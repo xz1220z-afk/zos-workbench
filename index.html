@@ -1,0 +1,2900 @@
+<!DOCTYPE html><html lang="zh-CN"><head><!-- Coze Coding Analytics -->
+<script>
+(function(){
+  function randomUUID(){
+    if(typeof crypto!=="undefined"&&typeof crypto.randomUUID==="function"){
+      return crypto.randomUUID();
+    }
+    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g,function(c){
+      return(+c^(crypto.getRandomValues(new Uint8Array(1))[0]&(15>>(+c/4)))).toString(16);
+    });
+  }
+
+  function encode(obj){return btoa(JSON.stringify(obj))}
+  function decode(str){try{return JSON.parse(atob(str))}catch(e){return null}}
+
+  function getDeviceId(){
+    var storageKey="__coze_coding_device_info";
+    try{
+      var info=decode(localStorage.getItem(storageKey));
+      if(info&&typeof info.did==="string"){return info.did}
+    }catch(e){}
+    var newInfo={did:randomUUID()};
+    try{localStorage.setItem(storageKey,encode(newInfo))}catch(e){}
+    return newInfo.did;
+  }
+
+  function sendPageViewEvent(){
+    var deviceId=getDeviceId();
+    var projectId="7667480962703343670";
+    var reportURL="https://code.coze.cn/api/coding/deployment/analytics/report?project_id="+encodeURIComponent(projectId)+"&did="+encodeURIComponent(deviceId);
+    try{
+      fetch(reportURL,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          events:[{
+            type:"page_view",
+            url:window.location.href,
+            path:window.location.pathname,
+            referrer:document.referrer,
+            timestamp:Date.now()
+          }]
+        })
+      }).catch(function(){});
+    }catch(e){}
+  }
+
+  if(document.readyState==="complete"){
+    sendPageViewEvent();
+  }else{
+    document.addEventListener("readystatechange",function(){
+      if(document.readyState==="complete"){sendPageViewEvent()}
+    });
+  }
+})();
+</script>
+<!-- WebPro SDK -->
+<script>
+(function(n,e,r,t,a,o,s,i,c,l,f,m,p,u){o="precollect";s="getAttribute";i="addEventListener";c="PerformanceObserver";l=function(e){f=[].slice.call(arguments);f.push(Date.now(),location.href);(e==o?l.p.a:l.q).push(f)};l.q=[];l.p={a:[]};n[a]=l;m=document.createElement("script");m.src=r+"?aid="+t+"&globalName="+a;m.crossOrigin="anonymous";e.getElementsByTagName("head")[0].appendChild(m);if(i in n){l.pcErr=function(e){e=e||n.event;p=e.target||e.srcElement;if(p instanceof Element||p instanceof HTMLElement){n[a](o,"st",{tagName:p.tagName,url:p[s]("href")||p[s]("src")})}else{n[a](o,"err",e.error||e.message)}};l.pcRej=function(e){e=e||n.event;n[a](o,"reject",e.reason||e.detail&&e.detail.reason)};n[i]("error",l.pcErr,true);n[i]("unhandledrejection",l.pcRej,true)}if("PerformanceLongTaskTiming"in n){u=l.pp={entries:[]};u.observer=new PerformanceObserver(function(e){u.entries=u.entries.concat(e.getEntries())});u.observer.observe({entryTypes:["longtask"]})}})(window,document,"https://apm.volccdn.com/mars-web/apmplus/web/browser.cn.js",1001891,"apmPlus");
+</script>
+<script>
+window.apmPlus("context.set", "project_id", "7667480962703343670");
+window.apmPlus("init",{
+  aid: 1001891,
+  token: '26a8704bd4d34b1698085c787d0c95d0'
+});
+window.apmPlus("start");
+</script>
+
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<title>ZOS 跨端 AI 工作台</title>
+<meta name="theme-color" content="#4f46e5"/>
+<meta name="background-color" content="#f0f2f5"/>
+<meta name="description" content="ZOS 跨端 AI 工作台 · 本地生活运营 · 花火影像 · 企业项目 · ZOS 企业大脑"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="ZOS"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="application-name" content="ZOS"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.png"/>
+<style>
+  :root {
+    --sidebar-bg: rgba(20, 20, 40, 0.65);
+    --sidebar-hover: rgba(255, 255, 255, 0.08);
+    --sidebar-active: rgba(79, 70, 229, 0.25);
+    --sidebar-text: rgba(255, 255, 255, 0.6);
+    --sidebar-text-active: #ffffff;
+    --sidebar-width: 240px;
+    --sidebar-collapsed: 64px;
+    --topbar-height: 56px;
+    --bg: #eef0f6;
+    --card-bg: rgba(255, 255, 255, 0.55);
+    --card-bg-solid: rgba(255, 255, 255, 0.75);
+    --card-border: rgba(255, 255, 255, 0.6);
+    --text: #1e1b2e;
+    --text-secondary: #5b5772;
+    --text-muted: #9a96b0;
+    --border: rgba(255, 255, 255, 0.5);
+    --border-soft: rgba(255, 255, 255, 0.35);
+    --shadow: 0 2px 8px rgba(31, 38, 80, 0.06);
+    --shadow-lg: 0 8px 32px rgba(31, 38, 80, 0.12);
+    --glass-blur: 20px;
+    --glass-saturate: 1.8;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --primary: #6366f1;
+    --primary-light: rgba(99, 102, 241, 0.1);
+    --green: #10b981;
+    --green-light: rgba(16, 185, 129, 0.1);
+    --orange: #f59e0b;
+    --orange-light: rgba(245, 158, 11, 0.1);
+    --blue: #3b82f6;
+    --blue-light: rgba(59, 130, 246, 0.1);
+    --purple: #8b5cf6;
+    --purple-light: rgba(139, 92, 246, 0.1);
+    --red: #ef4444;
+    --red-light: rgba(239, 68, 68, 0.08);
+    --transition: 0.25s ease;
+  }
+
+  /* ===== Decorative gradient blobs ===== */
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  body::before {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, #a78bfa, #818cf8);
+    top: -100px; right: -80px;
+  }
+  body::after {
+    width: 450px; height: 450px;
+    background: radial-gradient(circle, #f0abfc, #c084fc);
+    bottom: -100px; left: 100px;
+    opacity: 0.35;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  html { overscroll-behavior-x: none; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-x: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: pan-y;
+    -webkit-touch-callout: none;
+  }
+  /* Extra decorative blobs inside the layout */
+  .main::before {
+    content: '';
+    position: fixed;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #93c5fd, #818cf8);
+    filter: blur(70px);
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.3;
+    top: 40%; right: -120px;
+  }
+
+  /* ===== Sidebar ===== */
+  .sidebar {
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    background: var(--sidebar-bg);
+    backdrop-filter: blur(24px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(24px) saturate(var(--glass-saturate));
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    transition: width var(--transition), min-width var(--transition);
+    position: relative;
+    height: 100vh;
+    border-right: 1px solid rgba(255,255,255,0.06);
+  }
+  .sidebar.collapsed {
+    width: var(--sidebar-collapsed);
+    min-width: var(--sidebar-collapsed);
+  }
+
+  .sidebar-logo {
+    height: var(--topbar-height);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    overflow: hidden;
+  }
+  .sidebar.collapsed .sidebar-logo { padding: 0 16px; justify-content: center; }
+  .sidebar-logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 800;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .sidebar-logo-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity var(--transition);
+  }
+  .sidebar.collapsed .sidebar-logo-text { opacity: 0; width: 0; }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 12px 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .sidebar-nav::-webkit-scrollbar { width: 0; }
+
+  .nav-section {
+    padding: 8px 12px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,.25);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity var(--transition);
+  }
+  .sidebar.collapsed .nav-section { opacity: 0; height: 4px; padding: 0; overflow: hidden; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--sidebar-text);
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+    margin-bottom: 2px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+  .nav-item:hover { background: var(--sidebar-hover); color: #d0d0e0; }
+  .nav-item.active { background: var(--sidebar-active); color: var(--sidebar-text-active); }
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    background: var(--primary);
+    border-radius: 0 3px 3px 0;
+  }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--primary);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+  }
+  .sidebar.collapsed .nav-badge { display: none; }
+  .sidebar.collapsed .nav-item { padding: 10px 14px; justify-content: center; }
+  .sidebar.collapsed .nav-item::before { display: none; }
+
+  .nav-icon {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .nav-label {
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 1;
+    transition: opacity var(--transition);
+  }
+  .sidebar.collapsed .nav-label { opacity: 0; width: 0; overflow: hidden; }
+
+  .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .sidebar.collapsed .nav-dot { display: none; }
+  .dot-green { background: var(--green); }
+  .dot-orange { background: var(--orange); }
+  .dot-blue { background: var(--blue); }
+  .dot-purple { background: var(--purple); }
+
+  .sidebar-footer {
+    border-top: 1px solid rgba(255,255,255,.06);
+    padding: 12px 8px;
+    overflow: hidden;
+  }
+  .sidebar-footer .nav-item { margin-bottom: 0; }
+
+  .sidebar-toggle {
+    position: absolute;
+    right: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px; height: 24px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+    z-index: 101;
+    box-shadow: var(--shadow);
+    transition: transform var(--transition);
+  }
+  .sidebar-toggle:hover { color: var(--text); }
+
+  /* ===== Main Area ===== */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .topbar {
+    min-height: var(--topbar-height);
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(20px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(20px) saturate(var(--glass-saturate));
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .topbar-hamburger {
+    display: none;
+    width: 44px; height: 44px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 22px;
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .topbar-hamburger:hover { background: rgba(255, 255, 255, 0.4); }
+
+  .topbar-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+  }
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar-clock {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .topbar-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 4px;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background var(--transition);
+  }
+  .topbar-user:hover { background: rgba(255, 255, 255, 0.4); }
+  .topbar-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .topbar-username {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* ===== Content Area ===== */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 24px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .content::-webkit-scrollbar { width: 6px; }
+  .content::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 3px; }
+
+  .page { display: none; }
+  .page.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ===== Dashboard ===== */
+  .welcome-card {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.85), rgba(124, 58, 237, 0.8));
+    backdrop-filter: blur(20px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(20px) saturate(var(--glass-saturate));
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--shadow-lg);
+  }
+  .welcome-greeting { font-size: 13px; opacity: .75; margin-bottom: 4px; }
+  .welcome-date { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .welcome-sub { font-size: 14px; opacity: .85; }
+
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .module-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    cursor: pointer;
+    transition: all var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+  .module-card:hover {
+    background: var(--card-bg-solid);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.8);
+  }
+  .module-card-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+  .module-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .module-card-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+  }
+  .module-card-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 12px;
+  }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .quick-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .quick-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    backdrop-filter: blur(12px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(12px) saturate(var(--glass-saturate));
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .quick-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  /* ===== Generic page template ===== */
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .page-header-left h2 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .page-header-left p { font-size: 14px; color: var(--text-secondary); }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 24px;
+    text-align: center;
+  }
+  .empty-state-icon {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin-bottom: 16px;
+  }
+  .empty-state-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .empty-state-desc { font-size: 14px; color: var(--text-muted); max-width: 400px; }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .stat-card-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+  .stat-card-value { font-size: 28px; font-weight: 700; color: var(--text); }
+  .stat-card-placeholder { font-size: 13px; color: var(--text-muted); }
+
+  /* ===== Settings ===== */
+  .settings-section {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .settings-section h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0,0,0,.04);
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-label { font-size: 14px; color: var(--text); }
+  .setting-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .toggle {
+    width: 44px; height: 24px;
+    background: #d1d5db;
+    border-radius: 12px;
+    cursor: pointer;
+    position: relative;
+    transition: background var(--transition);
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--primary); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 20px; height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform var(--transition);
+    box-shadow: 0 1px 2px rgba(0,0,0,.15);
+  }
+  .toggle.on::after { transform: translateX(20px); }
+
+  /* ===== Btn variants ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    backdrop-filter: blur(12px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(12px) saturate(var(--glass-saturate));
+    color: var(--text);
+    transition: all var(--transition);
+    white-space: nowrap;
+    min-height: 44px;
+  }
+  .btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(99, 102, 241, 0.08); }
+  .btn-primary {
+    background: rgba(99, 102, 241, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #fff;
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+  .btn-primary:hover { background: rgba(79, 70, 229, 0.9); color: #fff; }
+  .btn-danger { color: var(--red); border-color: rgba(239, 68, 68, 0.3); }
+  .btn-danger:hover { background: var(--red-light); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; min-height: 32px; border-radius: 6px; }
+  .btn-xs { padding: 3px 8px; font-size: 11px; min-height: 28px; border-radius: 6px; }
+  .btn-ghost { border: none; background: none; color: var(--text-secondary); }
+  .btn-ghost:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+
+  /* ===== Filter tabs ===== */
+  .filter-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: var(--card-bg);
+    backdrop-filter: blur(12px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(12px) saturate(var(--glass-saturate));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    width: fit-content;
+    flex-wrap: wrap;
+  }
+  .filter-tab {
+    padding: 6px 14px;
+    font-size: 13px;
+    border: none;
+    background: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all var(--transition);
+    min-height: 32px;
+  }
+  .filter-tab:hover { color: var(--text); background: rgba(255,255,255,0.3); }
+  .filter-tab.active { background: rgba(99, 102, 241, 0.85); color: #fff; }
+
+  /* ===== List items ===== */
+  .list-item {
+    background: var(--card-bg);
+    backdrop-filter: blur(14px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(14px) saturate(var(--glass-saturate));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: all var(--transition);
+  }
+  .list-item:hover { box-shadow: var(--shadow); background: var(--card-bg-solid); }
+  .list-item-body { flex: 1; min-width: 0; }
+  .list-item-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    word-break: break-word;
+  }
+  .list-item-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .list-item-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .list-item.done .list-item-title {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+  .list-item.done { opacity: 0.7; }
+
+  .checkbox {
+    width: 22px; height: 22px;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: all var(--transition);
+    font-size: 12px;
+    color: transparent;
+  }
+  .checkbox:hover { border-color: var(--primary); }
+  .checkbox.checked {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+
+  /* ===== Badges / Tags ===== */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .tag-planning { background: var(--orange-light); color: var(--orange); }
+  .tag-active { background: var(--blue-light); color: var(--blue); }
+  .tag-done { background: var(--green-light); color: var(--green); }
+  .tag-paused { background: #f3f4f6; color: var(--text-muted); }
+  .tag-todo { background: var(--primary-light); color: var(--primary); }
+  .tag-pending { background: #fef3c7; color: #d97706; }
+  .tag-executed { background: var(--green-light); color: var(--green); }
+
+  /* ===== Modal ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 20, 40, 0.25);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(28px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(28px) saturate(var(--glass-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+  }
+  .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  /* ===== Form elements ===== */
+  .form-group { margin-bottom: 14px; }
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.6);
+    transition: border-color var(--transition), box-shadow var(--transition);
+    -webkit-appearance: none;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+  .form-group textarea { min-height: 80px; resize: vertical; }
+
+  /* ===== Inbox ===== */
+  .inbox-input-area {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .inbox-input-row {
+    display: flex;
+    gap: 8px;
+  }
+  .inbox-input-row input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    min-height: 44px;
+    background: rgba(255, 255, 255, 0.6);
+  }
+  .inbox-input-row input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.85);
+  }
+
+  /* ===== Project card ===== */
+  .project-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+  .project-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .project-card-title { font-size: 16px; font-weight: 600; }
+  .project-card-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
+  .project-card-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .project-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,0,0,.04);
+  }
+  .linked-tasks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 280px;
+    overflow: hidden;
+  }
+  .linked-task-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--primary);
+    flex-shrink: 0;
+  }
+  .linked-task-dot.done { background: var(--green); }
+
+  /* ===== Command queue ===== */
+  .cmd-input-area {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .cmd-input-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .cmd-input-row textarea {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    min-height: 60px;
+    resize: vertical;
+    background: rgba(255, 255, 255, 0.6);
+  }
+  .cmd-input-row textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.85);
+  }
+
+  /* ===== Privacy page ===== */
+  .privacy-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .privacy-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .privacy-card p, .privacy-card li {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .privacy-card ul { padding-left: 20px; margin: 8px 0; }
+  .privacy-card li { margin-bottom: 4px; }
+  .check-list { list-style: none; padding-left: 0; }
+  .check-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+  }
+  .check-icon {
+    color: var(--green);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .cross-icon {
+    color: var(--red);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 27, 46, 0.7);
+    backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    z-index: 300;
+    animation: toastIn 0.3s ease;
+    pointer-events: none;
+    box-shadow: var(--shadow-lg);
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+  /* ===== Overlay ===== */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    z-index: 99;
+  }
+  .sidebar-overlay.show { display: block; }
+
+  /* ===== Bottom mobile nav ===== */
+  .bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(24px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(24px) saturate(var(--glass-saturate));
+    border-top: 1px solid var(--border-soft);
+    padding: 4px 0 max(4px, env(safe-area-inset-bottom));
+    z-index: 110;
+    justify-content: space-around;
+    overflow-x: auto;
+  }
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 4px;
+    font-size: 10px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    -webkit-tap-highlight-color: transparent;
+    min-width: 56px;
+    flex-shrink: 0;
+  }
+  .bottom-nav-item.active { color: var(--primary); }
+  .bottom-nav-item .bn-icon { font-size: 20px; }
+
+  /* ===== Responsive ===== */
+  @media (min-width: 1025px) {
+    .sidebar-toggle { display: flex; }
+  }
+
+  @media (max-width: 1024px) {
+    .sidebar {
+      position: fixed;
+      left: -280px;
+      width: 280px;
+      min-width: 280px;
+      height: 100vh;
+      transition: left 0.3s ease;
+    }
+    .sidebar.open { left: 0; }
+    .sidebar.collapsed { width: 280px; min-width: 280px; }
+    .sidebar.collapsed .nav-label { opacity: 1; width: auto; overflow: visible; }
+    .sidebar.collapsed .nav-section { opacity: 1; height: auto; padding: 8px 12px 4px; }
+    .sidebar.collapsed .nav-item { padding: 10px 12px; justify-content: flex-start; }
+    .sidebar.collapsed .sidebar-logo { padding: 0 20px; justify-content: flex-start; }
+    .sidebar.collapsed .sidebar-logo-text { opacity: 1; width: auto; }
+    .sidebar.collapsed .nav-badge { display: block; }
+    .sidebar-overlay.show { display: block; }
+    .topbar-hamburger { display: flex; }
+    .sidebar-toggle { display: none !important; }
+    .content { padding: 16px; }
+    .welcome-card { padding: 20px 24px; }
+    .welcome-date { font-size: 20px; }
+    .list-item-actions { margin-top: 8px; }
+    .list-item { flex-wrap: wrap; }
+  }
+
+  @media (max-width: 767px) {
+    .bottom-nav { display: flex; }
+    .content { padding: 16px 16px 80px; }
+    .module-grid { grid-template-columns: 1fr; }
+    .stat-row { grid-template-columns: 1fr 1fr; }
+    .topbar-username { display: none; }
+    .topbar-clock { font-size: 13px; }
+    .welcome-card { padding: 20px; }
+    .welcome-date { font-size: 18px; }
+    .page-header { flex-direction: column; }
+    .filter-tabs { width: 100%; }
+    .filter-tab { flex: 1; text-align: center; }
+    .inbox-input-row { flex-direction: column; }
+    .cmd-input-row { flex-direction: column; }
+    .cmd-input-row textarea { min-width: auto; }
+    .list-item { flex-direction: column; }
+    .list-item-actions { justify-content: flex-start; margin-top: 8px; }
+    .project-card-footer { flex-direction: column; align-items: flex-start; }
+    .btn { min-height: 44px; }
+    .modal { max-width: 100%; border-radius: var(--radius) var(--radius) 0 0; margin-top: auto; max-height: 90vh; }
+  }
+
+  @media (max-width: 400px) {
+    .stat-row { grid-template-columns: 1fr; }
+    .quick-actions { gap: 8px; }
+    .quick-btn { font-size: 12px; padding: 6px 12px; }
+  }
+
+  /* ===== PWA / Standalone mode adjustments ===== */
+  @media (display-mode: standalone) {
+    .topbar {
+      padding-top: env(safe-area-inset-top);
+      min-height: calc(var(--topbar-height) + env(safe-area-inset-top));
+    }
+    .sidebar { padding-top: env(safe-area-inset-top); }
+    .sidebar-logo { min-height: calc(var(--topbar-height) + env(safe-area-inset-top)); }
+    body { padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+  }
+
+  /* ===== Landscape / keyboard open: hide bottom nav to free space ===== */
+  @media (max-height: 420px) and (max-width: 767px) {
+    .bottom-nav { display: none; }
+    .content { padding-bottom: 16px; }
+  }
+
+  .nav-item, .bottom-nav-item, .quick-btn, .toggle, .topbar-user, .module-card {
+    min-height: 44px;
+  }
+
+  /* ===== Onboarding Banner ===== */
+  .onboarding-banner {
+    background: rgba(99, 102, 241, 0.12);
+    backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .onboarding-banner-text { flex: 1; min-width: 200px; }
+  .onboarding-banner-text h4 { font-size: 15px; font-weight: 600; color: var(--primary); margin-bottom: 4px; }
+  .onboarding-banner-text p { font-size: 13px; color: var(--text-secondary); }
+  .onboarding-banner-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+
+  /* ===== Today View ===== */
+  .today-section { margin-bottom: 20px; }
+  .today-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+  .today-empty {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .today-item {
+    background: var(--card-bg);
+    backdrop-filter: blur(14px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(14px) saturate(var(--glass-saturate));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .today-item:hover { box-shadow: var(--shadow); background: var(--card-bg-solid); }
+  .today-item-icon { font-size: 18px; flex-shrink: 0; }
+  .today-item-text { flex: 1; min-width: 0; font-size: 14px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .today-item-tag { font-size: 11px; flex-shrink: 0; }
+
+  /* ===== Link Management Cards ===== */
+  .link-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(14px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(14px) saturate(var(--glass-saturate));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .link-card-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .link-card-url {
+    font-size: 13px;
+    color: var(--primary);
+    word-break: break-all;
+    margin-bottom: 4px;
+    font-family: monospace;
+    background: rgba(99, 102, 241, 0.08);
+    padding: 6px 10px;
+    border-radius: 6px;
+  }
+  .link-card-desc { font-size: 12px; color: var(--text-muted); }
+  .link-card-actions { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ===== Testing Checklist ===== */
+  .checklist-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .checklist-card h4 { font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+  .checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0,0,0,.04);
+    font-size: 13px;
+  }
+  .checklist-item:last-child { border-bottom: none; }
+  .checklist-status { flex-shrink: 0; font-size: 14px; width: 20px; text-align: center; }
+  .checklist-status.pass { color: var(--green); }
+  .checklist-status.manual { color: var(--orange); }
+  .checklist-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .checklist-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+  .checklist-badge.auto { background: var(--green-light); color: var(--green); }
+  .checklist-badge.human { background: var(--orange-light); color: var(--orange); }
+</style>
+</head>
+<body>
+
+<!-- ===== Sidebar ===== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">Z</div>
+    <span class="sidebar-logo-text">ZOS 工作台</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">工作区</div>
+    <div class="nav-item active" data-page="dashboard">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">仪表盘</span>
+    </div>
+    <div class="nav-item" data-page="today">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">今日视图</span>
+    </div>
+    <div class="nav-item" data-page="inbox">
+      <span class="nav-icon">📥</span>
+      <span class="nav-label">收集箱</span>
+      <span class="nav-badge" id="inboxBadge" style="display:none">0</span>
+    </div>
+    <div class="nav-item" data-page="tasks">
+      <span class="nav-icon">✅</span>
+      <span class="nav-label">任务</span>
+      <span class="nav-badge" id="taskBadge" style="display:none">0</span>
+    </div>
+    <div class="nav-section">业务模块</div>
+    <div class="nav-item" data-page="local-life">
+      <span class="nav-icon">🏪</span>
+      <span class="nav-label">本地生活运营</span>
+      <span class="nav-dot dot-green"></span>
+    </div>
+    <div class="nav-item" data-page="spark-media">
+      <span class="nav-icon">🎬</span>
+      <span class="nav-label">花火影像</span>
+      <span class="nav-dot dot-orange"></span>
+    </div>
+    <div class="nav-item" data-page="enterprise">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">企业项目</span>
+      <span class="nav-dot dot-blue"></span>
+    </div>
+    <div class="nav-item" data-page="zos-brain">
+      <span class="nav-icon">🧠</span>
+      <span class="nav-label">ZOS 企业大脑</span>
+      <span class="nav-dot dot-purple"></span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="nav-item" data-page="privacy">
+      <span class="nav-icon">🔒</span>
+      <span class="nav-label">隐私与数据</span>
+    </div>
+    <div class="nav-item" data-page="settings">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">设置</span>
+    </div>
+  </div>
+  <button class="sidebar-toggle" id="sidebarToggle" title="折叠侧边栏">◀</button>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ===== Main ===== -->
+<div class="main">
+  <header class="topbar">
+    <button class="topbar-hamburger" id="hamburger" aria-label="菜单">☰</button>
+    <div class="topbar-title" id="pageTitle">仪表盘</div>
+    <div class="topbar-actions">
+      <div class="topbar-clock" id="clock"></div>
+      <div class="topbar-user">
+        <div class="topbar-avatar">朱</div>
+        <span class="topbar-username">朱帅</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="content" id="content">
+
+    <!-- ===== 仪表盘 ===== -->
+    <section class="page active" id="page-dashboard">
+      <div class="welcome-card">
+        <div class="welcome-greeting" id="greeting"></div>
+        <div class="welcome-date" id="welcomeDate"></div>
+        <div class="welcome-sub">ZOS 跨端 AI 工作台 · 一切就绪</div>
+      </div>
+
+      <div class="onboarding-banner" id="onboardingBanner" style="display:none;">
+        <div class="onboarding-banner-text">
+          <h4>👋 欢迎使用 ZOS 工作台</h4>
+          <p>看起来你还没有任何数据。要不要一键创建示例内容，快速体验各模块功能？</p>
+        </div>
+        <div class="onboarding-banner-actions">
+          <button class="btn btn-primary btn-sm" onclick="createSampleData()">📋 创建示例数据</button>
+          <button class="btn btn-sm" onclick="dismissOnboarding()">以后再说</button>
+        </div>
+      </div>
+
+      <div class="section-title">工作区概览</div>
+      <div class="stat-row" id="dashboardStats"></div>
+
+      <div class="section-title">快捷操作</div>
+      <div class="quick-actions">
+        <button class="quick-btn" onclick="openInboxAdd()">📥 快速收集</button>
+        <button class="quick-btn" onclick="openTaskAdd()">✅ 新建任务</button>
+        <button class="quick-btn" onclick="openProjectAdd()">📌 新建项目</button>
+        <button class="quick-btn" onclick="navigateTo(&#39;zos-brain&#39;)">🧠 AI 指令队列</button>
+      </div>
+
+      <div class="section-title">业务概览</div>
+      <div class="module-grid">
+        <div class="module-card" onclick="navigateTo(&#39;local-life&#39;)">
+          <div class="module-card-icon" style="background: var(--green-light);">🏪</div>
+          <div class="module-card-title">本地生活运营</div>
+          <div class="module-card-desc">活动管理、门店运营、用户增长</div>
+          <span class="module-card-status" style="background: var(--green-light); color: var(--green);">● 待接入</span>
+        </div>
+        <div class="module-card" onclick="navigateTo(&#39;spark-media&#39;)">
+          <div class="module-card-icon" style="background: var(--orange-light);">🎬</div>
+          <div class="module-card-title">花火影像</div>
+          <div class="module-card-desc">项目策划、拍摄排期、后期制作</div>
+          <span class="module-card-status" style="background: var(--orange-light); color: var(--orange);">● 待接入</span>
+        </div>
+        <div class="module-card" onclick="navigateTo(&#39;enterprise&#39;)">
+          <div class="module-card-icon" style="background: var(--blue-light);">📋</div>
+          <div class="module-card-title">企业项目</div>
+          <div class="module-card-desc">项目看板、里程碑、资源调度</div>
+          <span class="module-card-status" style="background: var(--blue-light); color: var(--blue);" id="projectOverview">● 待确认</span>
+        </div>
+        <div class="module-card" onclick="navigateTo(&#39;zos-brain&#39;)">
+          <div class="module-card-icon" style="background: var(--purple-light);">🧠</div>
+          <div class="module-card-title">ZOS 企业大脑</div>
+          <div class="module-card-desc">Obsidian 知识库、AI 问答、知识图谱</div>
+          <span class="module-card-status" style="background: var(--purple-light); color: var(--purple);">● 待接入</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 今日视图 ===== -->
+    <section class="page" id="page-today">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>今日视图</h2>
+          <p id="todayDateLabel">聚焦今天最重要的事</p>
+        </div>
+      </div>
+      <div class="today-section">
+        <div class="today-section-header">📌 今日任务</div>
+        <div id="todayTasks"></div>
+      </div>
+      <div class="today-section">
+        <div class="today-section-header">📥 待处理收集</div>
+        <div id="todayInbox"></div>
+      </div>
+      <div class="today-section">
+        <div class="today-section-header">⚡ 待执行 AI 指令</div>
+        <div id="todayCommands"></div>
+      </div>
+    </section>
+
+    <!-- ===== 收集箱 ===== -->
+    <section class="page" id="page-inbox">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>收集箱</h2>
+          <p>灵感、待办、杂项——先记下来，再处理</p>
+        </div>
+      </div>
+      <div class="inbox-input-area">
+        <div class="inbox-input-row">
+          <input type="text" id="inboxInput" placeholder="记录一条想法、任务或备忘…" maxlength="200"/>
+          <button class="btn btn-primary" onclick="addInboxItem()">收集</button>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text-muted);">按 Enter 快速添加</div>
+      </div>
+      <div class="filter-tabs" id="inboxFilter" style="display:none">
+        <button class="filter-tab active" data-filter="all">全部</button>
+        <button class="filter-tab" data-filter="pending">待处理</button>
+        <button class="filter-tab" data-filter="converted">已转换</button>
+      </div>
+      <div id="inboxList"></div>
+      <div class="empty-state" id="inboxEmpty">
+        <div class="empty-state-icon" style="background: var(--primary-light);">📥</div>
+        <div class="empty-state-title">收集箱为空</div>
+        <div class="empty-state-desc">把一闪而过的想法、随手记下的任务都丢进来，之后再逐个处理。</div>
+      </div>
+    </section>
+
+    <!-- ===== 任务 ===== -->
+    <section class="page" id="page-tasks">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>任务</h2>
+          <p id="taskSummary">任务管理</p>
+        </div>
+        <button class="btn btn-primary" onclick="openTaskAdd()">＋ 新建任务</button>
+      </div>
+      <div class="filter-tabs" id="taskFilter">
+        <button class="filter-tab active" data-filter="all">全部</button>
+        <button class="filter-tab" data-filter="todo">进行中</button>
+        <button class="filter-tab" data-filter="done">已完成</button>
+      </div>
+      <div id="taskList"></div>
+      <div class="empty-state" id="taskEmpty">
+        <div class="empty-state-icon" style="background: var(--green-light);">✅</div>
+        <div class="empty-state-title">暂无任务</div>
+        <div class="empty-state-desc">点击「新建任务」开始记录你的工作事项。</div>
+      </div>
+    </section>
+
+    <!-- ===== 本地生活运营 ===== -->
+    <section class="page" id="page-local-life">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>本地生活运营</h2>
+          <p>活动管理、门店运营、用户增长</p>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-card-label">进行中活动</div>
+          <div class="stat-card-placeholder">— 待接入数据源</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">本周新增用户</div>
+          <div class="stat-card-placeholder">— 待接入数据源</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">活跃门店</div>
+          <div class="stat-card-placeholder">— 待接入数据源</div>
+        </div>
+      </div>
+      <div class="empty-state">
+        <div class="empty-state-icon" style="background: var(--green-light);">🏪</div>
+        <div class="empty-state-title">暂无运营数据</div>
+        <div class="empty-state-desc">接入本地生活平台数据后，此处将展示活动列表、运营指标和门店动态。</div>
+      </div>
+    </section>
+
+    <!-- ===== 花火影像 ===== -->
+    <section class="page" id="page-spark-media">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>花火影像</h2>
+          <p>项目策划、拍摄排期、后期制作</p>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-card-label">进行中项目</div>
+          <div class="stat-card-placeholder">— 待接入数据源</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">待审核素材</div>
+          <div class="stat-card-placeholder">— 待接入数据源</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">本月交付</div>
+          <div class="stat-card-placeholder">— 待接入数据源</div>
+        </div>
+      </div>
+      <div class="empty-state">
+        <div class="empty-state-icon" style="background: var(--orange-light);">🎬</div>
+        <div class="empty-state-title">暂无影像项目</div>
+        <div class="empty-state-desc">接入项目管理系统后，此处将展示拍摄排期、后期进度和素材库。</div>
+      </div>
+    </section>
+
+    <!-- ===== 企业项目 ===== -->
+    <section class="page" id="page-enterprise">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>企业项目</h2>
+          <p>项目看板、里程碑管理、资源调度</p>
+        </div>
+        <button class="btn btn-primary" onclick="openProjectAdd()">＋ 新建项目</button>
+      </div>
+      <div class="stat-row" id="projectStats">
+        <div class="stat-card">
+          <div class="stat-card-label">总项目数</div>
+          <div class="stat-card-value" id="projectCount">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">进行中</div>
+          <div class="stat-card-value" id="projectActiveCount">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">已完成</div>
+          <div class="stat-card-value" id="projectDoneCount">0</div>
+        </div>
+      </div>
+      <div class="filter-tabs" id="projectFilter" style="display:none">
+        <button class="filter-tab active" data-filter="all">全部</button>
+        <button class="filter-tab" data-filter="active">进行中</button>
+        <button class="filter-tab" data-filter="planning">规划中</button>
+        <button class="filter-tab" data-filter="done">已完成</button>
+        <button class="filter-tab" data-filter="paused">暂停</button>
+      </div>
+      <div id="projectList"></div>
+      <div class="empty-state" id="projectEmpty">
+        <div class="empty-state-icon" style="background: var(--blue-light);">📋</div>
+        <div class="empty-state-title">暂无项目</div>
+        <div class="empty-state-desc">创建一个项目来管理你的工作任务。所有数据保存在当前设备本地。</div>
+      </div>
+    </section>
+
+    <!-- ===== ZOS 企业大脑 ===== -->
+    <section class="page" id="page-zos-brain">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>ZOS 企业大脑</h2>
+          <p>Obsidian 知识库 · AI 指令队列 · 知识图谱</p>
+        </div>
+      </div>
+      <div class="module-grid">
+        <div class="module-card">
+          <div class="module-card-icon" style="background: var(--purple-light);">📓</div>
+          <div class="module-card-title">Obsidian 知识库</div>
+          <div class="module-card-desc">Markdown 笔记、双向链接、知识图谱</div>
+          <span class="module-card-status" style="background: var(--purple-light); color: var(--purple);">● 本地管理</span>
+        </div>
+        <div class="module-card" onclick="navigateTo(&#39;tasks&#39;)">
+          <div class="module-card-icon" style="background: var(--purple-light);">⚡</div>
+          <div class="module-card-title">AI 指令队列</div>
+          <div class="module-card-desc">待执行指令队列，不虚构 AI 已执行结果</div>
+          <span class="module-card-status" style="background: var(--purple-light); color: var(--purple);" id="cmdQueueStatus">● 队列就绪</span>
+        </div>
+        <div class="module-card">
+          <div class="module-card-icon" style="background: var(--purple-light);">🔗</div>
+          <div class="module-card-title">跨端同步</div>
+          <div class="module-card-desc">Mac · Windows · iPhone · Android</div>
+          <span class="module-card-status" style="background: var(--green-light); color: var(--green);">● 已就绪</span>
+        </div>
+      </div>
+      <div style="margin-top:24px;">
+        <div class="section-title">AI 指令队列（待执行指令队列）</div>
+        <div class="cmd-input-area">
+          <div class="cmd-input-row">
+            <textarea id="cmdInput" placeholder="输入一条 AI 指令，例如：帮我分析本周项目进度、生成一份项目周报…" maxlength="500"></textarea>
+            <button class="btn btn-primary" onclick="addCommand()">加入队列</button>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--text-muted);">指令将进入待执行队列，不会自动运行。</div>
+        </div>
+        <div id="cmdList"></div>
+        <div class="empty-state" id="cmdEmpty">
+          <div class="empty-state-icon" style="background: var(--purple-light);">⚡</div>
+          <div class="empty-state-title">指令队列为空</div>
+          <div class="empty-state-desc">添加一条 AI 指令，例如分析数据、生成报告等。指令会暂存在队列中等待执行。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 隐私与数据 ===== -->
+    <section class="page" id="page-privacy">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>数据来源与隐私</h2>
+          <p>了解你的数据在哪里、如何被处理</p>
+        </div>
+      </div>
+      <div class="privacy-card">
+        <h3>💾 数据存储位置</h3>
+        <p>ZOS 工作台中的所有数据（任务、收集箱、项目、指令队列）<strong>仅保存在当前设备的浏览器本地存储（localStorage）</strong>中。</p>
+        <ul>
+          <li>不会上传到任何云端服务器</li>
+          <li>清除浏览器数据会导致工作台数据丢失</li>
+          <li>不同设备之间的数据不互通</li>
+        </ul>
+      </div>
+      <div class="privacy-card">
+        <h3>🔗 外部服务连接状态</h3>
+        <ul class="check-list">
+          <li><span class="cross-icon">✗</span> 飞书 — 未连接</li>
+          <li><span class="cross-icon">✗</span> 腾讯文档 — 未连接</li>
+          <li><span class="cross-icon">✗</span> Obsidian — 未连接</li>
+          <li><span class="cross-icon">✗</span> 本地生活平台 — 未连接</li>
+          <li><span class="cross-icon">✗</span> 项目管理系统 — 未连接</li>
+          <li><span class="cross-icon">✗</span> 云存储 / 数据库 — 未连接</li>
+        </ul>
+        <p style="margin-top:8px;color:var(--text-muted);font-size:13px;">当前版本（v1.0.2）为纯本地工作台，所有外部服务状态均为「未连接」。</p>
+      </div>
+      <div class="privacy-card">
+        <h3>📋 数据收集声明</h3>
+        <p>本工作台<strong>不收集任何用户数据</strong>，不包含任何埋点、统计或分析代码。PWA 离线缓存仅用于加速页面加载，不涉及用户数据。</p>
+      </div>
+      <div class="privacy-card">
+        <h3>🔄 数据迁移</h3>
+        <p>需要更换设备或备份数据时，可在「设置」中使用数据导出/导入功能。导出的数据为 JSON 格式明文文件。</p>
+      </div>
+      <div class="privacy-card">
+        <h3>📝 业务数据说明</h3>
+        <ul class="check-list">
+          <li><span class="check-icon">✓</span> <strong>任务数据</strong>：本地创建，本地保存</li>
+          <li><span class="check-icon">✓</span> <strong>收集箱</strong>：本地创建，本地保存</li>
+          <li><span class="check-icon">✓</span> <strong>项目数据</strong>：本地创建，本地保存</li>
+          <li><span class="check-icon">✓</span> <strong>AI 指令</strong>：本地创建，本地保存</li>
+        </ul>
+        <p style="margin-top:8px;color:var(--text-muted);font-size:13px;">未标注「待接入」或「待确认」的内容均为用户手动录入的真实数据。</p>
+      </div>
+    </section>
+
+    <!-- ===== 设置 ===== -->
+    <section class="page" id="page-settings">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>设置</h2>
+          <p>工作台偏好配置</p>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>系统信息</h3>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">工作台版本</div>
+            <div class="setting-desc">v1.0.4 · 2026-07-28</div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">用户</div>
+            <div class="setting-desc">朱帅</div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">时区</div>
+            <div class="setting-desc">Asia/Shanghai (UTC+8)</div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">响应式适配</div>
+            <div class="setting-desc">桌面端 / 平板 / 手机 已启用</div>
+          </div>
+          <span style="font-size:14px;color:var(--green);">✓</span>
+        </div>
+      </div>
+      <div class="settings-section" id="linkManagement">
+        <h3>🔗 访问链接</h3>
+        <div class="link-card">
+          <div class="link-card-label"><span style="color:var(--green);">●</span> 正式访问链接</div>
+          <div class="link-card-url" id="publicLinkUrl">https://n8p3xbsbky.coze.site</div>
+          <div class="link-card-desc">当前唯一正式访问地址，可分享给团队成员使用。</div>
+          <div class="link-card-actions">
+            <button class="btn btn-xs" id="copyPublicLink" onclick="copyToClipboard(document.getElementById(&#39;publicLinkUrl&#39;).textContent)">📋 复制链接</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>🧪 跨端实测清单</h3>
+        <div class="checklist-card">
+          <h4>桌面端</h4>
+          <div class="checklist-item"><span class="checklist-status pass">✅</span><div><div>Chrome / Edge 页面加载与导航<span class="checklist-badge auto">已自动验证</span></div><div class="checklist-meta">PWA 标签齐全、JS 无语法错误、manifest/sw 可访问</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>Chrome / Edge 侧边栏折叠与展开<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">点击侧边栏切换按钮，确认折叠/展开动画正常</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>Chrome / Edge PWA 安装<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">地址栏右侧应出现安装图标，点击安装后独立窗口运行</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>Chrome / Edge 任务/收集/项目完整流程<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">新建、完成、筛选、删除、导入导出全部测试一遍</div></div></div>
+          <div class="checklist-item"><span class="checklist-status pass">✅</span><div><div>数据持久化（localStorage）<span class="checklist-badge auto">已自动验证</span></div><div class="checklist-meta">所有数据模型使用标准 JSON 序列化，读写逻辑一致</div></div></div>
+        </div>
+        <div class="checklist-card">
+          <h4>手机端 — iPhone Safari</h4>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>页面加载与响应式布局<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">打开链接，确认底部导航、安全区适配正常</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>添加到主屏幕（PWA）<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">Safari → 分享 → 添加到主屏幕 → 桌面图标启动</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>全屏独立运行<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">从桌面图标启动后，确认无浏览器地址栏</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>刘海屏 / Home Indicator 安全区<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">顶部内容不被刘海遮挡，底部导航不被横条遮挡</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>竖屏与横屏切换<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">旋转手机，确认布局自适应，无横向滚动条</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>键盘弹出后页面可用性<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">点击输入框后键盘弹出，确认页面可滚动、按钮可点击</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>离线提示<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">开启飞行模式后刷新页面，确认显示离线提示</div></div></div>
+        </div>
+        <div class="checklist-card">
+          <h4>手机端 — 安卓 Chrome</h4>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>页面加载与响应式布局<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">打开链接，确认底部导航、按钮触控区域≥44px</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>安装应用（PWA）<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">Chrome 菜单 → 安装应用 → 桌面图标启动</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>全屏独立运行<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">从桌面图标启动后，确认无浏览器地址栏</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>返回键导航<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">按系统返回键，确认页面行为符合预期</div></div></div>
+          <div class="checklist-item"><span class="checklist-status manual">👤</span><div><div>版本更新提示<span class="checklist-badge human">需人工验证</span></div><div class="checklist-meta">重新部署后刷新，确认弹出更新提示弹窗</div></div></div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>数据管理</h3>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">导出数据</div>
+            <div class="setting-desc">将所有本地数据导出为 JSON 文件</div>
+          </div>
+          <button class="btn btn-sm" onclick="exportData()">导出</button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">导入数据</div>
+            <div class="setting-desc">从 JSON 文件恢复数据</div>
+          </div>
+          <button class="btn btn-sm" onclick="document.getElementById(&#39;importFile&#39;).click()">导入</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)"/>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">清除示例数据</div>
+            <div class="setting-desc">一键移除所有示例数据，恢复空白工作台</div>
+          </div>
+          <button class="btn btn-sm" onclick="clearSampleData()">清除</button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">清除所有本地数据</div>
+            <div class="setting-desc" style="color:var(--red);">此操作不可恢复，数据将永久丢失</div>
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="clearAllData()">清除</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>安装到手机桌面</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6;">
+          ZOS 工作台已支持 PWA。添加到主屏幕后，可像原生 App 一样全屏运行。
+        </p>
+        <div class="setting-row" style="align-items:flex-start;flex-direction:column;gap:8px;">
+          <div class="setting-label">iPhone（Safari）</div>
+          <div class="setting-desc">打开 Safari → 点击底部「分享」按钮 → 选择「添加到主屏幕」</div>
+        </div>
+        <div class="setting-row" style="align-items:flex-start;flex-direction:column;gap:8px;">
+          <div class="setting-label">安卓（Chrome / Edge）</div>
+          <div class="setting-desc">打开浏览器菜单 → 点击「安装应用」或「添加到主屏幕」</div>
+        </div>
+        <div class="setting-row" style="align-items:flex-start;flex-direction:column;gap:8px;">
+          <div class="setting-label">运行模式</div>
+          <div class="setting-desc" id="displayMode">当前以浏览器标签页运行</div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>模块状态</h3>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">收集箱 &amp; 任务 &amp; 项目</div>
+            <div class="setting-desc">本地工作区已激活</div>
+          </div>
+          <span style="font-size:14px;color:var(--green);">✓</span>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">本地生活运营</div>
+            <div class="setting-desc">待接入数据源</div>
+          </div>
+          <span style="font-size:12px;color:var(--text-muted);">⏳</span>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">花火影像</div>
+            <div class="setting-desc">待接入数据源</div>
+          </div>
+          <span style="font-size:12px;color:var(--text-muted);">⏳</span>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">企业项目</div>
+            <div class="setting-desc">本地项目管理已激活</div>
+          </div>
+          <span style="font-size:14px;color:var(--green);">✓</span>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">ZOS 企业大脑</div>
+            <div class="setting-desc">AI 指令队列 · 跨端同步已就绪</div>
+          </div>
+          <span style="font-size:14px;color:var(--green);">✓</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===== Bottom Mobile Nav ===== -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bottom-nav-item active" data-page="dashboard">
+    <span class="bn-icon">📊</span>仪表盘
+  </button>
+  <button class="bottom-nav-item" data-page="today">
+    <span class="bn-icon">📅</span>今日
+  </button>
+  <button class="bottom-nav-item" data-page="inbox">
+    <span class="bn-icon">📥</span>收集箱
+  </button>
+  <button class="bottom-nav-item" data-page="tasks">
+    <span class="bn-icon">✅</span>任务
+  </button>
+  <button class="bottom-nav-item" data-page="enterprise">
+    <span class="bn-icon">📋</span>项目
+  </button>
+  <button class="bottom-nav-item" data-page="zos-brain">
+    <span class="bn-icon">🧠</span>大脑
+  </button>
+</nav>
+
+<!-- ===== Modals ===== -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ==================== DATA LAYER ====================
+  const KEYS = { TASKS:'zos_tasks', INBOX:'zos_inbox', PROJECTS:'zos_projects', COMMANDS:'zos_commands', ONBOARDED:'zos_onboarded' };
+
+  function load(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e) { return []; } }
+  function loadVal(k, fallback) { try { var v = localStorage.getItem(k); return v !== null ? v : fallback; } catch(e) { return fallback; } }
+  function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+  let tasks = load(KEYS.TASKS);
+  let inbox = load(KEYS.INBOX);
+  let projects = load(KEYS.PROJECTS);
+  let commands = load(KEYS.COMMANDS);
+  let onboarded = loadVal(KEYS.ONBOARDED, '');
+
+  // Migrate: ensure tasks have dueDate field
+  let migrated = false;
+  tasks.forEach(function(t) { if (!t.dueDate) { t.dueDate = null; migrated = true; } });
+  if (migrated) { save(KEYS.TASKS, tasks); }
+
+  let nextId = (function() {
+    let max = 0;
+    [tasks, inbox, projects, commands].forEach(arr => arr.forEach(item => {
+      const n = parseInt(String(item.id).replace(/\D/g,'')) || 0;
+      if (n > max) max = n;
+    }));
+    return max + 1;
+  })();
+  function uid() { return 'id_' + (nextId++); }
+  function now() { return new Date().toISOString(); }
+  function todayStr() {
+    var cn = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+    return cn.getFullYear() + '-' + String(cn.getMonth()+1).padStart(2,'0') + '-' + String(cn.getDate()).padStart(2,'0');
+  }
+  function isToday(dateStr) {
+    if (!dateStr) return false;
+    return dateStr.slice(0,10) === todayStr();
+  }
+  function timeAgo(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return '刚刚';
+    if (mins < 60) return mins + '分钟前';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + '小时前';
+    const days = Math.floor(hrs / 24);
+    return days + '天前';
+  }
+
+  // ==================== TOAST ====================
+  function toast(msg) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2000);
+  }
+
+  // ==================== MODAL ====================
+  function openModal(title, bodyHTML, onConfirm, confirmText) {
+    confirmText = confirmText || '确定';
+    const modal = document.getElementById('modalBody');
+    modal.innerHTML = '<h3>' + title + '</h3>' + bodyHTML +
+      '<div class="modal-actions"><button class="btn btn-ghost" onclick="window.closeModal()">取消</button>' +
+      '<button class="btn btn-primary" id="modalConfirm">' + confirmText + '</button></div>';
+    document.getElementById('modalOverlay').classList.add('show');
+    document.getElementById('modalConfirm').addEventListener('click', function() {
+      onConfirm();
+      closeModal();
+    });
+  }
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('show');
+  }
+  function confirmDialog(title, msg, onConfirm) {
+    openModal(title, '<p style="font-size:14px;color:var(--text-secondary);">' + msg + '</p>', onConfirm, '确认');
+  }
+
+  window.closeModal = closeModal;
+
+  // ==================== TASK MANAGEMENT ====================
+  function renderTasks(filter) {
+    filter = filter || (document.querySelector('#taskFilter .filter-tab.active')?.dataset.filter || 'all');
+    let list = [...tasks].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    if (filter === 'todo') list = list.filter(t => t.status === 'todo');
+    if (filter === 'done') list = list.filter(t => t.status === 'done');
+
+    const container = document.getElementById('taskList');
+    const empty = document.getElementById('taskEmpty');
+    const summary = document.getElementById('taskSummary');
+
+    const total = tasks.length;
+    const doneCount = tasks.filter(t => t.status === 'done').length;
+    summary.textContent = total ? '共 ' + total + ' 个任务，已完成 ' + doneCount + ' 个' : '任务管理';
+
+    if (!list.length) {
+      container.innerHTML = '';
+      empty.style.display = 'flex';
+      return;
+    }
+    empty.style.display = 'none';
+
+    container.innerHTML = list.map(t => {
+      const isDone = t.status === 'done';
+      const proj = t.projectId ? projects.find(p => p.id === t.projectId) : null;
+      return '<div class="list-item' + (isDone ? ' done' : '') + '">' +
+        '<div class="checkbox' + (isDone ? ' checked' : '') + '" onclick="window.toggleTask(\'' + t.id + '\')">' + (isDone ? '✓' : '') + '</div>' +
+        '<div class="list-item-body">' +
+          '<div class="list-item-title">' + escapeHtml(t.title) + '</div>' +
+          '<div class="list-item-meta">' +
+            (proj ? '<span class="tag tag-active">' + escapeHtml(proj.name) + '</span>' : '') +
+            '<span class="tag ' + (isDone ? 'tag-done' : 'tag-todo') + '">' + (isDone ? '已完成' : '进行中') + '</span>' +
+            '<span>' + timeAgo(t.createdAt) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="list-item-actions">' +
+          (t.description ? '<span style="font-size:12px;color:var(--text-muted);" title="' + escapeHtml(t.description) + '">💬</span>' : '') +
+          '<button class="btn btn-xs btn-danger" onclick="window.deleteTask(\'' + t.id + '\')">删除</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    updateBadges();
+  }
+
+  function openTaskAdd() {
+    openModal('新建任务',
+      '<div class="form-group"><label>任务名称</label><input id="taskTitleInput" placeholder="输入任务名称" maxlength="100" autofocus></div>' +
+      '<div class="form-group"><label>截止日期（可选，仅今天日期的任务才会出现在今日视图）</label><input id="taskDueInput" type="date" value="' + todayStr() + '"></div>' +
+      '<div class="form-group"><label>备注（可选）</label><textarea id="taskDescInput" placeholder="任务详情…" maxlength="500"></textarea></div>' +
+      '<div class="form-group"><label>关联项目（可选）</label><select id="taskProjectSelect"><option value="">不关联</option>' +
+        projects.filter(p => p.status !== 'done').map(p => '<option value="' + p.id + '">' + escapeHtml(p.name) + '</option>').join('') +
+      '</select></div>',
+      function() {
+        const title = document.getElementById('taskTitleInput').value.trim();
+        if (!title) { toast('请输入任务名称'); return; }
+        const projectId = document.getElementById('taskProjectSelect').value || null;
+        const dueDate = document.getElementById('taskDueInput').value || null;
+        tasks.push({ id: uid(), title: title, description: document.getElementById('taskDescInput').value.trim(), status: 'todo', createdAt: now(), doneAt: null, projectId: projectId, dueDate: dueDate });
+        save(KEYS.TASKS, tasks);
+        renderTasks();
+        renderDashboardStats();
+        toast('任务已创建');
+      }, '创建');
+  }
+
+  window.toggleTask = function(id) {
+    const t = tasks.find(t => t.id === id);
+    if (!t) return;
+    if (t.status === 'done') { t.status = 'todo'; t.doneAt = null; }
+    else { t.status = 'done'; t.doneAt = now(); }
+    save(KEYS.TASKS, tasks);
+    renderTasks();
+    renderDashboardStats();
+    renderProjects();
+  };
+
+  window.deleteTask = function(id) {
+    confirmDialog('删除任务', '确定要删除这个任务吗？此操作不可恢复。', function() {
+      tasks = tasks.filter(t => t.id !== id);
+      projects.forEach(p => { p.taskIds = p.taskIds.filter(tid => tid !== id); });
+      save(KEYS.TASKS, tasks);
+      save(KEYS.PROJECTS, projects);
+      renderTasks();
+      renderDashboardStats();
+      renderProjects();
+      toast('任务已删除');
+    });
+  };
+
+  window.openTaskAdd = openTaskAdd;
+
+  // ==================== INBOX ====================
+  function renderInbox(filter) {
+    filter = filter || (document.querySelector('#inboxFilter .filter-tab.active')?.dataset.filter || 'all');
+    let list = [...inbox].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    if (filter === 'pending') list = list.filter(i => !i.convertedTo);
+    if (filter === 'converted') list = list.filter(i => i.convertedTo);
+
+    const container = document.getElementById('inboxList');
+    const empty = document.getElementById('inboxEmpty');
+    const filterEl = document.getElementById('inboxFilter');
+
+    filterEl.style.display = inbox.length ? 'flex' : 'none';
+
+    if (!list.length) {
+      container.innerHTML = '';
+      empty.style.display = 'flex';
+      return;
+    }
+    empty.style.display = 'none';
+
+    container.innerHTML = list.map(i => {
+      const converted = i.convertedTo;
+      return '<div class="list-item">' +
+        '<div class="list-item-body">' +
+          '<div class="list-item-title">' + escapeHtml(i.content) + '</div>' +
+          '<div class="list-item-meta">' +
+            '<span>' + timeAgo(i.createdAt) + '</span>' +
+            (converted ? '<span class="tag tag-done">已转为' + converted + '</span>' : '<span class="tag tag-todo">待处理</span>') +
+          '</div>' +
+        '</div>' +
+        (converted ? '<div class="list-item-actions"><button class="btn btn-xs btn-danger" onclick="window.deleteInbox(\'' + i.id + '\')">删除</button></div>' :
+        '<div class="list-item-actions">' +
+          '<button class="btn btn-xs btn-primary" onclick="window.convertToTask(\'' + i.id + '\')">转任务</button>' +
+          '<button class="btn btn-xs" onclick="window.convertToProject(\'' + i.id + '\')">转项目</button>' +
+          '<button class="btn btn-xs btn-danger" onclick="window.deleteInbox(\'' + i.id + '\')">删除</button>' +
+        '</div>') +
+      '</div>';
+    }).join('');
+  }
+
+  function addInboxItem() {
+    const input = document.getElementById('inboxInput');
+    const val = input.value.trim();
+    if (!val) { toast('请输入内容'); return; }
+    inbox.push({ id: uid(), content: val, createdAt: now(), convertedTo: null, convertedId: null });
+    save(KEYS.INBOX, inbox);
+    input.value = '';
+    renderInbox();
+    renderDashboardStats();
+    updateBadges();
+    toast('已收集');
+  }
+
+  window.convertToTask = function(id) {
+    const item = inbox.find(i => i.id === id);
+    if (!item) return;
+    tasks.push({ id: uid(), title: item.content, description: '', status: 'todo', createdAt: now(), doneAt: null, projectId: null, dueDate: todayStr() });
+    item.convertedTo = '任务';
+    item.convertedId = tasks[tasks.length - 1].id;
+    save(KEYS.TASKS, tasks);
+    save(KEYS.INBOX, inbox);
+    renderInbox();
+    renderTasks();
+    renderDashboardStats();
+    updateBadges();
+    toast('已转为任务');
+  };
+
+  window.convertToProject = function(id) {
+    const item = inbox.find(i => i.id === id);
+    if (!item) return;
+    projects.push({ id: uid(), name: item.content, description: '', status: 'planning', createdAt: now(), taskIds: [], source: '待确认' });
+    item.convertedTo = '项目';
+    item.convertedId = projects[projects.length - 1].id;
+    save(KEYS.PROJECTS, projects);
+    save(KEYS.INBOX, inbox);
+    renderInbox();
+    renderProjects();
+    renderDashboardStats();
+    updateBadges();
+    toast('已转为项目');
+  };
+
+  window.deleteInbox = function(id) {
+    inbox = inbox.filter(i => i.id !== id);
+    save(KEYS.INBOX, inbox);
+    renderInbox();
+    renderDashboardStats();
+    updateBadges();
+    toast('已删除');
+  };
+
+  window.addInboxItem = addInboxItem;
+
+  function openInboxAdd() {
+    navigateTo('inbox');
+    setTimeout(function() {
+      document.getElementById('inboxInput').focus();
+    }, 300);
+  }
+  window.openInboxAdd = openInboxAdd;
+
+  // ==================== PROJECT MANAGEMENT ====================
+  function renderProjects(filter) {
+    filter = filter || (document.querySelector('#projectFilter .filter-tab.active')?.dataset.filter || 'all');
+    let list = [...projects].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    if (filter !== 'all') list = list.filter(p => p.status === filter);
+
+    const container = document.getElementById('projectList');
+    const empty = document.getElementById('projectEmpty');
+    const filterEl = document.getElementById('projectFilter');
+
+    document.getElementById('projectCount').textContent = projects.length;
+    document.getElementById('projectActiveCount').textContent = projects.filter(p => p.status === 'active' || p.status === 'planning').length;
+    document.getElementById('projectDoneCount').textContent = projects.filter(p => p.status === 'done').length;
+    filterEl.style.display = projects.length ? 'flex' : 'none';
+
+    if (!list.length) {
+      container.innerHTML = '';
+      empty.style.display = 'flex';
+      return;
+    }
+    empty.style.display = 'none';
+
+    const statusTags = { planning: '规划中', active: '进行中', done: '已完成', paused: '暂停' };
+    const statusClasses = { planning: 'tag-planning', active: 'tag-active', done: 'tag-done', paused: 'tag-paused' };
+
+    container.innerHTML = list.map(p => {
+      const linkedTasks = tasks.filter(t => t.projectId === p.id);
+      const doneCount = linkedTasks.filter(t => t.status === 'done').length;
+      return '<div class="project-card">' +
+        '<div class="project-card-header">' +
+          '<div class="project-card-title">' + escapeHtml(p.name) + '</div>' +
+          '<span class="tag ' + statusClasses[p.status] + '">' + statusTags[p.status] + '</span>' +
+        '</div>' +
+        (p.description ? '<div class="project-card-desc">' + escapeHtml(p.description) + '</div>' : '') +
+        '<div class="project-card-meta">' +
+          '<span>创建于 ' + timeAgo(p.createdAt) + '</span>' +
+          (p.source ? ' · <span style="color:var(--orange);">来源：' + escapeHtml(p.source) + '</span>' : '') +
+          ' · <span>' + linkedTasks.length + ' 个关联任务（' + doneCount + ' 已完成）</span>' +
+        '</div>' +
+        '<div class="linked-tasks">' + linkedTasks.map(t => '<span class="linked-task-dot' + (t.status === 'done' ? ' done' : '') + '" title="' + escapeHtml(t.title) + '"></span>').join('') + '</div>' +
+        '<div class="project-card-footer">' +
+          '<div style="display:flex;gap:4px;flex-wrap:wrap;">' +
+            '<button class="btn btn-xs" onclick="window.changeProjectStatus(\'' + p.id + '\', \'planning\')">规划中</button>' +
+            '<button class="btn btn-xs" onclick="window.changeProjectStatus(\'' + p.id + '\', \'active\')">进行中</button>' +
+            '<button class="btn btn-xs" onclick="window.changeProjectStatus(\'' + p.id + '\', \'done\')">完成</button>' +
+            '<button class="btn btn-xs" onclick="window.changeProjectStatus(\'' + p.id + '\', \'paused\')">暂停</button>' +
+          '</div>' +
+          '<div style="display:flex;gap:4px;">' +
+            '<button class="btn btn-xs" onclick="window.editProject(\'' + p.id + '\')">编辑</button>' +
+            '<button class="btn btn-xs btn-danger" onclick="window.deleteProject(\'' + p.id + '\')">删除</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function openProjectAdd() {
+    openModal('新建项目',
+      '<div class="form-group"><label>项目名称</label><input id="projectNameInput" placeholder="输入项目名称" maxlength="100" autofocus></div>' +
+      '<div class="form-group"><label>描述（可选）</label><textarea id="projectDescInput" placeholder="项目描述…" maxlength="500"></textarea></div>' +
+      '<div class="form-group"><label>数据来源</label><select id="projectSourceSelect"><option value="">手动创建</option><option value="待确认">待确认</option></select></div>',
+      function() {
+        const name = document.getElementById('projectNameInput').value.trim();
+        if (!name) { toast('请输入项目名称'); return; }
+        projects.push({ id: uid(), name: name, description: document.getElementById('projectDescInput').value.trim(), status: 'planning', createdAt: now(), taskIds: [], source: document.getElementById('projectSourceSelect').value || null });
+        save(KEYS.PROJECTS, projects);
+        renderProjects();
+        renderDashboardStats();
+        toast('项目已创建');
+      }, '创建');
+  }
+
+  window.changeProjectStatus = function(id, status) {
+    const p = projects.find(p => p.id === id);
+    if (!p) return;
+    p.status = status;
+    save(KEYS.PROJECTS, projects);
+    renderProjects();
+    renderDashboardStats();
+    renderTasks();
+    toast('项目状态已更新');
+  };
+
+  window.editProject = function(id) {
+    const p = projects.find(p => p.id === id);
+    if (!p) return;
+    openModal('编辑项目',
+      '<div class="form-group"><label>项目名称</label><input id="editProjectName" value="' + escapeHtml(p.name) + '" maxlength="100"></div>' +
+      '<div class="form-group"><label>描述</label><textarea id="editProjectDesc" maxlength="500">' + escapeHtml(p.description || '') + '</textarea></div>',
+      function() {
+        p.name = document.getElementById('editProjectName').value.trim();
+        if (!p.name) { toast('项目名称不能为空'); return; }
+        p.description = document.getElementById('editProjectDesc').value.trim();
+        save(KEYS.PROJECTS, projects);
+        renderProjects();
+        renderTasks();
+        toast('项目已更新');
+      }, '保存');
+  };
+
+  window.deleteProject = function(id) {
+    confirmDialog('删除项目', '删除项目不会删除关联任务，确定要删除吗？', function() {
+      projects = projects.filter(p => p.id !== id);
+      tasks.forEach(t => { if (t.projectId === id) t.projectId = null; });
+      save(KEYS.PROJECTS, projects);
+      save(KEYS.TASKS, tasks);
+      renderProjects();
+      renderTasks();
+      renderDashboardStats();
+      toast('项目已删除');
+    });
+  };
+
+  window.openProjectAdd = openProjectAdd;
+
+  // ==================== COMMAND QUEUE ====================
+  function renderCommands() {
+    const list = [...commands].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const container = document.getElementById('cmdList');
+    const empty = document.getElementById('cmdEmpty');
+
+    if (!list.length) {
+      container.innerHTML = '';
+      empty.style.display = 'flex';
+      return;
+    }
+    empty.style.display = 'none';
+
+    container.innerHTML = list.map(c => {
+      const isDone = c.status === 'executed';
+      return '<div class="list-item">' +
+        '<div class="list-item-body">' +
+          '<div class="list-item-title">' + escapeHtml(c.instruction) + '</div>' +
+          '<div class="list-item-meta">' +
+            '<span class="tag ' + (isDone ? 'tag-executed' : 'tag-pending') + '">' + (isDone ? '已执行' : '待执行') + '</span>' +
+            '<span>' + timeAgo(c.createdAt) + '</span>' +
+            (c.notes ? '<span style="color:var(--text-secondary);">备注：' + escapeHtml(c.notes) + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="list-item-actions">' +
+          (!isDone ? '<button class="btn btn-xs btn-primary" onclick="window.executeCommand(\'' + c.id + '\')">标记执行</button>' : '') +
+          '<button class="btn btn-xs btn-danger" onclick="window.deleteCommand(\'' + c.id + '\')">删除</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function addCommand() {
+    const input = document.getElementById('cmdInput');
+    const val = input.value.trim();
+    if (!val) { toast('请输入指令'); return; }
+    commands.push({ id: uid(), instruction: val, status: 'pending', createdAt: now(), executedAt: null, notes: null });
+    save(KEYS.COMMANDS, commands);
+    input.value = '';
+    renderCommands();
+    updateBadges();
+    toast('指令已加入队列');
+  }
+
+  window.executeCommand = function(id) {
+    const c = commands.find(c => c.id === id);
+    if (!c) return;
+    c.status = 'executed';
+    c.executedAt = now();
+    c.notes = '已手动标记执行——实际 AI 执行需接入后端服务';
+    save(KEYS.COMMANDS, commands);
+    renderCommands();
+    updateBadges();
+    toast('指令已标记为已执行');
+  };
+
+  window.deleteCommand = function(id) {
+    commands = commands.filter(c => c.id !== id);
+    save(KEYS.COMMANDS, commands);
+    renderCommands();
+    updateBadges();
+    toast('指令已删除');
+  };
+
+  window.addCommand = addCommand;
+
+  // ==================== TODAY VIEW ====================
+  function renderTodayView() {
+    var todayTasks = tasks.filter(function(t) { return t.status === 'todo' && isToday(t.dueDate); });
+    var pendingInbox = inbox.filter(function(i) { return !i.convertedTo; });
+    var pendingCmds = commands.filter(function(c) { return c.status === 'pending'; });
+
+    // Today date label
+    var labelEl = document.getElementById('todayDateLabel');
+    if (labelEl) {
+      var cn = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+      var weekdays = ['日','一','二','三','四','五','六'];
+      labelEl.textContent = cn.getFullYear() + '年' + (cn.getMonth()+1) + '月' + cn.getDate() + '日 星期' + weekdays[cn.getDay()];
+    }
+
+    function renderSection(id, items, icon, emptyText, clickHandler) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (!items.length) {
+        el.innerHTML = '<div class="today-empty">' + emptyText + '</div>';
+        return;
+      }
+      el.innerHTML = items.map(function(item, idx) {
+        var text = item.title || item.content || item.instruction || '';
+        var tag = '';
+        if (item.status === 'pending') tag = '<span class="today-item-tag tag tag-pending">待执行</span>';
+        return '<div class="today-item" onclick="' + clickHandler + '(\'' + item.id + '\')">' +
+          '<span class="today-item-icon">' + icon + '</span>' +
+          '<span class="today-item-text">' + escapeHtml(text) + '</span>' +
+          tag +
+          '</div>';
+      }).join('');
+    }
+
+    renderSection('todayTasks', todayTasks, '📌', '今天没有安排任务。去「任务」页面新建一个吧。', 'window.navigateToTaskDetail');
+    renderSection('todayInbox', pendingInbox, '📥', '收集箱中没有待处理的内容。', 'window.navigateToInboxItem');
+    renderSection('todayCommands', pendingCmds, '⚡', 'AI 指令队列为空。', 'window.navigateToBrain');
+  }
+
+  window.navigateToTaskDetail = function(id) { navigateTo('tasks'); };
+  window.navigateToInboxItem = function(id) { navigateTo('inbox'); };
+  window.navigateToBrain = function() { navigateTo('zos-brain'); };
+
+  // ==================== DASHBOARD STATS ====================
+  function renderDashboardStats() {
+    const container = document.getElementById('dashboardStats');
+    const todoCount = tasks.filter(t => t.status === 'todo').length;
+    const doneCount = tasks.filter(t => t.status === 'done').length;
+    const inboxCount = inbox.filter(i => !i.convertedTo).length;
+    const projectCount = projects.length;
+    const activeProjects = projects.filter(p => p.status === 'active' || p.status === 'planning').length;
+    const pendingCmds = commands.filter(c => c.status === 'pending').length;
+
+    container.innerHTML =
+      '<div class="stat-card"><div class="stat-card-label">待处理收集</div><div class="stat-card-value">' + inboxCount + '</div></div>' +
+      '<div class="stat-card"><div class="stat-card-label">进行中任务</div><div class="stat-card-value">' + todoCount + '</div></div>' +
+      '<div class="stat-card"><div class="stat-card-label">已完成任务</div><div class="stat-card-value" style="color:var(--green)">' + doneCount + '</div></div>' +
+      '<div class="stat-card"><div class="stat-card-label">活跃项目</div><div class="stat-card-value">' + activeProjects + '/' + projectCount + '</div></div>' +
+      '<div class="stat-card"><div class="stat-card-label">待执行 AI 指令</div><div class="stat-card-value">' + pendingCmds + '</div></div>';
+
+    // Update project overview card
+    const po = document.getElementById('projectOverview');
+    if (po) {
+      po.textContent = projectCount ? '● ' + activeProjects + ' 个项目进行中' : '● 待确认';
+    }
+  }
+
+  function updateBadges() {
+    const inboxBadge = document.getElementById('inboxBadge');
+    const taskBadge = document.getElementById('taskBadge');
+    const inboxCount = inbox.filter(i => !i.convertedTo).length;
+    const todoCount = tasks.filter(t => t.status === 'todo').length;
+
+    if (inboxCount) { inboxBadge.style.display = ''; inboxBadge.textContent = inboxCount; }
+    else { inboxBadge.style.display = 'none'; }
+    if (todoCount) { taskBadge.style.display = ''; taskBadge.textContent = todoCount; }
+    else { taskBadge.style.display = 'none'; }
+  }
+
+  // ==================== ONBOARDING ====================
+  function checkOnboarding() {
+    var hasData = tasks.length || inbox.length || projects.length || commands.length;
+    var banner = document.getElementById('onboardingBanner');
+    if (banner) {
+      banner.style.display = (!onboarded && !hasData) ? 'flex' : 'none';
+    }
+  }
+
+  function createSampleData() {
+    var today = todayStr();
+    var nowStr = now();
+
+    // Sample inbox items
+    inbox.push(
+      { id: uid(), content: '整理本周花火影像拍摄排期', createdAt: nowStr, convertedTo: null, convertedId: null },
+      { id: uid(), content: '联系本地生活运营供应商确认活动档期', createdAt: nowStr, convertedTo: null, convertedId: null },
+      { id: uid(), content: '研究 AI + Obsidian 知识图谱搭建方案', createdAt: nowStr, convertedTo: null, convertedId: null }
+    );
+
+    // Sample projects
+    var p1 = uid(); var p2 = uid();
+    projects.push(
+      { id: p1, name: 'Q3 本地生活营销活动', description: '暑期餐饮门店联合推广活动策划与执行', status: 'active', createdAt: nowStr, taskIds: [], source: '待确认' },
+      { id: p2, name: '花火影像 · 品牌宣传片', description: '客户品牌年度宣传片拍摄与后期制作', status: 'planning', createdAt: nowStr, taskIds: [], source: '待确认' }
+    );
+
+    // Sample tasks with dates
+    tasks.push(
+      { id: uid(), title: '完成活动方案初稿', description: '包含预算、时间线、门店清单', status: 'todo', createdAt: nowStr, doneAt: null, projectId: p1, dueDate: today },
+      { id: uid(), title: '审核拍摄脚本 V2', description: '', status: 'todo', createdAt: nowStr, doneAt: null, projectId: p2, dueDate: today },
+      { id: uid(), title: '搭建 Obsidian 知识库模板', description: '设计笔记分类、模板与双向链接结构', status: 'done', createdAt: nowStr, doneAt: nowStr, projectId: null, dueDate: null },
+      { id: uid(), title: '周会纪要整理', description: '', status: 'todo', createdAt: nowStr, doneAt: null, projectId: null, dueDate: null }
+    );
+
+    // Sample AI commands
+    commands.push(
+      { id: uid(), instruction: '帮我分析本周项目进度，生成一份项目周报', status: 'pending', createdAt: nowStr, executedAt: null, notes: null },
+      { id: uid(), instruction: '从收集箱中提取关键待办事项，按优先级排序', status: 'pending', createdAt: nowStr, executedAt: null, notes: null }
+    );
+
+    save(KEYS.TASKS, tasks);
+    save(KEYS.INBOX, inbox);
+    save(KEYS.PROJECTS, projects);
+    save(KEYS.COMMANDS, commands);
+
+    onboarded = '1';
+    localStorage.setItem(KEYS.ONBOARDED, onboarded);
+
+    refreshAll();
+    document.getElementById('onboardingBanner').style.display = 'none';
+    toast('示例数据已创建，欢迎体验！可在设置中一键清除。');
+  }
+
+  function dismissOnboarding() {
+    onboarded = '1';
+    localStorage.setItem(KEYS.ONBOARDED, onboarded);
+    document.getElementById('onboardingBanner').style.display = 'none';
+    toast('随时可以在仪表盘创建新内容。');
+  }
+
+  function clearSampleData() {
+    confirmDialog('清除示例数据',
+      '确定要清除所有数据吗？<br><br>将清除：<br>' +
+      '· 所有任务（' + tasks.length + ' 条）<br>' +
+      '· 收集箱内容（' + inbox.length + ' 条）<br>' +
+      '· 项目数据（' + projects.length + ' 条）<br>' +
+      '· AI 指令队列（' + commands.length + ' 条）<br><br>' +
+      '建议先导出数据备份。',
+      function() {
+        tasks = []; inbox = []; projects = []; commands = []; onboarded = '';
+        save(KEYS.TASKS, tasks);
+        save(KEYS.INBOX, inbox);
+        save(KEYS.PROJECTS, projects);
+        save(KEYS.COMMANDS, commands);
+        localStorage.setItem(KEYS.ONBOARDED, onboarded);
+        refreshAll();
+        checkOnboarding();
+        toast('所有数据已清除');
+      });
+  }
+
+  window.createSampleData = createSampleData;
+  window.dismissOnboarding = dismissOnboarding;
+  window.clearSampleData = clearSampleData;
+
+  // ==================== DATA IMPORT/EXPORT ====================
+  function exportData() {
+    var data = {
+      version: '1.0.4',
+      exportedAt: now(),
+      tasks: tasks,
+      inbox: inbox,
+      projects: projects,
+      commands: commands
+    };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    var dateStr = todayStr();
+    a.download = 'ZOS_Backup_' + dateStr + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('数据已导出');
+  }
+
+  function importData(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+
+    // File size check
+    if (file.size > 10 * 1024 * 1024) { toast('文件过大，最大支持 10MB'); event.target.value = ''; return; }
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var data = JSON.parse(e.target.result);
+
+        // Validate structure
+        var errors = [];
+        if (!data || typeof data !== 'object') { errors.push('文件内容不是有效的 JSON 对象'); }
+        else {
+          if (!Array.isArray(data.tasks)) errors.push('缺少 tasks 数组');
+          if (!Array.isArray(data.inbox)) errors.push('缺少 inbox 数组');
+          if (!Array.isArray(data.projects)) errors.push('缺少 projects 数组');
+          if (!Array.isArray(data.commands)) errors.push('缺少 commands 数组');
+
+          // Validate data types
+          if (Array.isArray(data.tasks)) {
+            data.tasks.forEach(function(t, i) {
+              if (!t.id || !t.title) errors.push('tasks[' + i + '] 缺少 id 或 title');
+            });
+          }
+        }
+
+        if (errors.length) {
+          openModal('导入失败 — 格式校验未通过',
+            '<div style="font-size:13px;color:var(--red);margin-bottom:12px;">文件格式不正确，请检查以下问题：</div>' +
+            '<ul style="font-size:13px;color:var(--text-secondary);padding-left:20px;line-height:1.8;">' +
+            errors.map(function(e) { return '<li>' + escapeHtml(e) + '</li>'; }).join('') +
+            '</ul>',
+            function() {}, '关闭');
+          return;
+        }
+
+        // Build overwrite summary
+        var summary = '';
+        if (data.tasks.length) summary += '· 任务：' + data.tasks.length + ' 条<br>';
+        if (data.inbox.length) summary += '· 收集箱：' + data.inbox.length + ' 条<br>';
+        if (data.projects.length) summary += '· 项目：' + data.projects.length + ' 条<br>';
+        if (data.commands.length) summary += '· AI 指令：' + data.commands.length + ' 条<br>';
+        if (data.version) summary += '<br>来源版本：' + escapeHtml(data.version);
+        if (data.exportedAt) summary += '<br>导出时间：' + escapeHtml(data.exportedAt.slice(0, 10));
+
+        confirmDialog('确认导入数据',
+          '<p style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:8px;">⚠️ 导入将覆盖当前所有本地数据！</p>' +
+          '<p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">导入文件包含以下数据：</p>' +
+          '<p style="font-size:13px;color:var(--text);">' + summary + '</p>' +
+          '<p style="font-size:12px;color:var(--text-muted);margin-top:8px;">当前数据将被完全替换。建议先导出备份。</p>',
+          function() {
+            tasks = data.tasks;
+            inbox = data.inbox;
+            projects = data.projects;
+            commands = data.commands;
+            // Migrate dueDate for older data
+            tasks.forEach(function(t) { if (!t.dueDate) t.dueDate = null; });
+            save(KEYS.TASKS, tasks);
+            save(KEYS.INBOX, inbox);
+            save(KEYS.PROJECTS, projects);
+            save(KEYS.COMMANDS, commands);
+            refreshAll();
+            checkOnboarding();
+            toast('数据已导入（共 ' + (data.tasks.length + data.inbox.length + data.projects.length + data.commands.length) + ' 条记录）');
+          });
+      } catch(err) {
+        openModal('导入失败 — 文件解析错误',
+          '<div style="font-size:13px;color:var(--red);margin-bottom:8px;">文件无法解析为有效的 JSON 格式。</div>' +
+          '<div style="font-size:13px;color:var(--text-secondary);font-family:monospace;background:#f5f5f5;padding:8px;border-radius:6px;word-break:break-all;">' + escapeHtml(err.message) + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">请确认文件是通过 ZOS 工作台导出的 .json 文件。</div>',
+          function() {}, '关闭');
+      }
+    };
+    reader.onerror = function() {
+      toast('文件读取失败，请重试');
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  function clearAllData() {
+    confirmDialog('清除所有数据',
+      '<span style="color:var(--red);font-weight:600;">⚠️ 此操作不可恢复！</span><br><br>将清除：<br>' +
+      '· 所有任务（' + tasks.length + ' 条）<br>' +
+      '· 收集箱内容（' + inbox.length + ' 条）<br>' +
+      '· 项目数据（' + projects.length + ' 条）<br>' +
+      '· AI 指令队列（' + commands.length + ' 条）<br><br>' +
+      '建议先导出数据备份。',
+      function() {
+        tasks = []; inbox = []; projects = []; commands = []; onboarded = '';
+        save(KEYS.TASKS, tasks);
+        save(KEYS.INBOX, inbox);
+        save(KEYS.PROJECTS, projects);
+        save(KEYS.COMMANDS, commands);
+        localStorage.setItem(KEYS.ONBOARDED, onboarded);
+        refreshAll();
+        checkOnboarding();
+        toast('所有数据已清除');
+      });
+  }
+
+  function refreshAll() {
+    renderTasks();
+    renderInbox();
+    renderProjects();
+    renderCommands();
+    renderDashboardStats();
+    renderTodayView();
+    updateBadges();
+    checkOnboarding();
+  }
+
+  window.exportData = exportData;
+  window.importData = importData;
+  window.clearAllData = clearAllData;
+
+  // ==================== UTILS ====================
+  function copyToClipboard(text) {
+    if (!text || text === '待部署后生成') { toast('链接尚未生成，请先部署'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() { toast('链接已复制到剪贴板'); })
+        .catch(function() { fallbackCopy(text); });
+    } else { fallbackCopy(text); }
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast('链接已复制到剪贴板'); } catch(e) { toast('复制失败，请手动复制'); }
+    document.body.removeChild(ta);
+  }
+  window.copyToClipboard = copyToClipboard;
+
+  // ==================== ESCAPE HTML ====================
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ==================== PAGE NAVIGATION ====================
+  const sidebar = document.getElementById('sidebar');
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const hamburger = document.getElementById('hamburger');
+  const pageTitle = document.getElementById('pageTitle');
+  const clock = document.getElementById('clock');
+  const greeting = document.getElementById('greeting');
+  const welcomeDate = document.getElementById('welcomeDate');
+
+  const pageTitles = {
+    'dashboard': '仪表盘',
+    'today': '今日视图',
+    'inbox': '收集箱',
+    'tasks': '任务',
+    'local-life': '本地生活运营',
+    'spark-media': '花火影像',
+    'enterprise': '企业项目',
+    'zos-brain': 'ZOS 企业大脑',
+    'privacy': '隐私与数据',
+    'settings': '设置'
+  };
+
+  // Page enter handlers
+  const pageEnterHandlers = {
+    'today': function() { renderTodayView(); },
+    'inbox': function() { renderInbox(); },
+    'tasks': function() { renderTasks(); },
+    'enterprise': function() { renderProjects(); },
+    'zos-brain': function() { renderCommands(); },
+    'dashboard': function() { renderDashboardStats(); }
+  };
+
+  let currentPage = 'dashboard';
+  let sidebarCollapsed = false;
+
+  function navigateTo(pageId) {
+    if (pageId === currentPage) return;
+
+    document.querySelectorAll('.sidebar-nav .nav-item, .sidebar-footer .nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.page === pageId);
+    });
+
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const target = document.getElementById('page-' + pageId);
+    if (target) target.classList.add('active');
+
+    document.querySelectorAll('#bottomNav .bottom-nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.page === pageId);
+    });
+
+    pageTitle.textContent = pageTitles[pageId] || pageId;
+    currentPage = pageId;
+
+    if (window.innerWidth <= 1024) closeSidebar();
+    document.getElementById('content').scrollTop = 0;
+
+    // Call page enter handler
+    if (pageEnterHandlers[pageId]) pageEnterHandlers[pageId]();
+  }
+
+  window.navigateTo = navigateTo;
+
+  document.querySelectorAll('.sidebar-nav .nav-item, .sidebar-footer .nav-item').forEach(el => {
+    el.addEventListener('click', function() { navigateTo(this.dataset.page); });
+  });
+
+  document.querySelectorAll('#bottomNav .bottom-nav-item').forEach(el => {
+    el.addEventListener('click', function() { navigateTo(this.dataset.page); });
+  });
+
+  // ==================== FILTER TABS ====================
+  document.querySelectorAll('.filter-tabs').forEach(tabs => {
+    tabs.addEventListener('click', function(e) {
+      const tab = e.target.closest('.filter-tab');
+      if (!tab) return;
+      tabs.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const filter = tab.dataset.filter;
+      if (tabs.id === 'taskFilter') renderTasks(filter);
+      else if (tabs.id === 'inboxFilter') renderInbox(filter);
+      else if (tabs.id === 'projectFilter') renderProjects(filter);
+    });
+  });
+
+  // ==================== ENTER KEY HANDLERS ====================
+  document.getElementById('inboxInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); addInboxItem(); }
+  });
+  document.getElementById('cmdInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addCommand(); }
+  });
+
+  // ==================== CLOCK (UTC+8) ====================
+  function updateClock() {
+    const cn = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+    const h = String(cn.getHours()).padStart(2, '0');
+    const m = String(cn.getMinutes()).padStart(2, '0');
+    const s = String(cn.getSeconds()).padStart(2, '0');
+    const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+    const wd = weekdays[cn.getDay()];
+    const month = cn.getMonth() + 1;
+    const day = cn.getDate();
+    clock.textContent = h + ':' + m + ':' + s + ' · 周' + wd + ' ' + month + '/' + day;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  function updateGreeting() {
+    const cn = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+    const h = cn.getHours();
+    let g;
+    if (h < 6) g = '夜深了，';
+    else if (h < 9) g = '早上好，';
+    else if (h < 12) g = '上午好，';
+    else if (h < 14) g = '中午好，';
+    else if (h < 18) g = '下午好，';
+    else g = '晚上好，';
+    greeting.textContent = g + '朱帅';
+  }
+  updateGreeting();
+
+  function updateWelcomeDate() {
+    const cn = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+    const y = cn.getFullYear();
+    const m = cn.getMonth() + 1;
+    const d = cn.getDate();
+    const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+    const wd = weekdays[cn.getDay()];
+    welcomeDate.textContent = y + '年' + m + '月' + d + '日 星期' + wd;
+  }
+  updateWelcomeDate();
+
+  // ==================== SIDEBAR ====================
+  sidebarToggle.addEventListener('click', function() {
+    sidebarCollapsed = !sidebarCollapsed;
+    sidebar.classList.toggle('collapsed', sidebarCollapsed);
+    sidebarToggle.textContent = sidebarCollapsed ? '▶' : '◀';
+  });
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    sidebarOverlay.classList.add('show');
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    sidebarOverlay.classList.remove('show');
+  }
+  hamburger.addEventListener('click', openSidebar);
+  sidebarOverlay.addEventListener('click', closeSidebar);
+
+  let lastWidth = window.innerWidth;
+  window.addEventListener('resize', function() {
+    const w = window.innerWidth;
+    if (w > 1024 && lastWidth <= 1024) {
+      closeSidebar();
+      sidebar.classList.remove('collapsed');
+      sidebarCollapsed = false;
+      sidebarToggle.textContent = '◀';
+    }
+    if (w <= 1024 && lastWidth > 1024) {
+      sidebar.classList.remove('collapsed');
+      sidebarCollapsed = false;
+    }
+    lastWidth = w;
+  });
+
+  let touchStartX = 0;
+  sidebar.addEventListener('touchstart', function(e) {
+    touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  sidebar.addEventListener('touchmove', function(e) {
+    const dx = e.touches[0].clientX - touchStartX;
+    if (dx < -60) closeSidebar();
+  }, { passive: true });
+
+  // ==================== DISPLAY MODE ====================
+  const displayModeLabel = document.getElementById('displayMode');
+  if (displayModeLabel) {
+    function updateDisplayMode() {
+      const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      displayModeLabel.textContent = standalone ? '当前以独立 App 模式运行（PWA）' : '当前以浏览器标签页运行';
+    }
+    updateDisplayMode();
+    window.matchMedia('(display-mode: standalone)').addEventListener('change', updateDisplayMode);
+  }
+
+  // ==================== SERVICE WORKER ====================
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('sw.js')
+        .then(function(registration) {
+          console.log('Service Worker 注册成功:', registration.scope);
+
+          // 强制检查 SW 更新（每次页面加载时）
+          registration.update();
+
+          // 监听 SW 更新
+          registration.addEventListener('updatefound', function() {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', function() {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // 检测到新版本，自动刷新页面
+                newWorker.postMessage({ type: 'skip-waiting' });
+              }
+            });
+          });
+
+          // 监听 controllerchange，当新 SW 接管时刷新页面
+          navigator.serviceWorker.addEventListener('controllerchange', function() {
+            window.location.reload();
+          });
+        })
+        .catch(function(err) { console.error('Service Worker 注册失败:', err); });
+
+      // 定期检查 SW 更新（每 30 分钟）
+      setInterval(function() {
+        navigator.serviceWorker.getRegistration().then(function(reg) {
+          if (reg) reg.update();
+        });
+      }, 30 * 60 * 1000);
+    });
+  }
+
+  // ==================== INIT ====================
+  updateBadges();
+  renderDashboardStats();
+  renderTodayView();
+  checkOnboarding();
+  console.log('ZOS 跨端 AI 工作台 v1.0.4 已就绪');
+  console.log('新增：今日视图 · 新手引导 · 导入校验 · 跨端实测清单 · 公开链接管理');
+  console.log('适配：Mac / Windows / iPhone / Android / PWA');
+  console.log('用户：朱帅 | 时区：UTC+8 | 数据存储：本地 localStorage');
+})();
+</script>
+
+
+</body></html>
