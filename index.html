@@ -1809,21 +1809,53 @@
   <div class="modal" id="modalBody"></div>
 </div>
 
-<script>
+<script type="module">
+import { markDeleted, normalizeCollection, touchRecord } from './src/data-model.mjs';
+
 (function() {
   'use strict';
 
   // ==================== DATA LAYER ====================
-  const KEYS = { TASKS:'zos_tasks', INBOX:'zos_inbox', PROJECTS:'zos_projects', COMMANDS:'zos_commands', ONBOARDED:'zos_onboarded' };
+  const KEYS = { TASKS:'zos_tasks', INBOX:'zos_inbox', PROJECTS:'zos_projects', COMMANDS:'zos_commands', TOMBSTONES:'zos_tombstones', ONBOARDED:'zos_onboarded', DEVICE:'zos_device_id', SCHEMA:'zos_schema_version' };
+  const SYNC_SCHEMA_VERSION = '2';
 
-  function load(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e) { return []; } }
+  function newDeviceId() {
+    if (crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    return 'device-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+  }
+  function deviceId() {
+    var existing = loadVal(KEYS.DEVICE, '');
+    if (existing) return existing;
+    var id = newDeviceId();
+    localStorage.setItem(KEYS.DEVICE, id);
+    return id;
+  }
+  const currentDeviceId = deviceId();
+  function newRecordId() {
+    if (crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    return currentDeviceId + ':' + Date.now().toString(36) + ':' + Math.random().toString(36).slice(2);
+  }
+  function load(k) {
+    try {
+      var raw = JSON.parse(localStorage.getItem(k)) || [];
+      if (!Array.isArray(raw)) return [];
+      var normalized = normalizeCollection(raw, { now: now(), deviceId: currentDeviceId, createId: newRecordId });
+      if (JSON.stringify(raw) !== JSON.stringify(normalized)) localStorage.setItem(k, JSON.stringify(normalized));
+      return normalized;
+    } catch(e) { return []; }
+  }
   function loadVal(k, fallback) { try { var v = localStorage.getItem(k); return v !== null ? v : fallback; } catch(e) { return fallback; } }
-  function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+  function save(k, v) {
+    var normalized = normalizeCollection(v, { now: now(), deviceId: currentDeviceId, createId: newRecordId });
+    v.splice(0, v.length, ...normalized);
+    localStorage.setItem(k, JSON.stringify(v));
+  }
 
   let tasks = load(KEYS.TASKS);
   let inbox = load(KEYS.INBOX);
   let projects = load(KEYS.PROJECTS);
   let commands = load(KEYS.COMMANDS);
+  let tombstones = load(KEYS.TOMBSTONES);
   let onboarded = loadVal(KEYS.ONBOARDED, '');
 
   // Migrate: ensure tasks have dueDate field
@@ -1831,15 +1863,17 @@
   tasks.forEach(function(t) { if (!t.dueDate) { t.dueDate = null; migrated = true; } });
   if (migrated) { save(KEYS.TASKS, tasks); }
 
-  let nextId = (function() {
-    let max = 0;
-    [tasks, inbox, projects, commands].forEach(arr => arr.forEach(item => {
-      const n = parseInt(String(item.id).replace(/\D/g,'')) || 0;
-      if (n > max) max = n;
-    }));
-    return max + 1;
-  })();
-  function uid() { return 'id_' + (nextId++); }
+  localStorage.setItem(KEYS.SCHEMA, SYNC_SCHEMA_VERSION);
+  function uid() { return newRecordId(); }
+  function touch(record) {
+    Object.assign(record, touchRecord(record, { now: now(), deviceId: currentDeviceId }));
+    return record;
+  }
+  function rememberDeletion(entity, record) {
+    if (!record) return;
+    tombstones.push({ ...markDeleted(record, { now: now(), deviceId: currentDeviceId }), entity: entity });
+    save(KEYS.TOMBSTONES, tombstones);
+  }
   function now() { return new Date().toISOString(); }
   function todayStr() {
     var cn = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
@@ -1962,6 +1996,7 @@
     if (!t) return;
     if (t.status === 'done') { t.status = 'todo'; t.doneAt = null; }
     else { t.status = 'done'; t.doneAt = now(); }
+    touch(t);
     save(KEYS.TASKS, tasks);
     renderTasks();
     renderDashboardStats();
@@ -1970,8 +2005,9 @@
 
   window.deleteTask = function(id) {
     confirmDialog('删除任务', '确定要删除这个任务吗？此操作不可恢复。', function() {
+      rememberDeletion('tasks', tasks.find(t => t.id === id));
       tasks = tasks.filter(t => t.id !== id);
-      projects.forEach(p => { p.taskIds = p.taskIds.filter(tid => tid !== id); });
+      projects.forEach(p => { p.taskIds = (p.taskIds || []).filter(tid => tid !== id); touch(p); });
       save(KEYS.TASKS, tasks);
       save(KEYS.PROJECTS, projects);
       renderTasks();
@@ -2042,6 +2078,7 @@
     tasks.push({ id: uid(), title: item.content, description: '', status: 'todo', createdAt: now(), doneAt: null, projectId: null, dueDate: todayStr() });
     item.convertedTo = '任务';
     item.convertedId = tasks[tasks.length - 1].id;
+    touch(item);
     save(KEYS.TASKS, tasks);
     save(KEYS.INBOX, inbox);
     renderInbox();
@@ -2057,6 +2094,7 @@
     projects.push({ id: uid(), name: item.content, description: '', status: 'planning', createdAt: now(), taskIds: [], source: '待确认' });
     item.convertedTo = '项目';
     item.convertedId = projects[projects.length - 1].id;
+    touch(item);
     save(KEYS.PROJECTS, projects);
     save(KEYS.INBOX, inbox);
     renderInbox();
@@ -2067,6 +2105,7 @@
   };
 
   window.deleteInbox = function(id) {
+    rememberDeletion('inbox', inbox.find(i => i.id === id));
     inbox = inbox.filter(i => i.id !== id);
     save(KEYS.INBOX, inbox);
     renderInbox();
@@ -2161,6 +2200,7 @@
     const p = projects.find(p => p.id === id);
     if (!p) return;
     p.status = status;
+    touch(p);
     save(KEYS.PROJECTS, projects);
     renderProjects();
     renderDashboardStats();
@@ -2178,6 +2218,7 @@
         p.name = document.getElementById('editProjectName').value.trim();
         if (!p.name) { toast('项目名称不能为空'); return; }
         p.description = document.getElementById('editProjectDesc').value.trim();
+        touch(p);
         save(KEYS.PROJECTS, projects);
         renderProjects();
         renderTasks();
@@ -2187,8 +2228,9 @@
 
   window.deleteProject = function(id) {
     confirmDialog('删除项目', '删除项目不会删除关联任务，确定要删除吗？', function() {
+      rememberDeletion('projects', projects.find(p => p.id === id));
       projects = projects.filter(p => p.id !== id);
-      tasks.forEach(t => { if (t.projectId === id) t.projectId = null; });
+      tasks.forEach(t => { if (t.projectId === id) { t.projectId = null; touch(t); } });
       save(KEYS.PROJECTS, projects);
       save(KEYS.TASKS, tasks);
       renderProjects();
@@ -2250,6 +2292,7 @@
     c.status = 'executed';
     c.executedAt = now();
     c.notes = '已手动标记执行——实际 AI 执行需接入后端服务';
+    touch(c);
     save(KEYS.COMMANDS, commands);
     renderCommands();
     updateBadges();
@@ -2257,6 +2300,7 @@
   };
 
   window.deleteCommand = function(id) {
+    rememberDeletion('commands', commands.find(c => c.id === id));
     commands = commands.filter(c => c.id !== id);
     save(KEYS.COMMANDS, commands);
     renderCommands();

@@ -35,6 +35,29 @@ export function normalizeRecord(record, options) {
   };
 }
 
+export function normalizeCollection(records, options) {
+  return records.map((record) => normalizeRecord(record, options));
+}
+
+export function touchRecord(record, options) {
+  const timestamp = required(options.now, 'now');
+  const deviceId = required(options.deviceId, 'deviceId');
+
+  return {
+    ...record,
+    updatedAt: timestamp,
+    revision: (Number.isInteger(record.revision) && record.revision > 0 ? record.revision : 0) + 1,
+    deviceId,
+  };
+}
+
+export function markDeleted(record, options) {
+  return {
+    ...touchRecord(record, options),
+    deletedAt: required(options.now, 'now'),
+  };
+}
+
 export function selectLatestRecord(left, right) {
   if (left.updatedAt !== right.updatedAt) {
     return left.updatedAt > right.updatedAt ? left : right;
