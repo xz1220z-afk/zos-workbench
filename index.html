@@ -2633,7 +2633,17 @@ import { applyRemoteSnapshot } from './src/sync-engine.mjs';
   window.clearAllData = clearAllData;
 
   // ==================== PRIVATE CLOUD SYNC ====================
-  function syncConfig() { return JSON.parse(loadVal(KEYS.SYNC_CONFIG, '{}')); }
+  // The publishable key is deliberately safe for browser distribution. Real data access
+  // still requires an authenticated user token and is constrained by the table's RLS rules.
+  // Never add a Supabase secret or service_role key here.
+  const DEFAULT_SYNC_CONFIG = Object.freeze({
+    url: 'https://dtwvyramgbwtlyhmkhkd.supabase.co',
+    anonKey: 'sb_publishable_a9d0ekZtcMn6oce51UdV0g_j7_BmVjg'
+  });
+  function syncConfig() {
+    var stored = JSON.parse(loadVal(KEYS.SYNC_CONFIG, '{}'));
+    return Object.assign({}, DEFAULT_SYNC_CONFIG, stored);
+  }
   function syncSession() { return JSON.parse(loadVal(KEYS.SYNC_SESSION, '{}')); }
   function syncStatus(message) {
     var el = document.getElementById('syncStatus');
