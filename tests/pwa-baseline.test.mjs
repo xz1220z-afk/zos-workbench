@@ -12,5 +12,7 @@ assert.doesNotMatch(indexHtml, /code\.coze\.cn\/api\/coding\/deployment\/analyti
   'Local takeover must not report page views to Coze analytics');
 assert.doesNotMatch(indexHtml, /apm\.volccdn\.com\/mars-web\/apmplus/i,
   'Local takeover must not load Coze performance monitoring');
+assert.doesNotMatch(indexHtml, /跨端同步已就绪/,
+  'The interface must not claim cross-device sync before authentication and cloud sync are connected');
 
 console.log('PWA baseline privacy and cache version checks passed');
