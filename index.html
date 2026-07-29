@@ -1825,10 +1825,82 @@
 </div>
 
 <script type="module">
-import { markDeleted, normalizeCollection, touchRecord } from './src/data-model.mjs';
-import { createSupabaseAuth } from './src/supabase-auth.mjs';
-import { createSupabaseTransport } from './src/supabase-transport.mjs';
-import { applyRemoteSnapshot } from './src/sync-engine.mjs';
+  // Sync runtime is intentionally bundled here so the public static deployment
+  // has no fragile module-path dependency. Source modules remain in /src for tests.
+  function syncRequired(value, name) {
+    if (!value) throw new Error(`${name} is required`);
+    return value;
+  }
+  function normalizeRecord(record, options) {
+    const timestamp = syncRequired(options.now, 'now');
+    const deviceId = syncRequired(options.deviceId, 'deviceId');
+    const id = record.id || syncRequired(options.createId, 'createId')();
+    return { ...record, id, createdAt: record.createdAt || timestamp, updatedAt: record.updatedAt || timestamp,
+      deletedAt: record.deletedAt || null, revision: Number.isInteger(record.revision) && record.revision > 0 ? record.revision : 1,
+      deviceId: record.deviceId || deviceId };
+  }
+  function normalizeCollection(records, options) { return records.map((record) => normalizeRecord(record, options)); }
+  function touchRecord(record, options) {
+    const timestamp = syncRequired(options.now, 'now');
+    const deviceId = syncRequired(options.deviceId, 'deviceId');
+    return { ...record, updatedAt: timestamp, revision: (Number.isInteger(record.revision) && record.revision > 0 ? record.revision : 0) + 1, deviceId };
+  }
+  function markDeleted(record, options) { return { ...touchRecord(record, options), deletedAt: syncRequired(options.now, 'now') }; }
+  function selectLatestRecord(left, right) {
+    if (left.updatedAt !== right.updatedAt) return left.updatedAt > right.updatedAt ? left : right;
+    if (left.revision !== right.revision) return left.revision > right.revision ? left : right;
+    return left.deviceId >= right.deviceId ? left : right;
+  }
+  function syncEndpoint(baseUrl, path) { return new URL(path, `${baseUrl.replace(/\/$/, '')}/`).toString(); }
+  async function syncRequestJson(fetchImpl, url, options) {
+    const response = await fetchImpl(url, options);
+    const body = await response.text();
+    if (!response.ok) throw new Error(`Supabase Auth request failed (${response.status})`);
+    return body ? JSON.parse(body) : {};
+  }
+  function createSupabaseAuth({ url, anonKey, fetchImpl = fetch }) {
+    syncRequired(url, 'url'); syncRequired(anonKey, 'anonKey');
+    const headers = { apikey: anonKey, 'Content-Type': 'application/json' };
+    return {
+      async requestOtp(email) { syncRequired(email, 'email'); await syncRequestJson(fetchImpl, syncEndpoint(url, '/auth/v1/otp'), { method: 'POST', headers, body: JSON.stringify({ email, create_user: true }) }); },
+      async verifyOtp(email, token) {
+        syncRequired(email, 'email'); syncRequired(token, 'token');
+        const response = await syncRequestJson(fetchImpl, syncEndpoint(url, '/auth/v1/verify'), { method: 'POST', headers, body: JSON.stringify({ type: 'email', email, token }) });
+        return { accessToken: syncRequired(response.access_token, 'missing access token'), refreshToken: syncRequired(response.refresh_token, 'missing refresh token'), userId: syncRequired(response.user?.id, 'missing user id') };
+      }
+    };
+  }
+  async function parseSupabaseResponse(response) {
+    if (!response.ok) throw new Error(`Supabase request failed (${response.status})`);
+    const body = await response.text(); return body ? JSON.parse(body) : [];
+  }
+  function createSupabaseTransport({ url, anonKey, getAccessToken = async () => anonKey, fetchImpl = fetch }) {
+    syncRequired(url, 'url'); syncRequired(anonKey, 'anonKey'); syncRequired(fetchImpl, 'fetchImpl');
+    async function authHeaders() { const accessToken = await getAccessToken(); syncRequired(accessToken, 'accessToken'); return { apikey: anonKey, Authorization: `Bearer ${accessToken}` }; }
+    return {
+      async pull(userId) { syncRequired(userId, 'userId'); const requestUrl = new URL(syncEndpoint(url, '/rest/v1/zos_records')); requestUrl.searchParams.set('user_id', `eq.${userId}`); requestUrl.searchParams.set('select', '*'); return parseSupabaseResponse(await fetchImpl(requestUrl.toString(), { headers: await authHeaders() })); },
+      async upsert(rows) { if (!Array.isArray(rows) || rows.length === 0) return []; const requestUrl = new URL(syncEndpoint(url, '/rest/v1/zos_records')); requestUrl.searchParams.set('on_conflict', 'user_id,entity_type,record_id'); return parseSupabaseResponse(await fetchImpl(requestUrl.toString(), { method: 'POST', headers: { ...(await authHeaders()), 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(rows) })); }
+    };
+  }
+  function toCloudRow({ userId, entityType, record }) {
+    syncRequired(userId, 'userId'); syncRequired(entityType, 'entityType');
+    const metadata = { id: syncRequired(record.id, 'record.id'), createdAt: syncRequired(record.createdAt, 'record.createdAt'), updatedAt: syncRequired(record.updatedAt, 'record.updatedAt'), deletedAt: record.deletedAt || null, revision: syncRequired(record.revision, 'record.revision'), deviceId: syncRequired(record.deviceId, 'record.deviceId') };
+    return { user_id: userId, entity_type: entityType, record_id: metadata.id, payload: { ...record }, created_at: metadata.createdAt, updated_at: metadata.updatedAt, deleted_at: metadata.deletedAt, revision: metadata.revision, device_id: metadata.deviceId };
+  }
+  function fromCloudRow(row) { return { ...(row.payload || {}), id: syncRequired(row.record_id, 'row.record_id'), createdAt: syncRequired(row.created_at, 'row.created_at'), updatedAt: syncRequired(row.updated_at, 'row.updated_at'), deletedAt: row.deleted_at || null, revision: syncRequired(row.revision, 'row.revision'), deviceId: syncRequired(row.device_id, 'row.device_id') }; }
+  function indexRecords(records) { return new Map(records.map((record) => [record.id, record])); }
+  function applyRemoteSnapshot({ local, remoteRows, userId = 'sync-user' }) {
+    const remoteByEntity = new Map();
+    for (const row of remoteRows) { const records = remoteByEntity.get(row.entity_type) || []; records.push(fromCloudRow(row)); remoteByEntity.set(row.entity_type, records); }
+    const collections = {}, tombstones = [], uploads = [];
+    const entityTypes = new Set([...Object.keys(local), ...remoteByEntity.keys()]);
+    for (const entityType of entityTypes) {
+      const localById = indexRecords(local[entityType] || []), remoteById = indexRecords(remoteByEntity.get(entityType) || []), ids = new Set([...localById.keys(), ...remoteById.keys()]), live = [];
+      for (const id of ids) { const localRecord = localById.get(id), remoteRecord = remoteById.get(id), winner = !remoteRecord ? localRecord : !localRecord ? remoteRecord : selectLatestRecord(localRecord, remoteRecord); if (winner === localRecord && (!remoteRecord || winner !== remoteRecord)) uploads.push(toCloudRow({ userId, entityType, record: winner })); if (winner.deletedAt) tombstones.push({ ...winner, entity: entityType }); else live.push(winner); }
+      collections[entityType] = live;
+    }
+    return { collections, tombstones, uploads };
+  }
 
 (function() {
   'use strict';
