@@ -1,14 +1,18 @@
-const CACHE_NAME = 'zos-workbench-v1.0.4';
+const CACHE_NAME = 'zos-workbench-v1.0.5';
+// Resolve from the service worker scope so the PWA works both at a domain root
+// and from a GitHub Pages project path such as /zos-workbench/.
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-  '/src/data-model.mjs',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  '/icons/icon-maskable-512x512.png',
-  '/icons/apple-touch-icon.png'
-];
+  './',
+  'index.html',
+  'manifest.webmanifest',
+  'src/data-model.mjs',
+  'icons/icon-192x192.png',
+  'icons/icon-512x512.png',
+  'icons/icon-maskable-512x512.png',
+  'icons/apple-touch-icon.png'
+].map(function(asset) {
+  return new URL(asset, self.registration.scope).href;
+});
 
 // Install: cache app shell
 self.addEventListener('install', function(event) {
@@ -55,7 +59,7 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
-  const isShellAsset = ASSETS_TO_CACHE.includes(url.pathname);
+  const isShellAsset = ASSETS_TO_CACHE.includes(url.href);
 
   event.respondWith(
     caches.match(request).then(function(cachedResponse) {

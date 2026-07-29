@@ -6,8 +6,8 @@ const [indexHtml, serviceWorker] = await Promise.all([
   readFile(new URL('../sw.js', import.meta.url), 'utf8'),
 ]);
 
-assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.0\.4';/,
-  'Service Worker cache must match the current v1.0.4 application release');
+assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.0\.5';/,
+  'Service Worker cache must match the current v1.0.5 application release');
 assert.doesNotMatch(indexHtml, /code\.coze\.cn\/api\/coding\/deployment\/analytics/i,
   'Local takeover must not report page views to Coze analytics');
 assert.doesNotMatch(indexHtml, /apm\.volccdn\.com\/mars-web\/apmplus/i,
