@@ -1543,7 +1543,7 @@
           <div class="module-card-icon" style="background: var(--purple-light);">🔗</div>
           <div class="module-card-title">跨端同步</div>
           <div class="module-card-desc">Mac · Windows · iPhone · Android</div>
-          <span class="module-card-status" style="background: var(--green-light); color: var(--green);">● 已就绪</span>
+          <span class="module-card-status" style="background: var(--orange-light); color: var(--orange);">● 待配置</span>
         </div>
       </div>
       <div style="margin-top:24px;">
@@ -1659,6 +1659,21 @@
             <button class="btn btn-xs" id="copyPublicLink" onclick="copyToClipboard(document.getElementById(&#39;publicLinkUrl&#39;).textContent)">📋 复制链接</button>
           </div>
         </div>
+      </div>
+      <div class="settings-section" id="cloudSyncSettings">
+        <h3>☁️ 私有云同步（Supabase）</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6;">数据仅在你完成邮箱验证码登录后同步到自己的 Supabase 项目。请只填写项目 URL 与 <strong>Publishable / anon key</strong>，不要填写数据库密码或 service_role 密钥。</p>
+        <div class="form-group"><label>项目 URL</label><input id="syncUrl" placeholder="https://xxxxx.supabase.co" inputmode="url"></div>
+        <div class="form-group"><label>Publishable / anon key</label><input id="syncAnonKey" placeholder="从 Project Settings → API 复制" autocomplete="off"></div>
+        <div class="form-group"><label>登录邮箱</label><input id="syncEmail" type="email" placeholder="你的邮箱"></div>
+        <div class="form-group"><label>邮箱验证码</label><input id="syncOtp" inputmode="numeric" maxlength="8" placeholder="收到验证码后填写"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
+          <button class="btn btn-sm" onclick="saveSyncConfig()">保存连接配置</button>
+          <button class="btn btn-sm" onclick="requestSyncOtp()">发送验证码</button>
+          <button class="btn btn-sm" onclick="verifySyncOtp()">验证并登录</button>
+          <button class="btn btn-primary btn-sm" onclick="syncNow()">立即同步</button>
+        </div>
+        <div class="setting-desc" id="syncStatus">未配置 · 当前数据仍仅保存在本机</div>
       </div>
       <div class="settings-section">
         <h3>🧪 跨端实测清单</h3>
@@ -1811,12 +1826,15 @@
 
 <script type="module">
 import { markDeleted, normalizeCollection, touchRecord } from './src/data-model.mjs';
+import { createSupabaseAuth } from './src/supabase-auth.mjs';
+import { createSupabaseTransport } from './src/supabase-transport.mjs';
+import { applyRemoteSnapshot } from './src/sync-engine.mjs';
 
 (function() {
   'use strict';
 
   // ==================== DATA LAYER ====================
-  const KEYS = { TASKS:'zos_tasks', INBOX:'zos_inbox', PROJECTS:'zos_projects', COMMANDS:'zos_commands', TOMBSTONES:'zos_tombstones', ONBOARDED:'zos_onboarded', DEVICE:'zos_device_id', SCHEMA:'zos_schema_version' };
+  const KEYS = { TASKS:'zos_tasks', INBOX:'zos_inbox', PROJECTS:'zos_projects', COMMANDS:'zos_commands', TOMBSTONES:'zos_tombstones', ONBOARDED:'zos_onboarded', DEVICE:'zos_device_id', SCHEMA:'zos_schema_version', SYNC_CONFIG:'zos_supabase_config', SYNC_SESSION:'zos_supabase_session' };
   const SYNC_SCHEMA_VERSION = '2';
 
   function newDeviceId() {
@@ -2614,6 +2632,65 @@ import { markDeleted, normalizeCollection, touchRecord } from './src/data-model.
   window.importData = importData;
   window.clearAllData = clearAllData;
 
+  // ==================== PRIVATE CLOUD SYNC ====================
+  function syncConfig() { return JSON.parse(loadVal(KEYS.SYNC_CONFIG, '{}')); }
+  function syncSession() { return JSON.parse(loadVal(KEYS.SYNC_SESSION, '{}')); }
+  function syncStatus(message) {
+    var el = document.getElementById('syncStatus');
+    if (el) el.textContent = message;
+  }
+  function fillSyncSettings() {
+    var config = syncConfig(); var session = syncSession();
+    var url = document.getElementById('syncUrl'); var key = document.getElementById('syncAnonKey');
+    if (url) url.value = config.url || '';
+    if (key) key.value = config.anonKey || '';
+    syncStatus(session.userId ? '已登录 · 可手动同步' : (config.url && config.anonKey ? '已配置 · 请发送邮箱验证码登录' : '未配置 · 当前数据仍仅保存在本机'));
+  }
+  function saveSyncConfig() {
+    var url = document.getElementById('syncUrl').value.trim().replace(/\/$/, '');
+    var anonKey = document.getElementById('syncAnonKey').value.trim();
+    if (!/^https:\/\/[^/]+\.supabase\.co$/i.test(url) || !anonKey) { toast('请填写有效的 Supabase 项目 URL 和 Publishable / anon key'); return; }
+    localStorage.setItem(KEYS.SYNC_CONFIG, JSON.stringify({ url: url, anonKey: anonKey }));
+    syncStatus('已配置 · 请发送邮箱验证码登录'); toast('云端连接配置已保存在当前设备');
+  }
+  function configuredAuth() {
+    var config = syncConfig();
+    if (!config.url || !config.anonKey) throw new Error('请先保存云端连接配置');
+    return createSupabaseAuth(config);
+  }
+  async function requestSyncOtp() {
+    try {
+      var email = document.getElementById('syncEmail').value.trim();
+      if (!email) { toast('请填写登录邮箱'); return; }
+      await configuredAuth().requestOtp(email); syncStatus('验证码已发送，请查收邮箱'); toast('验证码已发送');
+    } catch (error) { syncStatus('发送失败：' + error.message); toast('验证码发送失败，请检查配置'); }
+  }
+  async function verifySyncOtp() {
+    try {
+      var email = document.getElementById('syncEmail').value.trim(); var token = document.getElementById('syncOtp').value.trim();
+      if (!email || !token) { toast('请填写邮箱和验证码'); return; }
+      var session = await configuredAuth().verifyOtp(email, token);
+      localStorage.setItem(KEYS.SYNC_SESSION, JSON.stringify(session)); syncStatus('已登录 · 可手动同步'); toast('云端登录成功');
+    } catch (error) { syncStatus('登录失败：' + error.message); toast('验证码无效或已过期'); }
+  }
+  async function syncNow() {
+    try {
+      var config = syncConfig(); var session = syncSession();
+      if (!session.userId || !session.accessToken) { toast('请先完成邮箱验证码登录'); return; }
+      syncStatus('正在同步…');
+      var transport = createSupabaseTransport({ ...config, getAccessToken: async function() { return session.accessToken; } });
+      var remoteRows = await transport.pull(session.userId);
+      var local = { tasks: tasks.slice(), inbox: inbox.slice(), projects: projects.slice(), commands: commands.slice() };
+      tombstones.forEach(function(record) { (local[record.entity] || (local[record.entity] = [])).push(record); });
+      var merged = applyRemoteSnapshot({ local: local, remoteRows: remoteRows, userId: session.userId });
+      tasks = merged.collections.tasks || []; inbox = merged.collections.inbox || []; projects = merged.collections.projects || []; commands = merged.collections.commands || []; tombstones = merged.tombstones;
+      save(KEYS.TASKS, tasks); save(KEYS.INBOX, inbox); save(KEYS.PROJECTS, projects); save(KEYS.COMMANDS, commands); save(KEYS.TOMBSTONES, tombstones);
+      if (merged.uploads.length) await transport.upsert(merged.uploads);
+      refreshAll(); syncStatus('同步完成 · ' + merged.uploads.length + ' 条本地更新已上传'); toast('云端同步完成');
+    } catch (error) { syncStatus('同步失败：' + error.message); toast('同步失败，请检查网络、权限和登录状态'); }
+  }
+  window.saveSyncConfig = saveSyncConfig; window.requestSyncOtp = requestSyncOtp; window.verifySyncOtp = verifySyncOtp; window.syncNow = syncNow;
+
   // ==================== UTILS ====================
   function copyToClipboard(text) {
     if (!text || text === '待部署后生成') { toast('链接尚未生成，请先部署'); return; }
@@ -2864,6 +2941,7 @@ import { markDeleted, normalizeCollection, touchRecord } from './src/data-model.
   updateBadges();
   renderDashboardStats();
   renderTodayView();
+  fillSyncSettings();
   checkOnboarding();
   console.log('ZOS 跨端 AI 工作台 v1.0.4 已就绪');
   console.log('新增：今日视图 · 新手引导 · 导入校验 · 跨端实测清单 · 公开链接管理');
