@@ -163,3 +163,13 @@
 - Service Worker 缓存升级为 v1.0.8，避免旧版本继续生成错误回调。
 
 ---
+## v1.0.9 — 同步前自动续期登录会话
+
+**日期**：2026-07-30
+
+- 同步前使用已保存的 refresh token 续期 Supabase 会话。
+- 续期成功后保存新的 access token 和 refresh token，减少日常重新登录。
+- 续期失败仍保留安全错误提示，不绕过邮箱认证。
+- Service Worker 缓存升级为 v1.0.9。
+
+---

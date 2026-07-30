@@ -6,8 +6,10 @@ const [indexHtml, serviceWorker] = await Promise.all([
   readFile(new URL('../sw.js', import.meta.url), 'utf8'),
 ]);
 
-assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.0\.8';/,
-  'Service Worker cache must match the current v1.0.8 application release');
+assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.0\.9';/,
+  'Service Worker cache must match the current v1.0.9 application release');
+assert.match(indexHtml, /refreshSession\(session\.refreshToken\)/,
+  'Sync must refresh an existing Supabase session before pulling data');
 assert.match(indexHtml, /const PUBLIC_APP_URL = 'https:\/\/xz1220z-afk\.github\.io\/zos-workbench\/'/,
   'The public app URL must be explicit so auth callbacks stay on the GitHub Pages subpath');
 assert.match(indexHtml, /requestOtp\(email, PUBLIC_APP_URL\)/,

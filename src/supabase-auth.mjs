@@ -18,6 +18,12 @@ export function createSupabaseAuth({ url, anonKey, fetchImpl = fetch }) {
   required(url, 'url');
   required(anonKey, 'anonKey');
   const headers = { apikey: anonKey, 'Content-Type': 'application/json' };
+  function sessionFromResponse(response) {
+    const accessToken = required(response.access_token, 'missing access token');
+    const refreshToken = required(response.refresh_token, 'missing refresh token');
+    const userId = required(response.user?.id, 'missing user id');
+    return { accessToken, refreshToken, userId };
+  }
 
   return {
     async requestOtp(email, redirectTo) {
@@ -35,10 +41,15 @@ export function createSupabaseAuth({ url, anonKey, fetchImpl = fetch }) {
       const response = await requestJson(fetchImpl, endpoint(url, '/auth/v1/verify'), {
         method: 'POST', headers, body: JSON.stringify({ type: 'email', email, token }),
       });
-      const accessToken = required(response.access_token, 'missing access token');
-      const refreshToken = required(response.refresh_token, 'missing refresh token');
-      const userId = required(response.user?.id, 'missing user id');
-      return { accessToken, refreshToken, userId };
+      return sessionFromResponse(response);
+    },
+
+    async refreshSession(refreshToken) {
+      required(refreshToken, 'refreshToken');
+      const response = await requestJson(fetchImpl, endpoint(url, '/auth/v1/token?grant_type=refresh_token'), {
+        method: 'POST', headers, body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      return sessionFromResponse(response);
     },
 
     async consumeMagicLink(fragment) {

@@ -40,6 +40,23 @@ test('verifyOtp rejects incomplete authentication responses', async () => {
   await assert.rejects(() => auth.verifyOtp('ceo@example.com', '123456'), /missing access token/i);
 });
 
+test('refreshSession exchanges a refresh token for a new private sync session', async () => {
+  const calls = [];
+  const auth = createSupabaseAuth({
+    url: 'https://project.supabase.co', anonKey: 'public-anon-key',
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return jsonResponse({ access_token: 'access-2', refresh_token: 'refresh-2', user: { id: 'user-2' } });
+    },
+  });
+
+  const session = await auth.refreshSession('refresh-1');
+
+  assert.deepEqual(session, { accessToken: 'access-2', refreshToken: 'refresh-2', userId: 'user-2' });
+  assert.match(calls[0].url, /\/auth\/v1\/token\?grant_type=refresh_token$/);
+  assert.deepEqual(JSON.parse(calls[0].options.body), { refresh_token: 'refresh-1' });
+});
+
 test('consumeMagicLink turns a Supabase email-link fragment into a private sync session', async () => {
   const calls = [];
   const auth = createSupabaseAuth({
