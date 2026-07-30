@@ -1,0 +1,37 @@
+name: ZOS Workbench CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run regression tests
+        run: >-
+          node --test tests/data-model.test.mjs tests/pwa-baseline.test.mjs
+          tests/supabase-migration.test.mjs tests/sync-engine.test.mjs
+          tests/supabase-transport.test.mjs tests/supabase-auth.test.mjs
+      - name: Check inline JavaScript syntax
+        run: |
+          node --input-type=module - <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          const html = await readFile('index.html', 'utf8');
+          const match = html.match(/<script[^>]*>([\s\S]*?)<\/script>/);
+          if (!match) throw new Error('inline application script not found');
+          new Function(match[1]);
+          NODE
+      - name: Check whitespace
+        run: git diff --check
