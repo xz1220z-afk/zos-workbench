@@ -30,6 +30,8 @@ ZOS 是朱帅个人使用的跨端工作台，当前以静态 PWA 形式发布�
 
 每次推送到 `main` 或提交 Pull Request 时，GitHub Actions 会自动运行完整回归测试、内嵌 JavaScript 语法检查和空白字符检查。状态见仓库的 **Actions** 页面。
 
+另外，每天北京时间 09:17 会运行一次线上健康检查；也可以在 **Actions → ZOS Workbench Healthcheck → Run workflow** 手动执行。健康检查会验证主页、manifest、Service Worker 和线上版本标记。
+
 在仓库目录执行：
 
 ```bash
