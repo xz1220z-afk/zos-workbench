@@ -1327,13 +1327,13 @@
           <div class="module-card-icon" style="background: var(--green-light);">🏪</div>
           <div class="module-card-title">万嘉网络</div>
           <div class="module-card-desc">活动管理、门店运营、用户增长</div>
-          <span class="module-card-status" style="background: var(--green-light); color: var(--green);">● 待接入</span>
+          <span class="module-card-status" style="background: var(--green-light); color: var(--green);">● 只读汇总已部署</span>
         </div>
         <div class="module-card" onclick="navigateTo(&#39;spark-media&#39;)">
           <div class="module-card-icon" style="background: var(--orange-light);">🎬</div>
           <div class="module-card-title">花火影像</div>
           <div class="module-card-desc">项目策划、拍摄排期、后期制作</div>
-          <span class="module-card-status" style="background: var(--orange-light); color: var(--orange);">● 待接入</span>
+          <span class="module-card-status" style="background: var(--orange-light); color: var(--orange);">● 只读汇总已部署</span>
         </div>
         <div class="module-card" onclick="navigateTo(&#39;enterprise&#39;)">
           <div class="module-card-icon" style="background: var(--blue-light);">📋</div>
@@ -1345,7 +1345,7 @@
           <div class="module-card-icon" style="background: var(--purple-light);">🧠</div>
           <div class="module-card-title">ZOS 企业大脑</div>
           <div class="module-card-desc">Obsidian 知识库、AI 问答、知识图谱</div>
-          <span class="module-card-status" style="background: var(--purple-light); color: var(--purple);">● 待接入</span>
+          <span class="module-card-status" style="background: var(--purple-light); color: var(--purple);">● 本地桥接待启用</span>
         </div>
       </div>
     </section>
@@ -1453,8 +1453,8 @@
       </div>
       <div class="empty-state" id="wanjiaDataEmpty">
         <div class="empty-state-icon" style="background: var(--green-light);">🏪</div>
-        <div class="empty-state-title">万嘉数据通道尚未配置</div>
-        <div class="empty-state-desc">连接后将展示商家、GMV、动销、视频、直播与佣金汇总；不会回写飞书。</div>
+        <div class="empty-state-title">万嘉只读汇总等待首次刷新</div>
+        <div class="empty-state-desc">完成 Supabase 登录后点击「刷新数据」即可读取商家、GMV、动销、视频、直播与佣金汇总；不会回写飞书。</div>
       </div>
     </section>
 
@@ -1489,8 +1489,8 @@
       </div>
       <div class="empty-state" id="huahuoDataEmpty">
         <div class="empty-state-icon" style="background: var(--orange-light);">🎬</div>
-        <div class="empty-state-title">花火数据通道尚未配置</div>
-        <div class="empty-state-desc">连接后将展示客户、项目、拍摄排期、交付与回款汇总；不会回写飞书。</div>
+        <div class="empty-state-title">花火只读汇总等待首次刷新</div>
+        <div class="empty-state-desc">完成 Supabase 登录后点击「刷新数据」即可读取客户、项目、拍摄排期、交付与回款汇总；不会回写飞书。</div>
       </div>
     </section>
 
@@ -1605,9 +1605,9 @@
       <div class="privacy-card">
         <h3>🔗 外部服务连接状态</h3>
         <ul class="check-list">
-          <li><span class="cross-icon">—</span> 飞书 ERP — 尚未接入工作台</li>
+          <li><span class="check-icon">✓</span> 飞书 ERP — 万嘉与花火只读汇总服务已部署，首次刷新后在本机缓存</li>
           <li><span class="cross-icon">—</span> 腾讯文档 — 尚未接入</li>
-          <li><span class="cross-icon">—</span> Obsidian — 通过本地知识库使用，PWA 未直接接入</li>
+          <li><span class="cross-icon">—</span> Obsidian — 本地 Build012 草稿桥接已验证；跨端只读索引尚未启用</li>
           <li><span class="cross-icon">—</span> 本地生活平台 — 尚未接入</li>
           <li><span class="cross-icon">—</span> 项目管理系统 — 尚未接入</li>
           <li id="privacySupabaseStatus"><span class="cross-icon">—</span> Supabase — 未配置，仅本机</li>
