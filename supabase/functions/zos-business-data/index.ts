@@ -45,6 +45,17 @@ function fieldsOf(record: FeishuRecord) {
   return record.fields || {};
 }
 
+// Try multiple candidate column names for a field, returning the first
+// non-empty value. Keeps the index resilient to minor Feishu schema drift.
+function pick(record: FeishuRecord, ...names: string[]): unknown {
+  const f = fieldsOf(record);
+  for (const name of names) {
+    const v = f[name];
+    if (v !== undefined && v !== null && v !== '') return v;
+  }
+  return undefined;
+}
+
 function numberOf(value: unknown) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -80,6 +91,100 @@ function summarizeHuahuo(projects: FeishuRecord[], deliveries: FeishuRecord[], r
     contractAmount,
     receivedAmount,
     outstandingAmount: Math.max(0, contractAmount - receivedAmount),
+  };
+}
+
+// Build a read-only WanJia merchant-operations record index from the Feishu
+// merchant table. Only METADATA is carried — never merchant narratives. The
+// payload is always flagged mode: 'read_only' and is meant to be cached into
+// `zos_business_cache` (source = 'wanjia') for the PWA to SELECT.
+function buildWanjiaRecords(records: FeishuRecord[]): unknown {
+  return {
+    source: 'wanjia',
+    mode: 'read_only',
+    scannedAt: new Date().toISOString(),
+    records: records.map((record, idx) => {
+      const f = fieldsOf(record);
+      return {
+        id: String(pick(f, '商家ID', '记录ID', 'RecordId') || `wanjia-${idx}`),
+        merchantName: String(f['商家名称'] || '未知商家'),
+        cooperationType: String(pick(f, '合作类型', '业务类型') || '其他'),
+        stage: String(pick(f, '当前阶段', '阶段', '合作阶段') || '执行中'),
+        owner: String(pick(f, '项目负责人', '负责人', '对接人') || '未指定'),
+        updatedAt: String(pick(f, '最近更新时间', '更新时间', '修改时间') || new Date().toISOString()),
+        nextAction: String(pick(f, '下一步动作', '待办事项', '后续动作') || ''),
+        riskLevel: String(pick(f, '风险等级', '风险') || '低'),
+        revenueStatus: String(pick(f, '收入状态', '收款状态', '回款状态') || '待收款'),
+      };
+    }),
+  };
+}
+
+// Build a read-only HuaHuo shooting-project record index from the Feishu
+// project table. Only METADATA is carried — never project narratives/bodies.
+// The payload is always flagged mode: 'read_only' and is meant to be cached
+// into `zos_business_cache` (source = 'huahuo') for the PWA to SELECT.
+function buildHuahuoRecords(records: FeishuRecord[]): unknown {
+  return {
+    source: 'huahuo',
+    mode: 'read_only',
+    scannedAt: new Date().toISOString(),
+    records: records.map((record, idx) => {
+      const f = fieldsOf(record);
+      return {
+        id: String(pick(f, '项目ID', 'RecordId') || `huahuo-${idx}`),
+        clientName: String(pick(f, '客户名称', '客户') || '未指定'),
+        projectName: String(f['项目名称'] || '花火项目'),
+        projectType: String(pick(f, '项目类型') || '其他'),
+        shootingDate: String(pick(f, '拍摄日期', '外拍日期') || new Date().toISOString()),
+        stage: String(pick(f, '项目状态', '当前阶段', '阶段') || '筹备中'),
+        deliveryStatus: String(pick(f, '交付状态', '交付进度') || '待交付'),
+        revenueStatus: String(pick(f, '回款状态', '收款状态') || '待回款'),
+        profitStatus: String(pick(f, '利润状态', '利润') || '待核算'),
+      };
+    }),
+  };
+}
+
+// Build a read-only project metadata index from the (fact-source) Feishu tables.
+// Only METADATA is carried — never project narratives/bodies. The payload is
+// always flagged mode: 'read_only' and is meant to be cached into
+// `zos_business_cache` (source = 'projects') for the PWA to SELECT.
+function buildProjectsSource(huahuoProjects: FeishuRecord[], merchants: FeishuRecord[]): unknown {
+  const projects = huahuoProjects.map((record, idx) => {
+    const f = fieldsOf(record);
+    const status = String(f['项目状态'] || '进行中');
+    const riskFromStatus = status.includes('延期') || status.includes('风险') ? '高' : '中';
+    return {
+      id: `huahuo-${idx}`,
+      name: String(f['项目名称'] || '花火项目'),
+      type: '花火拍摄',
+      status,
+      owner: f['负责人'] ? String(f['负责人']) : '花火团队',
+      updatedAt: f['拍摄日期'] ? String(f['拍摄日期']) : new Date().toISOString(),
+      riskLevel: riskFromStatus,
+      source: 'huahuo',
+    };
+  });
+  const activeMerchants = merchants.filter((record) => {
+    const v = fieldsOf(record)['是否动销'];
+    return v === true || v === '是' || v === '已动销';
+  }).length;
+  projects.push({
+    id: 'wanjia-ops',
+    name: '万嘉商家运营',
+    type: '万嘉商家运营',
+    status: '进行中',
+    owner: '运营组',
+    updatedAt: new Date().toISOString(),
+    riskLevel: activeMerchants > 0 ? '低' : '中',
+    source: 'wanjia',
+  });
+  return {
+    source: 'projects',
+    mode: 'read_only',
+    scannedAt: new Date().toISOString(),
+    projects,
   };
 }
 
@@ -139,9 +244,11 @@ Deno.serve(async (req) => {
     const accessToken = await getTenantAccessToken(appId, appSecret);
     const [merchants, projects, deliveries, receipts] = await Promise.all([
       searchRecords(accessToken, FEISHU.wanjia.appToken, FEISHU.wanjia.merchantTable,
-        ['商家名称', '是否动销', '支付GMV', '核销GMV', '视频投稿数', '直播场次数', '总预估佣金']),
+        ['商家名称', '是否动销', '支付GMV', '核销GMV', '视频投稿数', '直播场次数', '总预估佣金',
+         '合作类型', '当前阶段', '项目负责人', '最近更新时间', '下一步动作', '风险等级', '收入状态']),
       searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.projectTable,
-        ['项目名称', '项目状态', '拍摄日期', '合同金额', '已收金额']),
+        ['项目名称', '项目状态', '拍摄日期', '合同金额', '已收金额', '负责人',
+         '项目类型', '回款状态', '利润状态']),
       searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.deliveryTable,
         ['项目', '计划交付日期', '交付状态', '客户确认状态']),
       searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.receiptTable,
@@ -149,8 +256,9 @@ Deno.serve(async (req) => {
     ]);
 
     return response({
-      wanjia: { summary: summarizeWanjia(merchants) },
-      huahuo: { summary: summarizeHuahuo(projects, deliveries, receipts) },
+      wanjia: { summary: summarizeWanjia(merchants), records: buildWanjiaRecords(merchants) },
+      huahuo: { summary: summarizeHuahuo(projects, deliveries, receipts), records: buildHuahuoRecords(projects) },
+      projects: buildProjectsSource(projects, merchants),
       brain: { state: 'not_configured', note: 'Obsidian bridge not configured' },
       meta: { fetchedAt: new Date().toISOString(), mode: 'read_only' },
     });

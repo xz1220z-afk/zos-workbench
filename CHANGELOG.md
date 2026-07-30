@@ -2,6 +2,55 @@
 
 ---
 
+## v1.1.0 — ZOS AI OS：企业数据驾驶舱 + 项目经理 Agent
+
+**日期**：2026-07-30
+
+**本次更新（接手 Codex 版后首次大版本）**：
+- **数据层（只读索引机制）**：新增 `src/project-data.mjs` 项目只读元数据契约（validateProjectIndex / createProjectCacheClient / summarizeProjects），严禁正文字段；新增迁移 `supabase/migrations/003_projects_cache.sql` 将 `zos_business_cache.source` 枚举扩展为 `('wanjia','huahuo','brain','projects')`。
+- **项目中心**：在「ZOS 企业大脑」页新增项目中心，展示进行中项目数 / 今日风险 / 项目总数统计，按类型（万嘉商家运营 / 花火拍摄 / 政府项目 / ERP建设）筛选，列表含项目名、类型、状态、负责人、更新时间、风险等级与来源；显式只读徽章；支持「导入本地索引」与登录后「刷新项目」。
+- **今日驾驶舱**：首页新增驾驶舱五卡——进行中项目、待处理事项、今日风险、AI 建议、待审核内容，数据来自项目只读索引 + 本地任务/收集箱。
+- **项目经理 Agent V1**：新增 `src/project-manager-agent.mjs`，确定性生成《朱帅每日经营简报》（今日重点任务 / 项目延期风险 / 商家跟进提醒 / 待决策事项 / AI 建议）；纯函数、无网络、无密钥；简报进入收集箱「待人工审核」，审核通过仅导出 `.md` 草稿，**绝不**直接修改数据库 / 知识库 / 发送外部消息。
+- **扫描器与示例**：新增 `scripts/project-metadata-scan.mjs`（本地、只读、无密钥）与 `samples/projects-source.example.json` 模板，可将结构化导出转换为 `zos_business_cache` 兼容的只读 payload。
+
+**测试**：新增 `tests/project-data.test.mjs`（12 项）、`tests/project-manager-agent.test.mjs`（9 项）；全量 **57/57 通过**；pwa-baseline 同步覆盖 V1.1 功能；内联脚本 `node --check` 通过。
+
+**当前限制**：真实企业数据接入需你执行 003 迁移 + 部署更新后的 Edge Function（已含 `projects` 返回位，待你配置飞书表映射）；AI 简报与驾驶舱在登录/同步前显示空态或本地缓存。
+
+---
+
+## v1.2.0 — 万嘉/花火明细接入 + 风险中心 + 项目经理 Agent V2
+
+**日期**：2026-07-30
+
+**本次更新（经营驾驶舱闭环）**：
+- **万嘉网络只读明细**：新增 `src/wanjia-data.mjs`（extractWanjiaRecord / buildWanjiaIndex / validateWanjiaIndex / createWanjiaCacheClient / summarizeWanjiaRecords），字段含商家名称、合作类型、阶段、负责人、更新时间、下一步、风险等级、收入状态（source='wanjia'）；契约严禁正文字段；Edge Function `zos-business-data` 扩展返回 `wanjia.records` 明细（mode 强制 `read_only`）。
+- **花火影像只读明细**：新增 `src/huahuo-data.mjs`（extractHuahuoRecord / buildHuahuoIndex / validateHuahuoIndex / createHuahuoCacheClient / summarizeHuahuoRecords），字段含客户、项目、类型、拍摄日期、阶段、交付状态、回款状态、利润状态（source='huahuo'）。
+- **风险探测器**：新增 `src/risk-detector.mjs`（daysSince / isStale>7天 / isStuck / hasUnfinished / detectRisks / bucketRisks / riskLevelFromReasons），按 kind（project / wanjia / huahuo）区分完成态，支持 asOf 注入；归一化函数对非规范日期容错回退。
+- **项目经理 Agent V2**：`src/project-manager-agent.mjs` 在保留 V1 简报能力基础上，新增 `generateDailyReport(ctx)` → 《朱帅经营日报》（今日重点 / 项目风险 / 需要决策 / 建议动作）+ `reportToMarkdown`；纯函数、无网络、无密钥、`reviewRequired:true`、`disclaimer` 声明不直写事实源。
+- **风险中心 · 老板决策页**：原三桶列表改造为决策卡片页——汇总横幅（🔴 需立即处理 / 🟡 需关注 / 🟢 正常）、按风险等级 / 来源排序、卡片含项目名、来源、阶段、负责人、风险原因、建议动作，红黄绿配色；仅读取万嘉/花火/项目只读缓存，绝不回写。
+- **经营日报入口**：首页与风险页均提供「生成今日经营日报」按钮；点击读取万嘉/花火/项目缓存 + 风险检测结果 → 生成草稿 → 进入收集箱「AI日报·待审核」，导出 `.md` 后人工确认；绝不自动发送、绝不自动修改业务数据。
+- **首页经营驾驶舱**：五卡改为老板关心的 5 件事——当前项目数量、今日风险数量、待跟进事项、待审核 AI 内容、AI 建议；读取万嘉/花火/项目缓存与风险检测汇总。
+- **万嘉/花火明细展示**：万嘉页与花火页新增只读明细列表，展示各自核心字段与风险标签，仅在点击「刷新数据」读取后呈现。
+
+**测试**：新增 `tests/wanjia-data.test.mjs`、`tests/huahuo-data.test.mjs`、`tests/risk-detector.test.mjs`、`tests/project-manager-agent-v2.test.mjs`、`tests/data-authenticity.test.mjs`（覆盖空数据 / 异常状态 / 权限只读 / 风险规则 / Agent 输出），全量 **114/114 通过**；`tests/pwa-baseline.test.mjs` 同步覆盖 V1.2（版本号、驾驶舱 ID、风险决策页、日报入口）；内联脚本 `node --check` 通过。
+
+**当前限制**：万嘉/花火真实数据仍需你部署扩展了 `records` 返回的 Edge Function 并配置对应 ERP 只读视图；未登录前明细区与驾驶舱显示空态或本地缓存；AI 日报/简报仅生成草稿，须经收集箱人工审核确认后方可执行。
+
+---
+
+## v1.0.15 — 企业大脑只读元数据索引与审核网关
+
+**日期**：2026-07-30
+
+**本次更新**：
+- 企业大脑页接入「只读元数据索引」：从 Supabase `zos_business_cache`（source=brain）拉取仅含 path/title/tags/mtime/folder/reviewStatus 的索引；前端强制校验 `mode=read_only` 且禁止出现正文，跨端可浏览笔记目录而不读取或写入知识库正文。
+- 新增收集箱草稿统计、按业务域（万嘉 / 花火 / SOP·案例）筛选与标题/标签搜索。
+- 新增 Inbox 审核队列 + 发布网关：仅审核通过的草稿可导出为 `.md` 下载到暂存目录，绝不自动写入知识库；审核状态本地留痕。
+- 同源已落地 `src/obsidian-metadata-index.mjs` 与本地扫描器 `scripts/obsidian-metadata-scan.mjs`（10/10 测试通过；扫描真实 Vault 产出 1987 条纯元数据、零正文泄漏）。
+
+---
+
 ## v1.0.12 — 受保护的只读业务汇总调用
 
 **日期**：2026-07-30

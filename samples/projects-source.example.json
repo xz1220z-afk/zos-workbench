@@ -1,0 +1,45 @@
+{
+  "_comment": "示例模板（非真实业务数据）。将本文件替换为真实 飞书/ERP 导出后运行：node scripts/project-metadata-scan.mjs samples/projects-source.example.json --out projects-cache.json",
+  "projects": [
+    {
+      "id": "wanjia-ops-2026",
+      "name": "万嘉商家运营项目（示例）",
+      "type": "万嘉商家运营",
+      "status": "进行中",
+      "owner": "运营组",
+      "updatedAt": "2026-07-28T09:00:00.000Z",
+      "riskLevel": "中",
+      "source": "wanjia"
+    },
+    {
+      "id": "huahuo-shoot-2026",
+      "name": "花火拍摄项目（示例）",
+      "type": "花火拍摄",
+      "status": "进行中",
+      "owner": "花火团队",
+      "updatedAt": "2026-07-29T14:30:00.000Z",
+      "riskLevel": "低",
+      "source": "huahuo"
+    },
+    {
+      "id": "xinxu-gov-2026",
+      "name": "新墟镇政府项目（示例）",
+      "type": "政府项目",
+      "status": "风险",
+      "owner": "朱帅",
+      "updatedAt": "2026-07-26T11:00:00.000Z",
+      "riskLevel": "高",
+      "source": "gov"
+    },
+    {
+      "id": "erp-build-2026",
+      "name": "ERP 建设项目（示例）",
+      "type": "ERP建设",
+      "status": "待启动",
+      "owner": "IT组",
+      "updatedAt": "2026-07-25T16:45:00.000Z",
+      "riskLevel": "低",
+      "source": "erp"
+    }
+  ]
+}

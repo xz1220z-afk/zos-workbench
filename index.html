@@ -1208,6 +1208,99 @@
   }
   .checklist-badge.auto { background: var(--green-light); color: var(--green); }
   .checklist-badge.human { background: var(--orange-light); color: var(--orange); }
+  /* ===== ZOS 企业大脑 · 只读元数据索引 ===== */
+  .brain-note-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .brain-note { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; background: var(--card-bg-solid); border: 1px solid var(--card-border); border-radius: var(--radius-sm); padding: 12px 14px; box-shadow: var(--shadow); }
+  .brain-note-main { min-width: 0; }
+  .brain-note-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; word-break: break-word; }
+  .brain-note-meta { font-size: 12px; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .brain-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .brain-tag { font-size: 11px; color: var(--purple); background: var(--purple-light); padding: 2px 8px; border-radius: 999px; }
+  .brain-note-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+  .review-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .review-badge.published { color: var(--green); background: var(--green-light); }
+  .review-badge.inbox-draft { color: var(--orange); background: var(--orange-light); }
+  .review-badge.excluded { color: var(--text-muted); background: rgba(0,0,0,0.04); }
+  .read-only-badge { font-size: 12px; color: var(--purple); background: var(--purple-light); padding: 3px 10px; border-radius: 999px; }
+  .brain-approve-state { font-size: 11px; color: var(--green); }
+  .search-box input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--card-border); background: var(--card-bg-solid); color: var(--text); font-size: 14px; }
+  .search-box input::placeholder { color: var(--text-muted); }
+
+  /* ===== 项目中心（只读元数据） ===== */
+  .project-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .project-card {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 14px 16px; border-radius: var(--radius-sm);
+    background: var(--card-bg-solid); border: 1px solid var(--border);
+    box-shadow: var(--shadow); flex-wrap: wrap;
+  }
+  .project-main { min-width: 220px; }
+  .project-name { font-weight: 600; color: var(--text); font-size: 15px; }
+  .project-meta { margin-top: 6px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); }
+  .project-side { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .status-badge { font-size: 12px; padding: 3px 10px; border-radius: 999px; font-weight: 600; }
+  .status-badge.active { background: var(--green-light); color: var(--green); }
+  .status-badge.bad { background: var(--red-light); color: var(--red); }
+  .status-badge.idle { background: var(--orange-light); color: var(--orange); }
+  .risk-badge { font-size: 12px; padding: 3px 10px; border-radius: 999px; font-weight: 600; }
+  .risk-badge.high { background: var(--red-light); color: var(--red); }
+  .risk-badge.mid { background: var(--orange-light); color: var(--orange); }
+  .risk-badge.low { background: var(--green-light); color: var(--green); }
+  .src-badge { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(99,102,241,0.08); color: var(--primary); }
+
+  /* ===== 今日驾驶舱 ===== */
+  .cockpit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-top: 10px; }
+  .cockpit-card {
+    padding: 16px; border-radius: var(--radius-sm);
+    background: var(--card-bg-solid); border: 1px solid var(--border);
+    box-shadow: var(--shadow); border-top: 3px solid var(--c, var(--primary));
+  }
+  .cockpit-label { font-size: 12px; color: var(--text-muted); }
+  .cockpit-value { font-size: 26px; font-weight: 700; color: var(--c, var(--primary)); margin-top: 6px; }
+
+  /* ===== 只读业务明细列表（万嘉/花火/项目/风险） ===== */
+  .read-only-badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 8px; background: var(--green-light); color: var(--green); margin-left: 6px; vertical-align: middle; }
+  .record-list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .record-row { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .record-row-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .record-row-title { font-weight: 600; font-size: 14px; color: var(--text); }
+  .record-row-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .record-row-empty { color: var(--text-muted); font-size: 13px; padding: 8px 2px; }
+  .risk-pill { font-size: 11px; padding: 1px 8px; border-radius: 8px; white-space: nowrap; }
+  .risk-pill.high { background: var(--red-light); color: var(--red); }
+  .risk-pill.mid { background: var(--orange-light); color: var(--orange); }
+  .risk-pill.low { background: var(--green-light); color: var(--green); }
+  .meta-pill { font-size: 11px; padding: 1px 8px; border-radius: 8px; background: var(--bg-secondary); color: var(--text-muted); }
+  .risk-bucket-title { display: flex; align-items: center; gap: 8px; }
+  .risk-count { font-size: 12px; color: var(--text-muted); }
+  /* ===== 老板决策页（风险中心 V1.2） ===== */
+  .boss-banner { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 14px; padding: 14px 16px; border-radius: 14px; background: var(--card-bg); border: 1px solid var(--border); }
+  .boss-stat { font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 10px; }
+  .boss-stat.high { background: rgba(229,72,77,0.12); color: var(--red); }
+  .boss-stat.mid { background: rgba(245,166,35,0.14); color: #c47f00; }
+  .boss-stat.low { background: rgba(48,164,108,0.12); color: var(--green); }
+  .boss-banner-empty { color: var(--text-muted); font-size: 13px; }
+  .risk-sort { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .risk-sort-label { font-size: 12px; color: var(--text-muted); }
+  .sort-btn { font-size: 12px; padding: 5px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; }
+  .sort-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .decision-list { display: flex; flex-direction: column; gap: 12px; }
+  .decision-card { background: var(--card-bg); border: 1px solid var(--border); border-left-width: 5px; border-radius: 14px; padding: 14px 16px; }
+  .decision-card.level-high { border-left-color: var(--red); }
+  .decision-card.level-mid { border-left-color: #f0a000; }
+  .decision-card.level-low { border-left-color: var(--green); }
+  .decision-card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .decision-name { font-size: 16px; font-weight: 700; color: var(--text); }
+  .decision-meta { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .source-pill { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 8px; background: var(--primary-light); color: var(--primary); }
+  .level-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 8px; color: #fff; white-space: nowrap; }
+  .level-badge.high { background: var(--red); }
+  .level-badge.mid { background: #f0a000; }
+  .level-badge.low { background: var(--green); }
+  .decision-reasons { margin-top: 10px; font-size: 13px; color: var(--text); line-height: 1.6; }
+  .decision-action { margin-top: 10px; background: var(--bg-secondary); border-radius: 10px; padding: 10px 12px; }
+  .decision-label { display: inline-block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
+  .action-list { margin: 4px 0 0; padding-left: 18px; font-size: 13px; color: var(--text); line-height: 1.7; }
 </style>
 </head>
 <body>
@@ -1258,6 +1351,11 @@
       <span class="nav-icon">🧠</span>
       <span class="nav-label">ZOS 企业大脑</span>
       <span class="nav-dot dot-purple"></span>
+    </div>
+    <div class="nav-item" data-page="risk">
+      <span class="nav-icon">🚦</span>
+      <span class="nav-label">风险中心</span>
+      <span class="nav-badge" id="riskBadge" style="display:none">0</span>
     </div>
   </nav>
   <div class="sidebar-footer">
@@ -1310,6 +1408,15 @@
         </div>
       </div>
 
+      <div class="section-title">🚦 今日驾驶舱</div>
+      <div class="cockpit-grid">
+        <div class="cockpit-card" style="--c:var(--blue);"><div class="cockpit-label">当前项目数量</div><div class="cockpit-value" id="cockpitProjects">—</div></div>
+        <div class="cockpit-card" style="--c:var(--orange);"><div class="cockpit-label">今日风险数量</div><div class="cockpit-value" id="cockpitRisk">—</div></div>
+        <div class="cockpit-card" style="--c:var(--green);"><div class="cockpit-label">待跟进事项</div><div class="cockpit-value" id="cockpitFollow">—</div></div>
+        <div class="cockpit-card" style="--c:var(--red);"><div class="cockpit-label">待审核AI内容</div><div class="cockpit-value" id="cockpitReview">—</div></div>
+        <div class="cockpit-card" style="--c:var(--purple);"><div class="cockpit-label">AI 建议</div><div class="cockpit-value" id="cockpitAdvice">—</div></div>
+      </div>
+
       <div class="section-title">工作区概览</div>
       <div class="stat-row" id="dashboardStats"></div>
 
@@ -1319,6 +1426,7 @@
         <button class="quick-btn" onclick="openTaskAdd()">✅ 新建任务</button>
         <button class="quick-btn" onclick="openProjectAdd()">📌 新建项目</button>
         <button class="quick-btn" onclick="navigateTo(&#39;zos-brain&#39;)">🧠 AI 指令队列</button>
+        <button class="quick-btn" onclick="generateDailyReport()">📊 生成今日经营日报</button>
       </div>
 
       <div class="section-title">业务概览</div>
@@ -1456,6 +1564,8 @@
         <div class="empty-state-title">万嘉只读汇总等待首次刷新</div>
         <div class="empty-state-desc">完成 Supabase 登录后点击「刷新数据」即可读取商家、GMV、动销、视频、直播与佣金汇总；不会回写飞书。</div>
       </div>
+      <div class="section-title" style="margin-top:18px;">📋 商家运营项目明细 <span class="read-only-badge">只读</span></div>
+      <div id="wanjiaRecordList" class="record-list"></div>
     </section>
 
     <!-- ===== 花火影像 ===== -->
@@ -1492,6 +1602,28 @@
         <div class="empty-state-title">花火只读汇总等待首次刷新</div>
         <div class="empty-state-desc">完成 Supabase 登录后点击「刷新数据」即可读取客户、项目、拍摄排期、交付与回款汇总；不会回写飞书。</div>
       </div>
+      <div class="section-title" style="margin-top:18px;">🎬 拍摄项目明细 <span class="read-only-badge">只读</span></div>
+      <div id="huahuoRecordList" class="record-list"></div>
+    </section>
+
+    <!-- ===== 风险中心 · 老板决策页 ===== -->
+    <section class="page" id="page-risk">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>风险中心 · 老板决策页</h2>
+          <p>高风险优先 · 只读聚合自万嘉 / 花火 / 企业项目，不直写事实源</p>
+        </div>
+        <button class="btn btn-sm" onclick="refreshBusinessData('wanjia');refreshBusinessData('huahuo');refreshBusinessData('projects');">↻ 刷新风险源</button>
+        <button class="btn btn-sm btn-primary" onclick="generateDailyReport()">📊 生成今日经营日报</button>
+      </div>
+      <div class="boss-banner" id="riskBanner"></div>
+      <div class="risk-sort">
+        <span class="risk-sort-label">排序</span>
+        <button class="sort-btn active" id="sortLevelBtn" onclick="setRiskSort('level')">按风险等级</button>
+        <button class="sort-btn" id="sortSourceBtn" onclick="setRiskSort('source')">按来源</button>
+        <span class="read-only-badge">只读 · 不回写</span>
+      </div>
+      <div id="riskDecisionList" class="decision-list"></div>
     </section>
 
     <!-- ===== 企业项目 ===== -->
@@ -1544,10 +1676,67 @@
       <div class="settings-section" style="margin:0 0 16px;padding:14px 16px;">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
           <div><strong>数据来源：Obsidian 企业大脑</strong><div class="setting-desc" id="brainDataStatus">正在检查连接状态…</div></div>
-          <span style="font-size:12px;color:var(--text-muted);">只读索引</span>
+          <span class="read-only-badge">只读索引 · 不含正文</span>
         </div>
       </div>
-      <div class="module-grid">
+
+      <div class="stat-row">
+        <div class="stat-card"><div class="stat-card-label">已索引笔记</div><div class="stat-card-placeholder" id="brainTotalCount">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">收集箱草稿</div><div class="stat-card-placeholder" id="brainInboxCount">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">已发布</div><div class="stat-card-placeholder" id="brainPublishedCount">—</div></div>
+      </div>
+
+      <div class="filter-tabs" id="brainFilter" style="margin-top:14px;">
+        <button class="filter-tab active" data-filter="all" onclick="setBrainFilter(this)">全部</button>
+        <button class="filter-tab" data-filter="inbox" onclick="setBrainFilter(this)">📥 收集箱</button>
+        <button class="filter-tab" data-filter="wanjia" onclick="setBrainFilter(this)">万嘉</button>
+        <button class="filter-tab" data-filter="huahuo" onclick="setBrainFilter(this)">花火</button>
+        <button class="filter-tab" data-filter="sop" onclick="setBrainFilter(this)">SOP·案例</button>
+      </div>
+      <div class="search-box" style="margin:12px 0 4px;">
+        <input type="text" id="brainSearch" placeholder="搜索标题或标签…" oninput="renderBrainIndex()" />
+      </div>
+      <div id="brainNoteList" class="brain-note-list"></div>
+      <div class="empty-state" id="brainDataEmpty">
+        <div class="empty-state-icon" style="background: var(--purple-light);">🧠</div>
+        <div class="empty-state-title">企业大脑只读索引等待首次同步</div>
+        <div class="empty-state-desc">在本地运行 obsidian-metadata-scan 生成只读元数据索引并同步到云端后，点击「刷新知识库」即可跨端查看笔记目录；本工作台绝不读取或写入知识库正文。</div>
+      </div>
+
+      <div style="margin-top:24px;">
+        <div class="section-title">📊 项目中心（企业数据只读索引）</div>
+        <div class="settings-section" style="margin:0 0 12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div><strong>数据来源：飞书 ERP / 企业项目（只读）</strong><div class="setting-desc" id="projectDataStatus">等待首次同步…</div></div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <label class="btn btn-sm" style="cursor:pointer;">📂 导入本地索引<input type="file" id="projectIndexFile" accept="application/json,.json" style="display:none;" onchange="importProjectIndexFile(this)" /></label>
+            <button class="btn btn-sm" onclick="refreshBusinessData('projects')">↻ 刷新项目</button>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-card"><div class="stat-card-label">进行中项目</div><div class="stat-card-placeholder" id="projActiveCount">—</div></div>
+          <div class="stat-card"><div class="stat-card-label">今日风险</div><div class="stat-card-placeholder" id="projRiskCount">—</div></div>
+          <div class="stat-card"><div class="stat-card-label">项目总数</div><div class="stat-card-placeholder" id="projTotalCount">—</div></div>
+        </div>
+        <div class="filter-tabs" id="projectFilter" style="margin-top:14px;">
+          <button class="filter-tab active" data-filter="all" onclick="setProjectFilter(this)">全部</button>
+          <button class="filter-tab" data-filter="万嘉商家运营" onclick="setProjectFilter(this)">万嘉</button>
+          <button class="filter-tab" data-filter="花火拍摄" onclick="setProjectFilter(this)">花火</button>
+          <button class="filter-tab" data-filter="政府项目" onclick="setProjectFilter(this)">政府项目</button>
+          <button class="filter-tab" data-filter="ERP建设" onclick="setProjectFilter(this)">ERP建设</button>
+        </div>
+        <div id="projectList" class="project-list"></div>
+        <div class="empty-state" id="projectDataEmpty">
+          <div class="empty-state-icon" style="background: var(--blue-light);">📊</div>
+          <div class="empty-state-title">项目中心等待首次同步</div>
+          <div class="empty-state-desc">项目元数据来自飞书 ERP 等事实源，经只读索引进入 ZOS。可点击「导入本地索引」载入项目扫描器生成的 JSON，或登录 Supabase 后点「刷新项目」。</div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="generateProjectBrief()">🤖 生成《朱帅每日经营简报》</button>
+          <span style="font-size:11px;color:var(--text-muted);">简报将进入收集箱待你审核，AI 不直写数据库 / 知识库 / 外发消息。</span>
+        </div>
+      </div>
+
+      <div class="module-grid" style="margin-top:24px;">
         <div class="module-card">
           <div class="module-card-icon" style="background: var(--purple-light);">📓</div>
           <div class="module-card-title">Obsidian 知识库</div>
@@ -1567,6 +1756,18 @@
           <span class="module-card-status" style="background: var(--orange-light); color: var(--orange);">● 待配置</span>
         </div>
       </div>
+
+      <div style="margin-top:24px;">
+        <div class="section-title">📥 Inbox 审核队列（仅审核，不直写知识库）</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">审核通过仅导出草稿到暂存目录，绝不自动写入知识库；正式入库由你手动完成。</div>
+        <div id="brainInboxList" class="brain-note-list"></div>
+        <div class="empty-state" id="brainInboxEmpty">
+          <div class="empty-state-icon" style="background: var(--purple-light);">✅</div>
+          <div class="empty-state-title">暂无待审核草稿</div>
+          <div class="empty-state-desc">收集箱中的草稿会出现在这里。审核通过后将导出为草稿文件（放入暂存目录），不会直接写入知识库。</div>
+        </div>
+      </div>
+
       <div style="margin-top:24px;">
         <div class="section-title">AI 指令队列（待执行指令队列）</div>
         <div class="cmd-input-area">
@@ -1607,7 +1808,7 @@
         <ul class="check-list">
           <li><span class="check-icon">✓</span> 飞书 ERP — 万嘉与花火只读汇总服务已部署，首次刷新后在本机缓存</li>
           <li><span class="cross-icon">—</span> 腾讯文档 — 尚未接入</li>
-          <li><span class="cross-icon">—</span> Obsidian — 本地 Build012 草稿桥接已验证；跨端只读索引尚未启用</li>
+          <li><span class="cross-icon">—</span> Obsidian — 本地 Build012 草稿桥接已验证；跨端只读索引已就绪（待首次同步）</li>
           <li><span class="cross-icon">—</span> 本地生活平台 — 尚未接入</li>
           <li><span class="cross-icon">—</span> 项目管理系统 — 尚未接入</li>
           <li id="privacySupabaseStatus"><span class="cross-icon">—</span> Supabase — 未配置，仅本机</li>
@@ -1647,7 +1848,7 @@
         <div class="setting-row">
           <div>
             <div class="setting-label">工作台版本</div>
-            <div class="setting-desc">v1.0.14 · 2026-07-30</div>
+            <div class="setting-desc">v1.2.0 · 2026-07-30</div>
           </div>
         </div>
         <div class="setting-row">
@@ -1954,7 +2155,7 @@
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.0.14';
+  const APP_VERSION = '1.2.0';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
   const APP_RELEASE_DATE = '2026-07-30';
 
@@ -2184,21 +2385,23 @@
 
     container.innerHTML = list.map(i => {
       const converted = i.convertedTo;
+      const isBrief = i.kind === 'brief';
+      const isReport = i.kind === 'report';
+      const tag = converted
+        ? '<span class="tag tag-done">已转为' + converted + '</span>'
+        : (isReport ? '<span class="tag tag-todo">AI日报·待审核</span>' : (isBrief ? '<span class="tag tag-todo">AI简报·待审核</span>' : '<span class="tag tag-todo">待处理</span>'));
+      const actions = converted
+        ? '<div class="list-item-actions"><button class="btn btn-xs btn-danger" onclick="window.deleteInbox(\'' + i.id + '\')">删除</button></div>'
+        : (isReport
+          ? '<div class="list-item-actions"><button class="btn btn-xs btn-primary" onclick="window.exportReportDraft(\'' + i.id + '\')">导出日报(.md)</button><button class="btn btn-xs btn-danger" onclick="window.deleteInbox(\'' + i.id + '\')">删除</button></div>'
+          : (isBrief
+            ? '<div class="list-item-actions"><button class="btn btn-xs btn-primary" onclick="window.exportBriefDraft(\'' + i.id + '\')">导出简报(.md)</button><button class="btn btn-xs btn-danger" onclick="window.deleteInbox(\'' + i.id + '\')">删除</button></div>'
+            : '<div class="list-item-actions"><button class="btn btn-xs btn-primary" onclick="window.convertToTask(\'' + i.id + '\')">转任务</button><button class="btn btn-xs" onclick="window.convertToProject(\'' + i.id + '\')">转项目</button><button class="btn btn-xs btn-danger" onclick="window.deleteInbox(\'' + i.id + '\')">删除</button></div>'));
       return '<div class="list-item">' +
         '<div class="list-item-body">' +
           '<div class="list-item-title">' + escapeHtml(i.content) + '</div>' +
-          '<div class="list-item-meta">' +
-            '<span>' + timeAgo(i.createdAt) + '</span>' +
-            (converted ? '<span class="tag tag-done">已转为' + converted + '</span>' : '<span class="tag tag-todo">待处理</span>') +
-          '</div>' +
-        '</div>' +
-        (converted ? '<div class="list-item-actions"><button class="btn btn-xs btn-danger" onclick="window.deleteInbox(\'' + i.id + '\')">删除</button></div>' :
-        '<div class="list-item-actions">' +
-          '<button class="btn btn-xs btn-primary" onclick="window.convertToTask(\'' + i.id + '\')">转任务</button>' +
-          '<button class="btn btn-xs" onclick="window.convertToProject(\'' + i.id + '\')">转项目</button>' +
-          '<button class="btn btn-xs btn-danger" onclick="window.deleteInbox(\'' + i.id + '\')">删除</button>' +
-        '</div>') +
-      '</div>';
+          '<div class="list-item-meta"><span>' + timeAgo(i.createdAt) + '</span>' + tag + '</div>' +
+        '</div>' + actions + '</div>';
     }).join('');
   }
 
@@ -2824,6 +3027,7 @@
       if (wanjiaEmpty) wanjiaEmpty.style.display = 'none';
       var wanjiaStatus = document.getElementById('wanjiaDataStatus');
       if (wanjiaStatus) wanjiaStatus.textContent = '已读取缓存 · 更新于 ' + (cache.wanjia.fetchedAt || '未知时间') + ' · 只读';
+      renderRecordList('wanjiaRecordList', (cache.wanjia && cache.wanjia.records) || [], 'wanjia');
     } else {
       setBusinessValue('wanjiaMerchantCount', '—');
       setBusinessValue('wanjiaActiveMerchantCount', '—');
@@ -2839,6 +3043,7 @@
       if (huahuoEmpty) huahuoEmpty.style.display = 'none';
       var huahuoStatus = document.getElementById('huahuoDataStatus');
       if (huahuoStatus) huahuoStatus.textContent = '已读取缓存 · 更新于 ' + (cache.huahuo.fetchedAt || '未知时间') + ' · 只读';
+      renderRecordList('huahuoRecordList', (cache.huahuo && cache.huahuo.records) || [], 'huahuo');
     } else {
       setBusinessValue('huahuoActiveProjects', '—');
       setBusinessValue('huahuoPendingDeliveries', '—');
@@ -2848,8 +3053,74 @@
   async function refreshBusinessData(source) {
     var labels = { wanjia: '万嘉网络', huahuo: '花火影像', brain: 'ZOS 企业大脑' };
     if (source === 'brain') {
-      toast('Obsidian 知识库桥接尚未部署；当前不会读取或写入知识库。');
-      renderBusinessDataStates();
+      try {
+        var config = syncConfig(); var session = syncSession();
+        if (!session.userId || !session.accessToken) { toast('请先完成 Supabase 邮箱登录'); return; }
+        if (session.refreshToken) {
+          try { var refreshed = await configuredAuth().refreshSession(session.refreshToken); session = Object.assign({}, session, refreshed); localStorage.setItem(KEYS.SYNC_SESSION, JSON.stringify(session)); } catch (e) {}
+        }
+        toast('正在读取企业大脑只读索引…');
+        var brainPayload = await fetchBrainIndex();
+        if (!brainPayload) {
+          var stEl = document.getElementById('brainDataStatus');
+          if (stEl) stEl.textContent = '云端暂无只读索引；请先在本地运行 obsidian-metadata-scan 并同步';
+          toast('云端暂无只读索引；请先生成并同步索引');
+          renderBusinessDataStates(); renderBrainIndex();
+          return;
+        }
+        var bcache = businessDataCache();
+        bcache.brain = { payload: brainPayload, fetchedAt: brainPayload.scannedAt || new Date().toISOString() };
+        localStorage.setItem(BUSINESS_DATA_CACHE_KEY, JSON.stringify(bcache));
+        renderBusinessDataStates(); renderBrainIndex();
+        toast('企业大脑只读索引已刷新（仅元数据，不取正文）');
+      } catch (error) {
+        renderBusinessDataStates(); renderBrainIndex();
+        toast('知识库读取失败：' + error.message);
+      }
+      return;
+    }
+    if (source === 'projects') {
+      try {
+        var config = syncConfig(); var session = syncSession();
+        if (!session.userId || !session.accessToken) {
+          var localProj = loadProjectIndex();
+          if (localProj) { projectIndexState = localProj; renderProjectCenter(); renderCockpit(); toast('已载入本地项目索引缓存（未登录也可查看）'); }
+          else { toast('请先完成 Supabase 登录，或导入本地索引 JSON'); }
+          return;
+        }
+        if (session.refreshToken) {
+          try { var pr = await configuredAuth().refreshSession(session.refreshToken); session = Object.assign({}, session, pr); localStorage.setItem(KEYS.SYNC_SESSION, JSON.stringify(session)); } catch (e) {}
+        }
+        toast('正在读取项目只读索引…');
+        var projPayload = null;
+        try {
+          // 主路径：Edge Function（飞书只读代理），与 wanjia/huahuo 一致
+          var bdata = await fetchBusinessData({ url: config.url, anonKey: config.anonKey, accessToken: session.accessToken });
+          if (bdata && bdata.projects && Array.isArray(bdata.projects.projects)) {
+            projPayload = bdata.projects; // { source:'projects', mode:'read_only', projects:[...] }
+          }
+        } catch (e) { /* 落到下方缓存回退 */ }
+        if (!projPayload) {
+          // 回退路径：Supabase zos_business_cache（source='projects'）
+          try { projPayload = await fetchProjectIndex(); } catch (e) {}
+        }
+        if (!projPayload) {
+          var localProj2 = loadProjectIndex();
+          if (localProj2) { projectIndexState = localProj2; renderProjectCenter(); renderCockpit(); toast('云端暂无项目索引，已回退本地缓存'); return; }
+          var stp = document.getElementById('projectDataStatus');
+          if (stp) stp.textContent = '云端暂无项目索引；请确认 Edge Function 已返回 projects 或导入本地索引';
+          renderProjectCenter(); renderCockpit();
+          toast('云端暂无项目索引');
+          return;
+        }
+        projectIndexState = projPayload;
+        saveProjectIndex(projPayload);
+        renderProjectCenter(); renderCockpit();
+        toast('项目只读索引已刷新（仅元数据）');
+      } catch (error) {
+        renderProjectCenter(); renderCockpit();
+        toast('项目读取失败：' + error.message);
+      }
       return;
     }
     try {
@@ -2863,8 +3134,8 @@
       toast('正在读取' + (labels[source] || '业务') + '汇总…');
       var data = await fetchBusinessData({ url: config.url, anonKey: config.anonKey, accessToken: session.accessToken });
       var cache = businessDataCache();
-      cache.wanjia = { summary: data.wanjia?.summary || {}, fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
-      cache.huahuo = { summary: data.huahuo?.summary || {}, fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
+      cache.wanjia = { summary: data.wanjia?.summary || {}, records: data.wanjia?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
+      cache.huahuo = { summary: data.huahuo?.summary || {}, records: data.huahuo?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
       localStorage.setItem(BUSINESS_DATA_CACHE_KEY, JSON.stringify(cache));
       renderBusinessDataStates();
       toast((labels[source] || '业务') + '汇总已刷新（只读）');
@@ -2874,6 +3145,704 @@
     }
   }
   window.refreshBusinessData = refreshBusinessData;
+
+  // ===== ZOS 企业大脑 · 只读元数据索引（仅元数据，绝不取正文） =====
+  function validateBrainIndex(obj) {
+    if (!obj || typeof obj !== 'object') throw new Error('索引格式无效');
+    if (obj.mode !== 'read_only') throw new Error('索引不是只读模式');
+    if (obj.source !== 'brain') throw new Error('索引来源不是 brain');
+    if (!Array.isArray(obj.notes)) throw new Error('notes 不是数组');
+    var FORBIDDEN = ['content', 'body', 'text', 'markdown'];
+    obj.notes.forEach(function (note) {
+      ['path', 'title', 'tags', 'mtime', 'folder', 'reviewStatus'].forEach(function (k) {
+        if (!(k in note)) throw new Error('笔记缺少字段: ' + k);
+      });
+      FORBIDDEN.forEach(function (f) { if (f in note) throw new Error('索引禁止包含正文字段: ' + f); });
+    });
+    return true;
+  }
+
+  async function fetchBrainIndex() {
+    var config = syncConfig(); var session = syncSession();
+    syncRequired(config.url, 'url'); syncRequired(config.anonKey, 'anonKey'); syncRequired(session.accessToken, 'accessToken');
+    var requestUrl = new URL(syncEndpoint(config.url, '/rest/v1/zos_business_cache'));
+    requestUrl.searchParams.set('source', 'eq.brain');
+    requestUrl.searchParams.set('select', 'payload');
+    var response = await fetch(requestUrl.toString(), {
+      headers: { apikey: config.anonKey, Authorization: 'Bearer ' + session.accessToken }
+    });
+    if (!response.ok) throw new Error('只读索引请求失败（' + response.status + '）');
+    var rows = await response.json();
+    if (!Array.isArray(rows) || rows.length === 0) return null;
+    var payload = rows[0] && rows[0].payload;
+    if (!payload || payload.mode !== 'read_only') throw new Error('只读索引响应未标记为 read_only');
+    validateBrainIndex(payload);
+    return payload;
+  }
+
+  function brainNoteFolderGroup(note) {
+    var path = (note.path || '').replace(/\\/g, '/').toLowerCase();
+    if (note.reviewStatus === 'inbox-draft' || path.indexOf('收集箱') !== -1 || path.indexOf('inbox') !== -1) return 'inbox';
+    if (path.indexOf('万嘉') !== -1 || path.indexOf('wanjia') !== -1) return 'wanjia';
+    if (path.indexOf('花火') !== -1 || path.indexOf('huahuo') !== -1) return 'huahuo';
+    if (path.indexOf('sop') !== -1 || path.indexOf('案例') !== -1 || path.indexOf('case') !== -1) return 'sop';
+    return 'other';
+  }
+
+  function brainRenderNote(note, container, allowApprove) {
+    var group = brainNoteFolderGroup(note);
+    var li = document.createElement('div');
+    li.className = 'brain-note';
+    var main = document.createElement('div'); main.className = 'brain-note-main';
+    var title = document.createElement('div'); title.className = 'brain-note-title'; title.textContent = note.title || note.path;
+    var meta = document.createElement('div'); meta.className = 'brain-note-meta';
+    var f = document.createElement('span'); f.textContent = '📁 ' + (note.folder || '(root)');
+    var t = document.createElement('span'); t.textContent = '🕒 ' + (note.mtime ? new Date(note.mtime).toLocaleString('zh-CN') : '');
+    meta.appendChild(f); meta.appendChild(t);
+    main.appendChild(title); main.appendChild(meta);
+    if (note.tags && note.tags.length) {
+      var tags = document.createElement('div'); tags.className = 'brain-tags';
+      note.tags.slice(0, 6).forEach(function (tg) { var el = document.createElement('span'); el.className = 'brain-tag'; el.textContent = '#' + tg; tags.appendChild(el); });
+      main.appendChild(tags);
+    }
+    var side = document.createElement('div'); side.className = 'brain-note-side';
+    var badge = document.createElement('span'); badge.className = 'review-badge ' + (note.reviewStatus || 'published');
+    badge.textContent = note.reviewStatus === 'inbox-draft' ? '收集箱草稿' : (note.reviewStatus === 'excluded' ? '已排除' : '已发布');
+    side.appendChild(badge);
+    if (allowApprove && group === 'inbox') {
+      var approved = brainApprovedSet().has(note.path);
+      if (approved) {
+        var ok = document.createElement('span'); ok.className = 'brain-approve-state'; ok.textContent = '✓ 已审核导出';
+        side.appendChild(ok);
+      } else {
+        var btn = document.createElement('button'); btn.className = 'btn btn-sm btn-primary'; btn.textContent = '审核通过→导出';
+        btn.addEventListener('click', function () { approveBrainNote(note.path); });
+        side.appendChild(btn);
+      }
+    }
+    li.appendChild(main); li.appendChild(side);
+    container.appendChild(li);
+  }
+
+  function brainFilterState() {
+    var active = document.querySelector('#brainFilter .filter-tab.active');
+    return active ? active.getAttribute('data-filter') : 'all';
+  }
+  window.setBrainFilter = function (btn) {
+    document.querySelectorAll('#brainFilter .filter-tab').forEach(function (b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    renderBrainIndex();
+  };
+
+  function renderBrainIndex() {
+    var cache = businessDataCache();
+    var index = cache.brain && cache.brain.payload;
+    var list = document.getElementById('brainNoteList');
+    var empty = document.getElementById('brainDataEmpty');
+    var inboxList = document.getElementById('brainInboxList');
+    var inboxEmpty = document.getElementById('brainInboxEmpty');
+    if (!index || !Array.isArray(index.notes) || index.notes.length === 0) {
+      if (list) list.innerHTML = '';
+      if (empty) empty.style.display = '';
+      if (inboxList) inboxList.innerHTML = '';
+      if (inboxEmpty) inboxEmpty.style.display = '';
+      setBusinessValue('brainTotalCount', '—');
+      setBusinessValue('brainInboxCount', '—');
+      setBusinessValue('brainPublishedCount', '—');
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    var filter = brainFilterState();
+    var q = (document.getElementById('brainSearch') || {}).value || '';
+    var ql = q.trim().toLowerCase();
+    var notes = index.notes.filter(function (note) {
+      var group = brainNoteFolderGroup(note);
+      if (filter !== 'all' && group !== filter) return false;
+      if (ql) {
+        var hay = ((note.title || '') + ' ' + (note.tags || []).join(' ') + ' ' + (note.folder || '') + ' ' + (note.path || '')).toLowerCase();
+        if (hay.indexOf(ql) === -1) return false;
+      }
+      return true;
+    });
+    if (list) { list.innerHTML = ''; notes.forEach(function (n) { brainRenderNote(n, list, false); }); }
+    var inboxCount = index.notes.filter(function (n) { return n.reviewStatus === 'inbox-draft'; }).length;
+    var pubCount = index.notes.filter(function (n) { return n.reviewStatus === 'published'; }).length;
+    setBusinessValue('brainTotalCount', String(index.notes.length));
+    setBusinessValue('brainInboxCount', String(inboxCount));
+    setBusinessValue('brainPublishedCount', String(pubCount));
+    var inboxNotes = index.notes.filter(function (n) { return n.reviewStatus === 'inbox-draft'; });
+    if (inboxList) {
+      inboxList.innerHTML = '';
+      if (inboxNotes.length === 0) { if (inboxEmpty) inboxEmpty.style.display = ''; }
+      else { if (inboxEmpty) inboxEmpty.style.display = 'none'; inboxNotes.forEach(function (n) { brainRenderNote(n, inboxList, true); }); }
+    }
+    var status = document.getElementById('brainDataStatus');
+    if (status) status.textContent = '已读取只读索引 · 更新于 ' + (cache.brain.fetchedAt || '未知时间') + ' · 仅元数据';
+  }
+
+  var BRAIN_APPROVED_KEY = 'zos_brain_approved_v1';
+  function brainApprovedSet() {
+    try { return new Set(JSON.parse(loadVal(BRAIN_APPROVED_KEY, '[]'))); } catch (e) { return new Set(); }
+  }
+  function brainMarkApproved(path) {
+    var s = brainApprovedSet(); s.add(path);
+    try { localStorage.setItem(BRAIN_APPROVED_KEY, JSON.stringify(Array.from(s))); } catch (e) {}
+  }
+  window.approveBrainNote = function (path) {
+    var cache = businessDataCache();
+    var index = cache.brain && cache.brain.payload;
+    if (!index) { toast('请先刷新只读索引'); return; }
+    var note = (index.notes || []).find(function (n) { return n.path === path; });
+    if (!note) { toast('未找到该笔记'); return; }
+    brainMarkApproved(path);
+    exportBrainDraft(note);
+    toast('已审核通过 · 草稿已导出（请放入暂存目录，勿直写知识库）');
+    renderBrainIndex();
+  };
+  function exportBrainDraft(note) {
+    var body = [
+      '---',
+      'title: ' + (note.title || note.path),
+      'tags: [' + (note.tags || []).join(', ') + ']',
+      'reviewed_by: ZOS 审核网关',
+      'source_path: ' + note.path,
+      'status: draft',
+      '---',
+      '',
+      '# ' + (note.title || note.path),
+      '',
+      '> 本草稿由 ZOS 企业大脑「审核网关」于 ' + new Date().toLocaleString('zh-CN') + ' 导出。',
+      '> 仅含元数据占位，不含知识库正文；请补充内容后移入知识库，切勿直接覆盖原笔记。',
+      '',
+      '（在此补充正文…）'
+    ].join('\n');
+    var blob = new Blob([body], { type: 'text/markdown;charset=utf-8' });
+    var a = document.createElement('a');
+    var safe = (note.title || 'draft').replace(/[\\/:*?"<>|]/g, '_').slice(0, 60);
+    a.href = URL.createObjectURL(blob);
+    a.download = safe + '.md';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  // ===== 项目中心 · 企业数据只读元数据索引 =====
+  // 严守 read_only 契约：只渲染元数据（名称/类型/状态/负责人/更新时间/风险），
+  // 绝不读取或写入知识正文，绝不回写事实源（飞书 ERP）。
+  const PROJECT_INDEX_KEY = 'zos_project_index';
+  const BRIEF_DRAFTS_KEY = 'zos_brief_drafts';
+  const REPORT_DRAFTS_KEY = 'zos_report_drafts';
+  var projectIndexState = null;
+
+  function loadProjectIndex() {
+    try { return JSON.parse(loadVal(PROJECT_INDEX_KEY, 'null')); } catch (e) { return null; }
+  }
+  function saveProjectIndex(idx) {
+    try { localStorage.setItem(PROJECT_INDEX_KEY, JSON.stringify(idx)); } catch (e) {}
+  }
+  function briefDraftsMap() {
+    try { return JSON.parse(loadVal(BRIEF_DRAFTS_KEY, '{}')) || {}; } catch (e) { return {}; }
+  }
+  function saveBriefDraft(id, md) {
+    var m = briefDraftsMap(); m[id] = md;
+    try { localStorage.setItem(BRIEF_DRAFTS_KEY, JSON.stringify(m)); } catch (e) {}
+  }
+  function reportDraftsMap() {
+    try { return JSON.parse(loadVal(REPORT_DRAFTS_KEY, '{}')) || {}; } catch (e) { return {}; }
+  }
+  function saveReportDraft(id, md) {
+    var m = reportDraftsMap(); m[id] = md;
+    try { localStorage.setItem(REPORT_DRAFTS_KEY, JSON.stringify(m)); } catch (e) {}
+  }
+  function exportReportDraft(id) {
+    var m = reportDraftsMap(); var md = m[id];
+    if (!md) { toast('未找到日报内容'); return; }
+    var blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '朱帅经营日报-' + todayStr() + '.md';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    toast('经营日报草稿已导出（.md），请人工审核后使用');
+  }
+  window.exportReportDraft = exportReportDraft;
+  function shortDate(iso) {
+    if (!iso) return '未知';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '未知';
+    return d.toISOString().slice(0, 10);
+  }
+  function projectRiskClass(level) {
+    return level === '高' ? 'high' : (level === '中' ? 'mid' : 'low');
+  }
+  function projectStatusClass(s) {
+    if (s === '进行中') return 'active';
+    if (s === '风险' || s === '已延期') return 'bad';
+    return 'idle';
+  }
+
+  async function fetchProjectIndex() {
+    var config = syncConfig(); var session = syncSession();
+    syncRequired(config.url, 'url'); syncRequired(config.anonKey, 'anonKey'); syncRequired(session.accessToken, 'accessToken');
+    var requestUrl = new URL(syncEndpoint(config.url, '/rest/v1/zos_business_cache'));
+    requestUrl.searchParams.set('source', 'eq.projects');
+    requestUrl.searchParams.set('select', 'payload');
+    var response = await fetch(requestUrl.toString(), {
+      headers: { apikey: config.anonKey, Authorization: 'Bearer ' + session.accessToken }
+    });
+    if (!response.ok) throw new Error('项目索引请求失败（' + response.status + '）');
+    var rows = await response.json();
+    if (!Array.isArray(rows) || rows.length === 0) return null;
+    var payload = rows[0] && rows[0].payload;
+    if (!payload || payload.mode !== 'read_only') throw new Error('项目索引响应未标记为 read_only');
+    if (payload.source !== 'projects') throw new Error('项目索引来源不是 projects');
+    if (!Array.isArray(payload.projects)) throw new Error('projects 不是数组');
+    return payload;
+  }
+
+  function projectFilterState() {
+    var a = document.querySelector('#projectFilter .filter-tab.active');
+    return a ? a.getAttribute('data-filter') : 'all';
+  }
+  window.setProjectFilter = function (btn) {
+    document.querySelectorAll('#projectFilter .filter-tab').forEach(function (b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    renderProjectCenter();
+  };
+
+  function renderProjectCenter() {
+    var index = projectIndexState || loadProjectIndex();
+    var list = document.getElementById('projectList');
+    var empty = document.getElementById('projectDataEmpty');
+    var st = document.getElementById('projectDataStatus');
+    if (!index || !Array.isArray(index.projects) || index.projects.length === 0) {
+      if (list) list.innerHTML = '';
+      if (empty) empty.style.display = '';
+      setBusinessValue('projActiveCount', '—'); setBusinessValue('projRiskCount', '—'); setBusinessValue('projTotalCount', '—');
+      if (st) st.textContent = '等待首次同步…';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    var filter = projectFilterState();
+    var rows = index.projects.filter(function (p) { return filter === 'all' || p.type === filter; });
+    var active = index.projects.filter(function (p) { return p.status === '进行中'; }).length;
+    var risk = index.projects.filter(function (p) { return p.riskLevel === '高' || p.status === '风险' || p.status === '已延期'; }).length;
+    setBusinessValue('projActiveCount', String(active));
+    setBusinessValue('projRiskCount', String(risk));
+    setBusinessValue('projTotalCount', String(index.projects.length));
+    if (st) st.textContent = '已读取只读索引 · 更新于 ' + (index.scannedAt || '未知时间') + ' · 仅元数据';
+    if (list) {
+      list.innerHTML = rows.map(function (p) {
+        return '<div class="project-card">' +
+          '<div class="project-main">' +
+            '<div class="project-name">' + escapeHtml(p.name) + '</div>' +
+            '<div class="project-meta">' +
+              '<span>类型：' + escapeHtml(p.type) + '</span>' +
+              '<span>负责人：' + escapeHtml(p.owner) + '</span>' +
+              '<span>更新：' + escapeHtml(shortDate(p.updatedAt)) + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="project-side">' +
+            '<span class="status-badge ' + projectStatusClass(p.status) + '">' + escapeHtml(p.status) + '</span>' +
+            '<span class="risk-badge ' + projectRiskClass(p.riskLevel) + '">风险：' + escapeHtml(p.riskLevel) + '</span>' +
+            '<span class="src-badge">' + escapeHtml(p.source) + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+  }
+
+  window.importProjectIndexFile = function (input) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var obj = JSON.parse(reader.result);
+        var idx = (obj && Array.isArray(obj.projects)) ? obj
+          : (obj && obj.source === 'projects' ? obj
+            : { source: 'projects', mode: 'read_only', scannedAt: new Date().toISOString(), projects: Array.isArray(obj) ? obj : [] });
+        if (!Array.isArray(idx.projects)) throw new Error('缺少 projects 数组');
+        if (idx.mode !== 'read_only') throw new Error('索引必须为 read_only');
+        idx.projects = idx.projects.map(function (p) {
+          var c = {};
+          ['id', 'name', 'type', 'status', 'owner', 'updatedAt', 'riskLevel', 'source'].forEach(function (k) { if (k in p) c[k] = p[k]; });
+          return c;
+        });
+        idx.mode = 'read_only'; idx.source = 'projects';
+        projectIndexState = idx;
+        saveProjectIndex(idx);
+        renderProjectCenter(); renderCockpit();
+        toast('已导入本地项目索引（' + idx.projects.length + ' 条，仅元数据）');
+      } catch (e) {
+        toast('导入失败：' + e.message);
+      }
+      input.value = '';
+    };
+    reader.readAsText(file);
+  };
+
+  // ===== 项目经理 Agent V1（内联实现，与 src/project-manager-agent.mjs 保持一致） =====
+  // 纯函数、确定性、无网络、无密钥。只生成结构化简报，绝不写库/知识库/外发。
+  function buildBrief(projects, ctx) {
+    ctx = ctx || {};
+    var owner = ctx.owner || '朱帅';
+    var date = ctx.date || todayStr();
+    var list = projects || [];
+    var highRisk = list.filter(function (p) { return p.riskLevel === '高' || p.status === '风险' || p.status === '已延期'; });
+    var active = list.filter(function (p) { return p.status === '进行中'; });
+    var wanjia = list.filter(function (p) { return p.source === 'wanjia' || p.type === '万嘉商家运营'; });
+    var keyTasks = [];
+    active.forEach(function (p) { keyTasks.push('跟进「' + p.name + '」（状态：' + p.status + '，风险：' + p.riskLevel + '，负责人：' + p.owner + '）'); });
+    (ctx.tasks || []).forEach(function (t) { keyTasks.push('处理任务：' + (t.title || t.name || '未命名任务')); });
+    if (!keyTasks.length) keyTasks.push('今日无进行中项目，可安排规划与复盘。');
+    var delayRisks = [];
+    highRisk.forEach(function (p) { delayRisks.push('「' + p.name + '」存在延期/风险（状态：' + p.status + '，风险：' + p.riskLevel + '，更新：' + shortDate(p.updatedAt) + '）'); });
+    if (!delayRisks.length) delayRisks.push('当前无高风险的延期项目，保持监控。');
+    var followups = [];
+    wanjia.forEach(function (p) { if (p.status === '进行中') followups.push('万嘉商家运营「' + p.name + '」进行中，建议今日核对动销与核销数据。'); });
+    if (!followups.length) followups.push('暂无万嘉商家运营跟进提醒。');
+    var decisions = [];
+    highRisk.forEach(function (p) { decisions.push('需决策：「' + p.name + '」是否增派资源或调整交付节奏（风险：' + p.riskLevel + '）。'); });
+    if ((ctx.inboxDrafts || 0) > 0) decisions.push('有 ' + ctx.inboxDrafts + ' 条收集箱草稿待审核，决定是否进入工作流。');
+    if (!decisions.length) decisions.push('今日无明确待决策事项。');
+    var suggestions = [];
+    if (highRisk.length >= 2) suggestions.push('高风险项目较多（' + highRisk.length + ' 个），建议优先召开项目同步会。');
+    if (active.length > 0) suggestions.push('建议每日上午固定 15 分钟过一遍进行中项目状态。');
+    if ((ctx.inboxDrafts || 0) > 0) suggestions.push('先清理收集箱草稿，避免 AI 指令与待办堆积。');
+    if (!suggestions.length) suggestions.push('系统运行平稳，按既定节奏推进即可。');
+    return {
+      title: owner + '每日经营简报', date: date, owner: owner, reviewRequired: true,
+      disclaimer: '本简报由 AI 生成，须人工审核后方可执行；AI 不直接修改数据库、知识库或发送外部消息。',
+      sections: { keyTasks: keyTasks, delayRisks: delayRisks, merchantFollowups: followups, decisions: decisions, suggestions: suggestions }
+    };
+  }
+  function buildBriefMarkdown(brief) {
+    var titles = { keyTasks: '一、今日重点任务', delayRisks: '二、项目延期风险', merchantFollowups: '三、商家跟进提醒', decisions: '四、待决策事项', suggestions: '五、AI 建议' };
+    var lines = ['# ' + brief.title, '', '- 日期：' + brief.date, '- 负责人：' + brief.owner, '- 状态：待人工审核（AI 生成）', ''];
+    ['keyTasks', 'delayRisks', 'merchantFollowups', 'decisions', 'suggestions'].forEach(function (k) {
+      lines.push('## ' + titles[k]);
+      var items = brief.sections[k] || [];
+      if (!items.length) lines.push('- （无）'); else items.forEach(function (it) { lines.push('- ' + it); });
+      lines.push('');
+    });
+    lines.push('> ' + brief.disclaimer);
+    return lines.join('\n');
+  }
+
+  window.generateProjectBrief = function () {
+    var index = projectIndexState || loadProjectIndex();
+    if (!index || !index.projects || !index.projects.length) { toast('请先刷新或导入项目索引'); return; }
+    var pendingTasks = (typeof tasks !== 'undefined' ? tasks : []).filter(function (t) { return t.status !== 'done' && t.status !== '已完成'; });
+    var inboxDrafts = (typeof inbox !== 'undefined' ? inbox : []).filter(function (i) { return !i.convertedTo && i.kind !== 'brief'; }).length;
+    var brief = buildBrief(index.projects, { owner: '朱帅', date: todayStr(), tasks: pendingTasks, inboxDrafts: inboxDrafts });
+    var md = buildBriefMarkdown(brief);
+    var id = uid();
+    inbox.push({ id: id, content: '【AI每日简报·待审核】' + brief.title, createdAt: now(), convertedTo: null, convertedId: null, kind: 'brief' });
+    save(KEYS.INBOX, inbox);
+    saveBriefDraft(id, md);
+    renderInbox(); renderDashboardStats(); updateBadges();
+    toast('已生成《' + brief.title + '》草稿，请在收集箱审核');
+  };
+
+  window.exportBriefDraft = function (id) {
+    var m = briefDraftsMap();
+    var md = m[id];
+    if (!md) { toast('未找到简报内容'); return; }
+    var blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '朱帅每日经营简报-' + todayStr() + '.md';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    toast('简报草稿已导出（.md），请人工审核后使用');
+  };
+
+  // ===== 项目经理 Agent V2 — 朱帅经营日报（内联镜像 src/project-manager-agent.mjs，前端只读聚合） =====
+  function buildDailyReportInline(sources, ctx) {
+    ctx = ctx || {};
+    var date = ctx.date || todayStr();
+    var owner = ctx.owner || '朱帅';
+    var asOf = ctx.asOf || new Date();
+    var wanjia = sources.wanjia || [];
+    var huahuo = sources.huahuo || [];
+    var projects = sources.projects || [];
+    var tasks = sources.tasks || [];
+    var inboxDrafts = ctx.inboxDrafts || 0;
+    var wRisks = detectRisksInline(wanjia, 'wanjia', asOf);
+    var hRisks = detectRisksInline(huahuo, 'huahuo', asOf);
+    var pRisks = detectRisksInline(projects, 'project', asOf);
+    var allRisks = wRisks.concat(hRisks).concat(pRisks);
+    var keyFocus = [];
+    projects.forEach(function (p) { if (p.status === '进行中') keyFocus.push('推进「' + p.name + '」（负责人：' + p.owner + '，风险：' + p.riskLevel + '）'); });
+    wanjia.forEach(function (w) { if (!isDoneInline(w, 'wanjia')) keyFocus.push('万嘉「' + w.merchantName + '」：' + (w.nextAction || w.stage)); });
+    huahuo.forEach(function (h) { if (!isDoneInline(h, 'huahuo')) keyFocus.push('花火「' + h.projectName + '」：' + h.stage + ' / ' + h.deliveryStatus + ' / ' + h.revenueStatus); });
+    tasks.forEach(function (t) { if (t && t.status !== 'done' && t.status !== '已完成') keyFocus.push('任务：' + (t.title || t.name || '未命名任务')); });
+    if (!keyFocus.length) keyFocus.push('今日无进行中项目或未完成任务，可安排规划与复盘。');
+    var projectRisksLines = allRisks.length
+      ? allRisks.map(function (r) { return '【' + r.level + '】' + r.name + '（' + kindLabelInline(r.kind) + '）：' + (r.reasons || []).map(function (x) { return x.label; }).join('；'); })
+      : ['当前无高风险或延期项目，保持监控。'];
+    var decisions = [];
+    allRisks.forEach(function (r) { if (r.level === '高') decisions.push('「' + r.name + '」风险等级高，需决策是否增派资源或调整交付节奏。'); });
+    if (inboxDrafts > 0) decisions.push('有 ' + inboxDrafts + ' 条收集箱草稿待审核，决定是否进入工作流。');
+    if (!decisions.length) decisions.push('今日无明确待决策事项。');
+    var suggestions = [];
+    if (allRisks.length >= 2) suggestions.push('风险项较多（' + allRisks.length + ' 个），建议上午召开 15 分钟项目同步会。');
+    var stale = allRisks.filter(function (r) { return (r.reasons || []).some(function (x) { return x.code === 'stale'; }); });
+    if (stale.length) suggestions.push(stale.length + ' 个项目超过 7 天未更新，建议立即推动状态刷新与负责人确认。');
+    suggestions.push('所有结论须经 Inbox 审核、人工确认后方可执行；AI 不直接修改数据库、知识库或发送外部消息。');
+    if (suggestions.length === 1) suggestions.unshift('系统运行平稳，按既定节奏推进即可。');
+    return {
+      title: owner + '经营日报', date: date, owner: owner, reviewRequired: true,
+      disclaimer: '本日报由 AI 生成，须人工审核后方可执行；AI 不直接修改数据库、知识库或发送外部消息。',
+      risksCount: allRisks.length,
+      sections: { keyFocus: keyFocus, projectRisks: projectRisksLines, decisions: decisions, suggestions: suggestions }
+    };
+  }
+  function reportToMarkdownInline(report) {
+    var titles = { keyFocus: '一、今日重点', projectRisks: '二、项目风险', decisions: '三、需要决策', suggestions: '四、建议动作' };
+    var lines = ['# ' + report.title, '', '- 日期：' + report.date, '- 负责人：' + report.owner, '- 风险项：' + report.risksCount, '- 状态：待人工审核（AI 生成）', ''];
+    ['keyFocus', 'projectRisks', 'decisions', 'suggestions'].forEach(function (k) {
+      lines.push('## ' + titles[k]);
+      var items = report.sections[k] || [];
+      if (!items.length) lines.push('- （无）'); else items.forEach(function (it) { lines.push('- ' + it); });
+      lines.push('');
+    });
+    lines.push('> ' + report.disclaimer);
+    return lines.join('\n');
+  }
+  // 生成经营日报：仅读取只读缓存（万嘉/花火/项目）+ 风险检测结果 → 生成草稿 → 入收集箱待人工审核。
+  // 绝不自动发送消息、绝不自动修改任何事实源 / 知识库。
+  window.generateDailyReport = function () {
+    var cache = businessDataCache();
+    var wanjia = (cache.wanjia && cache.wanjia.records) || [];
+    var huahuo = (cache.huahuo && cache.huahuo.records) || [];
+    var idx = projectIndexState || loadProjectIndex();
+    var projects = (idx && idx.projects) || [];
+    var pendingTasks = (typeof tasks !== 'undefined' ? tasks : []).filter(function (t) { return t.status !== 'done' && t.status !== '已完成'; });
+    var inboxDrafts = (typeof inbox !== 'undefined' ? inbox : []).filter(function (i) { return !i.convertedTo && i.kind !== 'brief' && i.kind !== 'report'; }).length;
+    var report = buildDailyReportInline({ wanjia: wanjia, huahuo: huahuo, projects: projects, tasks: pendingTasks }, { owner: '朱帅', date: todayStr(), inboxDrafts: inboxDrafts });
+    var md = reportToMarkdownInline(report);
+    var id = uid();
+    inbox.push({ id: id, content: '【AI经营日报·待审核】' + report.title + '（风险项 ' + report.risksCount + '）', createdAt: now(), convertedTo: null, convertedId: null, kind: 'report' });
+    save(KEYS.INBOX, inbox);
+    saveReportDraft(id, md);
+    renderInbox(); renderDashboardStats(); updateBadges(); renderCockpit();
+    toast('已生成《' + report.title + '》草稿（风险项 ' + report.risksCount + '），请在收集箱审核');
+  };
+
+  // ===== 今日驾驶舱 =====
+  // ---- 内联风险引擎（与 src/risk-detector.mjs 规则一致，前端只读聚合） ----
+  var RISK_DONE_STAGES = {
+    wanjia: ['已结束', '已结案', '已完成'],
+    huahuo: ['已结项', '已结案', '已完成', '已结束'],
+    project: ['已完成'],
+  };
+  function daysSinceIso(iso, asOf) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return Infinity;
+    return Math.floor((new Date(asOf).getTime() - d.getTime()) / 86400000);
+  }
+  function isDoneInline(record, kind) {
+    var done = RISK_DONE_STAGES[kind] || [];
+    var stage = record.stage || record.status || '';
+    return done.indexOf(stage) !== -1;
+  }
+  function hasUnfinishedInline(record, kind) {
+    if (kind === 'wanjia') return !!(record.nextAction && !/^(无|完成|结束|暂无)/.test(String(record.nextAction).trim()));
+    if (kind === 'huahuo') return record.deliveryStatus === '待交付' || record.deliveryStatus === '交付中' || record.revenueStatus === '待回款';
+    if (kind === 'project') return ['进行中', '已延期', '风险'].indexOf(record.status) !== -1;
+    return false;
+  }
+  function isHighRiskInline(record, kind) {
+    if (kind === 'wanjia') return record.riskLevel === '高';
+    if (kind === 'huahuo') return record.profitStatus === '亏损' || record.riskLevel === '高';
+    if (kind === 'project') return record.riskLevel === '高' || record.status === '风险' || record.status === '已延期';
+    return false;
+  }
+  function isRevenuePendingInline(record, kind) {
+    if (kind === 'wanjia') return record.revenueStatus === '待收款';
+    if (kind === 'huahuo') return record.revenueStatus === '待回款';
+    return false;
+  }
+  function detectRisksInline(records, kind, asOf) {
+    if (!Array.isArray(records)) return [];
+    var staleDays = 7, stuckDays = 14;
+    return records
+      .filter(function (r) { return !isDoneInline(r, kind); })
+      .map(function (r) {
+        var reasons = [];
+        var since = daysSinceIso(r.updatedAt, asOf);
+        if (since > staleDays) reasons.push({ code: 'stale', label: '超过 ' + staleDays + ' 天未更新（已停滞 ' + since + ' 天）', severity: since > stuckDays ? 'high' : 'medium' });
+        if (since > stuckDays) reasons.push({ code: 'stuck', label: '状态「' + (r.stage || r.status || '未知') + '」停留超过 ' + stuckDays + ' 天', severity: 'medium' });
+        if (hasUnfinishedInline(r, kind)) reasons.push({ code: 'unfinished', label: '存在未完成动作 / 交付 / 任务', severity: 'medium' });
+        if (isHighRiskInline(r, kind)) reasons.push({ code: 'high_risk', label: '内置高风险标记', severity: 'high' });
+        if (isRevenuePendingInline(r, kind)) reasons.push({ code: 'revenue_pending', label: '回款 / 收款待处理', severity: 'medium' });
+        if (!reasons.length) return null;
+        var name = r.merchantName || r.projectName || r.name || String(r.id);
+        var level = reasons.some(function (x) { return x.severity === 'high'; }) ? '高' : (reasons.some(function (x) { return x.severity === 'medium'; }) ? '中' : '低');
+        return { recordId: String(r.id), name: name, kind: kind, stage: r.stage || r.status || '', owner: r.owner || '', level: level, reasons: reasons };
+      })
+      .filter(Boolean)
+      .sort(function (a, b) { var o = { '高': 0, '中': 1, '低': 2 }; return o[a.level] - o[b.level]; });
+  }
+  function riskPill(level) {
+    var cls = level === '高' ? 'high' : (level === '中' ? 'mid' : 'low');
+    return '<span class="risk-pill ' + cls + '">' + escapeHtml(level + '风险') + '</span>';
+  }
+  function shortDateInline(iso) {
+    if (!iso) return '未知';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '未知';
+    return d.toISOString().slice(0, 10);
+  }
+  function kindLabelInline(kind) { return { wanjia: '万嘉', huahuo: '花火', project: '项目' }[kind] || kind; }
+  function renderRecordList(containerId, records, kind) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    if (!records || !records.length) {
+      el.innerHTML = '<div class="record-row-empty">暂无明细记录（点击「刷新数据」后展示只读元数据）。</div>';
+      return;
+    }
+    el.innerHTML = records.map(function (r) {
+      var title, sub = [];
+      if (kind === 'wanjia') {
+        title = r.merchantName || '未知商家';
+        sub = [['合作类型', r.cooperationType], ['当前阶段', r.stage], ['负责人', r.owner], ['更新', shortDateInline(r.updatedAt)], ['风险', r.riskLevel], ['收入', r.revenueStatus]];
+      } else if (kind === 'huahuo') {
+        title = r.projectName || '花火项目';
+        sub = [['客户', r.clientName], ['类型', r.projectType], ['拍摄', shortDateInline(r.shootingDate)], ['阶段', r.stage], ['交付', r.deliveryStatus], ['回款', r.revenueStatus], ['利润', r.profitStatus]];
+      }
+      var subHtml = sub.map(function (kv) { return '<span class="meta-pill">' + escapeHtml(kv[0] + '：' + (kv[1] != null ? kv[1] : '—')) + '</span>'; }).join('');
+      return '<div class="record-row"><div class="record-row-top"><div class="record-row-title">' + escapeHtml(title) + '</div>' + riskPill(r.riskLevel || '低') + '</div><div class="record-row-sub">' + subHtml + '</div></div>';
+    }).join('');
+  }
+  var riskSortMode = 'level';
+  function setRiskSort(mode) {
+    riskSortMode = mode;
+    var lb = document.getElementById('sortLevelBtn');
+    var sb = document.getElementById('sortSourceBtn');
+    if (lb) lb.classList.toggle('active', mode === 'level');
+    if (sb) sb.classList.toggle('active', mode === 'source');
+    renderRiskCenter();
+  }
+  window.setRiskSort = setRiskSort;
+  function riskLevelOrder(l) { return { '高': 0, '中': 1, '低': 2 }[l] != null ? { '高': 0, '中': 1, '低': 2 }[l] : 3; }
+  function riskSourceOrder(k) { return { wanjia: 0, huahuo: 1, project: 2 }[k] != null ? { wanjia: 0, huahuo: 1, project: 2 }[k] : 3; }
+  function suggestActionInline(risk) {
+    var map = {
+      stale: '立即联系负责人刷新状态，确认最新进展',
+      stuck: '推动阶段流转，定位卡点并明确下一步',
+      unfinished: '明确下一步动作与截止时间',
+      high_risk: '优先评估资源投入与交付节奏',
+      revenue_pending: '跟进回款 / 收款流程，避免资金占用'
+    };
+    var seen = {}; var out = [];
+    (risk.reasons || []).forEach(function (r) {
+      if (map[r.code] && !seen[r.code]) { seen[r.code] = 1; out.push(map[r.code]); }
+    });
+    return out.length ? out : ['保持监控，按既定节奏推进'];
+  }
+  function levelBadgeInline(level) {
+    var cls = level === '高' ? 'high' : (level === '中' ? 'mid' : 'low');
+    var text = level === '高' ? '需要立即处理' : (level === '中' ? '需要关注' : '正常');
+    return '<span class="level-badge ' + cls + '">' + escapeHtml(level) + ' · ' + escapeHtml(text) + '</span>';
+  }
+  function classifyRiskInline(record, kind, asOf) {
+    var risks = detectRisksInline([record], kind, asOf);
+    if (risks.length) return risks[0];
+    return {
+      recordId: String(record.id),
+      name: record.merchantName || record.projectName || record.name || String(record.id),
+      kind: kind,
+      stage: record.stage || record.status || '',
+      owner: record.owner || '',
+      level: '低',
+      reasons: []
+    };
+  }
+  function renderRiskCenter() {
+    var cache = businessDataCache();
+    var asOf = new Date();
+    var wanjia = (cache.wanjia && cache.wanjia.records) || [];
+    var huahuo = (cache.huahuo && cache.huahuo.records) || [];
+    var idx = projectIndexState || loadProjectIndex();
+    var projects = (idx && idx.projects) || [];
+    var all = [];
+    wanjia.forEach(function (r) { if (!isDoneInline(r, 'wanjia')) all.push(classifyRiskInline(r, 'wanjia', asOf)); });
+    huahuo.forEach(function (r) { if (!isDoneInline(r, 'huahuo')) all.push(classifyRiskInline(r, 'huahuo', asOf)); });
+    projects.forEach(function (r) { if (!isDoneInline(r, 'project')) all.push(classifyRiskInline(r, 'project', asOf)); });
+    all.sort(function (a, b) {
+      if (riskSortMode === 'source') {
+        var d = riskSourceOrder(a.kind) - riskSourceOrder(b.kind);
+        return d !== 0 ? d : riskLevelOrder(a.level) - riskLevelOrder(b.level);
+      }
+      return riskLevelOrder(a.level) - riskLevelOrder(b.level);
+    });
+    var high = all.filter(function (r) { return r.level === '高'; }).length;
+    var mid = all.filter(function (r) { return r.level === '中'; }).length;
+    var low = all.filter(function (r) { return r.level === '低'; }).length;
+    var noData = (!wanjia.length && !huahuo.length && !projects.length);
+    var banner = document.getElementById('riskBanner');
+    if (banner) {
+      if (noData) {
+        banner.innerHTML = '<span class="boss-banner-empty">暂无业务数据，请先在万嘉 / 花火 / 企业项目页刷新只读汇总。</span>';
+      } else {
+        banner.innerHTML = '<span class="boss-stat high">🔴 需立即处理 ' + high + '</span>' +
+          '<span class="boss-stat mid">🟡 需关注 ' + mid + '</span>' +
+          '<span class="boss-stat low">🟢 正常 ' + low + '</span>';
+      }
+    }
+    var el = document.getElementById('riskDecisionList');
+    if (el) {
+      if (!all.length) {
+        el.innerHTML = '<div class="record-row-empty">当前无进行中的业务项，业务运行平稳。</div>';
+      } else {
+        el.innerHTML = all.map(function (r) {
+          var reasons = (r.reasons && r.reasons.length) ? (r.reasons || []).map(function (x) { return escapeHtml(x.label); }).join('；') : '正常 · 无需处理';
+          var actions = suggestActionInline(r).map(function (a) { return '<li>' + escapeHtml(a) + '</li>'; }).join('');
+          var lvl = r.level === '高' ? 'high' : (r.level === '中' ? 'mid' : 'low');
+          return '<div class="decision-card level-' + lvl + '">' +
+            '<div class="decision-card-head"><div class="decision-name">' + escapeHtml(r.name) + '</div>' + levelBadgeInline(r.level) + '</div>' +
+            '<div class="decision-meta"><span class="source-pill">' + escapeHtml(kindLabelInline(r.kind)) + '</span>' +
+            '<span class="meta-pill">阶段：' + escapeHtml(r.stage || '—') + '</span>' +
+            (r.owner ? '<span class="meta-pill">负责人：' + escapeHtml(r.owner) + '</span>' : '') + '</div>' +
+            '<div class="decision-reasons"><span class="decision-label">风险原因</span>' + reasons + '</div>' +
+            '<div class="decision-action"><span class="decision-label">建议动作</span><ul class="action-list">' + actions + '</ul></div>' +
+            '</div>';
+        }).join('');
+      }
+    }
+    var badge = document.getElementById('riskBadge');
+    if (badge) { var total = high + mid; badge.style.display = total ? 'inline-block' : 'none'; badge.textContent = String(total); }
+  }
+  window.renderRiskCenter = renderRiskCenter;
+
+  function renderCockpit() {
+    var idx = projectIndexState || loadProjectIndex();
+    var projects = (idx && idx.projects) || [];
+    var totalProjects = projects.length;
+    var projectRisk = projects.filter(function (p) { return p.riskLevel === '高' || p.status === '风险' || p.status === '已延期'; }).length;
+    var pendingTasks = (typeof tasks !== 'undefined' ? tasks : []).filter(function (t) { return t.status !== 'done' && t.status !== '已完成'; }).length;
+    var pendingInbox = (typeof inbox !== 'undefined' ? inbox : []).filter(function (i) { return !i.convertedTo; }).length;
+    var pendingAI = (typeof inbox !== 'undefined' ? inbox : []).filter(function (i) { return !i.convertedTo && (i.kind === 'brief' || i.kind === 'report'); }).length;
+    var cache = businessDataCache();
+    var asOf = new Date();
+    var wRecords = (cache.wanjia && cache.wanjia.records) || [];
+    var hRecords = (cache.huahuo && cache.huahuo.records) || [];
+    var wRisk = detectRisksInline(wRecords, 'wanjia', asOf).length;
+    var hRisk = detectRisksInline(hRecords, 'huahuo', asOf).length;
+    var totalRisk = projectRisk + wRisk + hRisk;
+    var followUp = pendingTasks + pendingInbox;
+    var hasAny = projects.length || wRecords.length || hRecords.length;
+    var advice = hasAny ? (totalRisk > 0 ? totalRisk + ' 项需关注' : '运行平稳') : '待同步';
+    setBusinessValue('cockpitProjects', String(totalProjects));
+    setBusinessValue('cockpitRisk', String(totalRisk));
+    setBusinessValue('cockpitFollow', String(followUp));
+    setBusinessValue('cockpitReview', String(pendingAI));
+    setBusinessValue('cockpitAdvice', advice);
+  }
+  window.renderCockpit = renderCockpit;
+
   function fillSyncSettings() {
     var config = syncConfig(); var session = syncSession();
     var url = document.getElementById('syncUrl'); var key = document.getElementById('syncAnonKey');
@@ -3000,6 +3969,7 @@
     'spark-media': '花火影像',
     'enterprise': '企业项目',
     'zos-brain': 'ZOS 企业大脑',
+    'risk': '风险中心',
     'privacy': '隐私与数据',
     'settings': '设置'
   };
@@ -3010,10 +3980,11 @@
     'inbox': function() { renderInbox(); },
     'tasks': function() { renderTasks(); },
     'enterprise': function() { renderProjects(); },
-    'zos-brain': function() { renderCommands(); renderBusinessDataStates(); },
+    'zos-brain': function() { renderCommands(); renderBusinessDataStates(); renderBrainIndex(); renderProjectCenter(); },
     'local-life': function() { renderBusinessDataStates(); },
     'spark-media': function() { renderBusinessDataStates(); },
-    'dashboard': function() { renderDashboardStats(); }
+    'risk': function() { renderRiskCenter(); },
+    'dashboard': function() { renderDashboardStats(); renderCockpit(); }
   };
 
   let currentPage = 'dashboard';
