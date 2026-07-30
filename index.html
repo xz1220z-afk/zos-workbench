@@ -4,7 +4,7 @@
 <title>ZOS 跨端 AI 工作台</title>
 <meta name="theme-color" content="#4f46e5"/>
 <meta name="background-color" content="#f0f2f5"/>
-<meta name="description" content="ZOS 跨端 AI 工作台 · 本地生活运营 · 花火影像 · 企业项目 · ZOS 企业大脑"/>
+<meta name="description" content="ZOS 跨端 AI 工作台 · 万嘉网络 · 花火影像 · 企业项目 · ZOS 企业大脑"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="ZOS"/>
@@ -1241,7 +1241,7 @@
     <div class="nav-section">业务模块</div>
     <div class="nav-item" data-page="local-life">
       <span class="nav-icon">🏪</span>
-      <span class="nav-label">本地生活运营</span>
+      <span class="nav-label">万嘉网络</span>
       <span class="nav-dot dot-green"></span>
     </div>
     <div class="nav-item" data-page="spark-media">
@@ -1325,7 +1325,7 @@
       <div class="module-grid">
         <div class="module-card" onclick="navigateTo(&#39;local-life&#39;)">
           <div class="module-card-icon" style="background: var(--green-light);">🏪</div>
-          <div class="module-card-title">本地生活运营</div>
+          <div class="module-card-title">万嘉网络</div>
           <div class="module-card-desc">活动管理、门店运营、用户增长</div>
           <span class="module-card-status" style="background: var(--green-light); color: var(--green);">● 待接入</span>
         </div>
@@ -1422,11 +1422,11 @@
       </div>
     </section>
 
-    <!-- ===== 本地生活运营 ===== -->
+    <!-- ===== 万嘉网络 ===== -->
     <section class="page" id="page-local-life">
       <div class="page-header">
         <div class="page-header-left">
-          <h2>本地生活运营</h2>
+          <h2>万嘉网络</h2>
           <p>活动管理、门店运营、用户增长</p>
         </div>
       </div>
@@ -1447,7 +1447,7 @@
       <div class="empty-state">
         <div class="empty-state-icon" style="background: var(--green-light);">🏪</div>
         <div class="empty-state-title">暂无运营数据</div>
-        <div class="empty-state-desc">接入本地生活平台数据后，此处将展示活动列表、运营指标和门店动态。</div>
+        <div class="empty-state-desc">接入万嘉网络业务数据后，此处将展示活动列表、运营指标和门店动态。</div>
       </div>
     </section>
 
@@ -1763,7 +1763,7 @@
         </div>
         <div class="setting-row">
           <div>
-            <div class="setting-label">本地生活运营</div>
+            <div class="setting-label">万嘉网络</div>
             <div class="setting-desc">待接入数据源</div>
           </div>
           <span style="font-size:12px;color:var(--text-muted);">⏳</span>
@@ -1912,7 +1912,7 @@
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.0.9';
+  const APP_VERSION = '1.0.10';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
   const APP_RELEASE_DATE = '2026-07-30';
 
@@ -2505,14 +2505,14 @@
     // Sample inbox items
     inbox.push(
       { id: uid(), content: '整理本周花火影像拍摄排期', createdAt: nowStr, convertedTo: null, convertedId: null },
-      { id: uid(), content: '联系本地生活运营供应商确认活动档期', createdAt: nowStr, convertedTo: null, convertedId: null },
+      { id: uid(), content: '联系万嘉网络供应商确认活动档期', createdAt: nowStr, convertedTo: null, convertedId: null },
       { id: uid(), content: '研究 AI + Obsidian 知识图谱搭建方案', createdAt: nowStr, convertedTo: null, convertedId: null }
     );
 
     // Sample projects
     var p1 = uid(); var p2 = uid();
     projects.push(
-      { id: p1, name: 'Q3 本地生活营销活动', description: '暑期餐饮门店联合推广活动策划与执行', status: 'active', createdAt: nowStr, taskIds: [], source: '待确认' },
+      { id: p1, name: 'Q3 万嘉网络营销活动', description: '暑期餐饮门店联合推广活动策划与执行', status: 'active', createdAt: nowStr, taskIds: [], source: '待确认' },
       { id: p2, name: '花火影像 · 品牌宣传片', description: '客户品牌年度宣传片拍摄与后期制作', status: 'planning', createdAt: nowStr, taskIds: [], source: '待确认' }
     );
 
@@ -2842,7 +2842,7 @@
     'today': '今日视图',
     'inbox': '收集箱',
     'tasks': '任务',
-    'local-life': '本地生活运营',
+    'local-life': '万嘉网络',
     'spark-media': '花火影像',
     'enterprise': '企业项目',
     'zos-brain': 'ZOS 企业大脑',

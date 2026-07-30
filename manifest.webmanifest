@@ -1,7 +1,7 @@
 {
   "name": "ZOS 跨端 AI 工作台",
   "short_name": "ZOS",
-  "description": "ZOS 跨端 AI 工作台 · 本地生活运营 · 花火影像 · 企业项目 · ZOS 企业大脑",
+  "description": "ZOS 跨端 AI 工作台 · 万嘉网络 · 花火影像 · 企业项目 · ZOS 企业大脑",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

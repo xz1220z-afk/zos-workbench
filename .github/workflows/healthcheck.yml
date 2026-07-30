@@ -21,6 +21,6 @@ jobs:
             status=$(curl -L -sS -o /tmp/zos-response -w '%{http_code}' "$base$path")
             test "$status" = 200
           done
-          curl -L -fsS "$base/" | grep -F "const APP_VERSION = '1.0.9'"
+          curl -L -fsS "$base/" | grep -F "const APP_VERSION = '1.0.10'"
           curl -L -fsS "$base/" | grep -F "requestOtp(email, PUBLIC_APP_URL)"
-          curl -L -fsS "$base/sw.js" | grep -F "zos-workbench-v1.0.9"
+          curl -L -fsS "$base/sw.js" | grep -F "zos-workbench-v1.0.10"
