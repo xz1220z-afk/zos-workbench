@@ -25,6 +25,22 @@ function response(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: CORS_HEADERS });
 }
 
+function configuredPublishableKey() {
+  const legacyKey = Deno.env.get('SUPABASE_ANON_KEY');
+  if (legacyKey) return legacyKey;
+
+  const rawKeys = Deno.env.get('SUPABASE_PUBLISHABLE_KEYS');
+  if (!rawKeys) return null;
+  try {
+    const keys = JSON.parse(rawKeys);
+    if (typeof keys?.default === 'string') return keys.default;
+    const firstKey = Object.values(keys || {}).find((value) => typeof value === 'string');
+    return typeof firstKey === 'string' ? firstKey : null;
+  } catch {
+    return null;
+  }
+}
+
 function fieldsOf(record: FeishuRecord) {
   return record.fields || {};
 }
@@ -106,7 +122,7 @@ Deno.serve(async (req) => {
   if (!token) return response({ error: 'authentication_required' }, 401);
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const publishableKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const publishableKey = configuredPublishableKey();
   if (!supabaseUrl || !publishableKey) return response({ error: 'service_not_configured' }, 503);
 
   const supabase = createClient(supabaseUrl, publishableKey, {

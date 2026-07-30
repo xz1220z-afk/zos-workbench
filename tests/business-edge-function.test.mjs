@@ -7,6 +7,10 @@ const migration = await readFile(new URL('../supabase/migrations/002_business_da
 assert.match(source, /FEISHU_APP_ID/);
 assert.match(source, /FEISHU_APP_SECRET/);
 assert.match(source, /auth\.getUser/);
+assert.match(source, /SUPABASE_PUBLISHABLE_KEYS/,
+  'Function supports current Supabase publishable-key environment variables');
+assert.match(source, /SUPABASE_ANON_KEY/,
+  'Function remains compatible with legacy Supabase anon-key environments');
 assert.match(source, /tenant_access_token\/internal/);
 assert.match(source, /records\/search/);
 assert.match(source, /wanjia/);
