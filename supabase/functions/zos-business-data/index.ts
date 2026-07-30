@@ -131,12 +131,18 @@ function buildHuahuoRecords(records: FeishuRecord[]): unknown {
     scannedAt: new Date().toISOString(),
     records: records.map((record, idx) => {
       const f = fieldsOf(record);
+      const shootingDate = String(pick(f, '拍摄日期', '外拍日期') || new Date().toISOString());
+      // P1 hotfix (v1.2.1): huahuo records must carry updatedAt so the risk
+      // detector can compute stale/stuck days without producing Infinity.
+      // Prefer the Feishu project update-time field; fall back to shootingDate.
+      const updatedAt = String(pick(f, '最近更新时间', '更新时间') || shootingDate);
       return {
         id: String(pick(f, '项目ID', 'RecordId') || `huahuo-${idx}`),
         clientName: String(pick(f, '客户名称', '客户') || '未指定'),
         projectName: String(f['项目名称'] || '花火项目'),
         projectType: String(pick(f, '项目类型') || '其他'),
-        shootingDate: String(pick(f, '拍摄日期', '外拍日期') || new Date().toISOString()),
+        shootingDate,
+        updatedAt,
         stage: String(pick(f, '项目状态', '当前阶段', '阶段') || '筹备中'),
         deliveryStatus: String(pick(f, '交付状态', '交付进度') || '待交付'),
         revenueStatus: String(pick(f, '回款状态', '收款状态') || '待回款'),
@@ -248,7 +254,7 @@ Deno.serve(async (req) => {
          '合作类型', '当前阶段', '项目负责人', '最近更新时间', '下一步动作', '风险等级', '收入状态']),
       searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.projectTable,
         ['项目名称', '项目状态', '拍摄日期', '合同金额', '已收金额', '负责人',
-         '项目类型', '回款状态', '利润状态']),
+         '项目类型', '回款状态', '利润状态', '最近更新时间', '更新时间']),
       searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.deliveryTable,
         ['项目', '计划交付日期', '交付状态', '客户确认状态']),
       searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.receiptTable,

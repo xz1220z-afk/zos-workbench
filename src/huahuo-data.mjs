@@ -125,6 +125,7 @@ export function extractHuahuoRecord(raw = {}) {
     projectName: String(projectName),
     projectType: normalizeProjectType(raw.projectType ?? raw.项目类型),
     shootingDate: normalizeDate(raw.shootingDate ?? raw.拍摄日期),
+    updatedAt: normalizeDate(raw.updatedAt ?? raw.最近更新时间 ?? raw.更新时间 ?? raw.shootingDate ?? raw.拍摄日期),
     stage: normalizeStage(raw.stage ?? raw.当前阶段 ?? raw.项目状态 ?? raw.阶段),
     deliveryStatus: normalizeDeliveryStatus(raw.deliveryStatus ?? raw.交付状态),
     revenueStatus: normalizeRevenueStatus(raw.revenueStatus ?? raw.回款状态 ?? raw.收款状态),

@@ -39,6 +39,22 @@
 
 ---
 
+## v1.2.1 — Hotfix：修复花火记录缺失 updatedAt 导致风险假阳性
+
+**日期**：2026-07-31
+
+**本次更新（P1 数据契约修复，无业务功能变更）**：
+- **P1 根因**：`huahuo.records` 缺少 `updatedAt` 字段，风险探测器用 `updatedAt` 计算停滞天数时得到 `Infinity`，导致所有花火项目被误判为「超 7 天未更新 / 状态停滞」高风险假阳性。
+- **Edge Function `zos-business-data`**：`buildHuahuoRecords` 新增 `updatedAt` 字段，取值优先飞书项目更新时间字段（`最近更新时间` / `更新时间`），若不存在则 fallback 到 `shootingDate`；同时在 huahuo `projectTable` 拉取字段中增补 `最近更新时间` / `更新时间`。保持 `mode:'read_only'`、不回写飞书、不修改权限模型。
+- **本地契约 `src/huahuo-data.mjs`**：`extractHuahuoRecord` 同步补齐 `updatedAt`（fallback `shootingDate`），与万嘉契约对齐；`updatedAt` 保持可选（不进入 `REQUIRED_HUAHUO_KEYS`），不破坏既有校验。
+- **版本号**：`index.html` `APP_VERSION`、设置页标签、`sw.js` `CACHE_NAME` 统一升至 `1.2.1`；`tests/pwa-baseline.test.mjs` 断言同步。
+
+**测试**：新增 `tests/huahuo-risk.test.mjs`（4 项，覆盖有 updatedAt 正常计算 daysSince / 无 updatedAt 回退 shootingDate / 不产生 Infinity / 不误判全部风险）；与既有回归共同保障；内联脚本 `node --check` 通过。
+
+**当前限制（与 v1.2.0 一致）**：万嘉/花火真实数据仍需你部署上述更新后的 Edge Function 并配置对应 ERP 只读视图；AI 日报/简报仅生成草稿，须经收集箱人工审核确认。
+
+---
+
 ## v1.0.15 — 企业大脑只读元数据索引与审核网关
 
 **日期**：2026-07-30
