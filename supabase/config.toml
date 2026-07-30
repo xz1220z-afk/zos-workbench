@@ -1,0 +1,3 @@
+[functions.zos-business-data]
+# This endpoint only returns read-only business summaries to authenticated users.
+verify_jwt = true

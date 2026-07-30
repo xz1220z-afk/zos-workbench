@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 const source = await readFile(new URL('../supabase/functions/zos-business-data/index.ts', import.meta.url), 'utf8');
 const migration = await readFile(new URL('../supabase/migrations/002_business_data_cache.sql', import.meta.url), 'utf8');
+const config = await readFile(new URL('../supabase/config.toml', import.meta.url), 'utf8');
 
 assert.match(source, /FEISHU_APP_ID/);
 assert.match(source, /FEISHU_APP_SECRET/);
@@ -20,5 +21,7 @@ assert.doesNotMatch(source, /cli_aab7f0f691b8dcb3|yimbjqe4EDassDFqmUR9Lh0xdzBHyM
 assert.match(migration, /create table if not exists public\.zos_business_cache/i);
 assert.match(migration, /enable row level security/i);
 assert.match(migration, /auth\.uid\(\) = user_id/i);
+assert.match(config, /\[functions\.zos-business-data\]/);
+assert.match(config, /verify_jwt\s*=\s*true/);
 
 console.log('Business Edge Function safety checks passed');
