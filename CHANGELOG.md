@@ -154,3 +154,12 @@
 **版本目录**：`versions/v1.0.4/`
 
 ---
+## v1.0.8 — 修复 Supabase 邮箱登录回调路径
+
+**日期**：2026-07-30
+
+- 邮箱登录链接固定回调到 `https://xz1220z-afk.github.io/zos-workbench/`。
+- 修复从登录邮件跳转 GitHub Pages 根域名导致 404 的问题。
+- Service Worker 缓存升级为 v1.0.8，避免旧版本继续生成错误回调。
+
+---

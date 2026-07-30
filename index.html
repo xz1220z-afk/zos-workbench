@@ -1910,7 +1910,7 @@
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.0.7';
+  const APP_VERSION = '1.0.8';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
   const APP_RELEASE_DATE = '2026-07-30';
 
@@ -2768,7 +2768,7 @@
     try {
       var email = document.getElementById('syncEmail').value.trim();
       if (!email) { toast('请填写登录邮箱'); return; }
-      await configuredAuth().requestOtp(email, window.location.origin + window.location.pathname); syncStatus('登录链接已发送，请在同一浏览器打开邮件链接'); toast('登录链接已发送');
+      await configuredAuth().requestOtp(email, PUBLIC_APP_URL); syncStatus('登录链接已发送，请在同一浏览器打开邮件链接'); toast('登录链接已发送');
     } catch (error) { syncStatus('发送失败：' + error.message); toast('登录链接发送失败，请检查配置'); }
   }
   async function consumeSyncMagicLink() {

@@ -6,8 +6,14 @@ const [indexHtml, serviceWorker] = await Promise.all([
   readFile(new URL('../sw.js', import.meta.url), 'utf8'),
 ]);
 
-assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.0\.7';/,
-  'Service Worker cache must match the current v1.0.7 application release');
+assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.0\.8';/,
+  'Service Worker cache must match the current v1.0.8 application release');
+assert.match(indexHtml, /const PUBLIC_APP_URL = 'https:\/\/xz1220z-afk\.github\.io\/zos-workbench\/'/,
+  'The public app URL must be explicit so auth callbacks stay on the GitHub Pages subpath');
+assert.match(indexHtml, /requestOtp\(email, PUBLIC_APP_URL\)/,
+  'Magic-link requests must redirect to the public app subpath');
+assert.doesNotMatch(indexHtml, /requestOtp\(email, window\.location\.origin \+ window\.location\.pathname\)/,
+  'Magic-link requests must not derive redirects from the current page location');
 assert.doesNotMatch(indexHtml, /n8p3xbsbky\.coze\.site/i,
   'Current UI must not expose the retired Coze address');
 assert.doesNotMatch(indexHtml, /当前版本（v1\.0\.2）为纯本地工作台/i,
