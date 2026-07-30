@@ -1647,7 +1647,7 @@
         <div class="setting-row">
           <div>
             <div class="setting-label">工作台版本</div>
-            <div class="setting-desc">v1.0.11 · 2026-07-30</div>
+            <div class="setting-desc">v1.0.12 · 2026-07-30</div>
           </div>
         </div>
         <div class="setting-row">
@@ -1910,6 +1910,17 @@
       async upsert(rows) { if (!Array.isArray(rows) || rows.length === 0) return []; const requestUrl = new URL(syncEndpoint(url, '/rest/v1/zos_records')); requestUrl.searchParams.set('on_conflict', 'user_id,entity_type,record_id'); return parseSupabaseResponse(await fetchImpl(requestUrl.toString(), { method: 'POST', headers: { ...(await authHeaders()), 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(rows) })); }
     };
   }
+  async function fetchBusinessData({ url, anonKey, accessToken, fetchImpl = fetch }) {
+    syncRequired(url, 'url'); syncRequired(anonKey, 'anonKey'); syncRequired(accessToken, 'accessToken');
+    const response = await fetchImpl(syncEndpoint(url, '/functions/v1/zos-business-data'), {
+      headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` }
+    });
+    const body = await response.text();
+    if (!response.ok) throw new Error(`业务数据请求失败（${response.status}）`);
+    const data = body ? JSON.parse(body) : {};
+    if (data?.meta?.mode !== 'read_only') throw new Error('接口未返回只读数据');
+    return data;
+  }
   function toCloudRow({ userId, entityType, record }) {
     syncRequired(userId, 'userId'); syncRequired(entityType, 'entityType');
     const metadata = { id: syncRequired(record.id, 'record.id'), createdAt: syncRequired(record.createdAt, 'record.createdAt'), updatedAt: syncRequired(record.updatedAt, 'record.updatedAt'), deletedAt: record.deletedAt || null, revision: syncRequired(record.revision, 'record.revision'), deviceId: syncRequired(record.deviceId, 'record.deviceId') };
@@ -1933,7 +1944,7 @@
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.0.11';
+  const APP_VERSION = '1.0.12';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
   const APP_RELEASE_DATE = '2026-07-30';
 
@@ -2780,7 +2791,7 @@
   function businessConnectionMessage() {
     var session = syncSession();
     if (!session.userId || !session.accessToken) return '未登录 Supabase；只读数据通道尚未启用。';
-    return '已登录 Supabase；只读数据通道待部署，当前不会读取或写入飞书。';
+    return '已登录 Supabase；点击“刷新数据”后读取汇总数据，不会写入飞书。';
   }
   function setBusinessValue(id, value) {
     var el = document.getElementById(id);
@@ -2824,10 +2835,33 @@
       setBusinessValue('huahuoReceivedAmount', '—');
     }
   }
-  function refreshBusinessData(source) {
+  async function refreshBusinessData(source) {
     var labels = { wanjia: '万嘉网络', huahuo: '花火影像', brain: 'ZOS 企业大脑' };
-    toast((labels[source] || '该模块') + '只读数据通道尚未部署；当前不会读取或写入飞书。');
-    renderBusinessDataStates();
+    if (source === 'brain') {
+      toast('Obsidian 知识库桥接尚未部署；当前不会读取或写入知识库。');
+      renderBusinessDataStates();
+      return;
+    }
+    try {
+      var config = syncConfig(); var session = syncSession();
+      if (!session.userId || !session.accessToken) { toast('请先完成 Supabase 邮箱登录'); return; }
+      if (session.refreshToken) {
+        var refreshed = await configuredAuth().refreshSession(session.refreshToken);
+        session = { ...session, ...refreshed };
+        localStorage.setItem(KEYS.SYNC_SESSION, JSON.stringify(session));
+      }
+      toast('正在读取' + (labels[source] || '业务') + '汇总…');
+      var data = await fetchBusinessData({ url: config.url, anonKey: config.anonKey, accessToken: session.accessToken });
+      var cache = businessDataCache();
+      cache.wanjia = { summary: data.wanjia?.summary || {}, fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
+      cache.huahuo = { summary: data.huahuo?.summary || {}, fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
+      localStorage.setItem(BUSINESS_DATA_CACHE_KEY, JSON.stringify(cache));
+      renderBusinessDataStates();
+      toast((labels[source] || '业务') + '汇总已刷新（只读）');
+    } catch (error) {
+      renderBusinessDataStates();
+      toast((labels[source] || '业务') + '数据读取失败：' + error.message);
+    }
   }
   window.refreshBusinessData = refreshBusinessData;
   function fillSyncSettings() {

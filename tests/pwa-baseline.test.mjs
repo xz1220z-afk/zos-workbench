@@ -6,8 +6,8 @@ const [indexHtml, serviceWorker] = await Promise.all([
   readFile(new URL('../sw.js', import.meta.url), 'utf8'),
 ]);
 
-assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.0\.11';/,
-  'Service Worker cache must match the current v1.0.11 application release');
+assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.0\.12';/,
+  'Service Worker cache must match the current v1.0.12 application release');
 assert.doesNotMatch(indexHtml, /本地生活运营/,
   'Current UI must use the 万嘉网络 brand name');
 assert.match(indexHtml, /万嘉网络/,
@@ -16,9 +16,9 @@ assert.match(indexHtml, /refreshSession\(session\.refreshToken\)/,
   'Sync must refresh an existing Supabase session before pulling data');
 assert.match(indexHtml, /const PUBLIC_APP_URL = 'https:\/\/xz1220z-afk\.github\.io\/zos-workbench\/'/,
   'The public app URL must be explicit so auth callbacks stay on the GitHub Pages subpath');
-assert.match(indexHtml, /const APP_VERSION = '1\.0\.11'/,
+assert.match(indexHtml, /const APP_VERSION = '1\.0\.12'/,
   'The inline application version must match the current release');
-assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v1\.0\.11/,
+assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v1\.0\.12/,
   'The settings page version label must match the current release');
 assert.match(indexHtml, /requestOtp\(email, PUBLIC_APP_URL\)/,
   'Magic-link requests must redirect to the public app subpath');
@@ -46,5 +46,7 @@ assert.match(indexHtml, /id="brainDataStatus"/,
   '企业大脑页面必须有真实数据源状态位，不能只保留空白占位');
 assert.match(indexHtml, /function renderBusinessDataStates\(\)/,
   '页面必须根据实际连接状态渲染业务数据源');
+assert.match(indexHtml, /fetchBusinessData\(\{[\s\S]{0,260}accessToken/,
+  '登录用户点击刷新时必须调用受保护的只读汇总接口');
 
 console.log('PWA baseline privacy and cache version checks passed');
