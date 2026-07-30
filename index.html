@@ -1429,25 +1429,32 @@
           <h2>万嘉网络</h2>
           <p>活动管理、门店运营、用户增长</p>
         </div>
+        <button class="btn btn-sm" onclick="refreshBusinessData('wanjia')">↻ 刷新数据</button>
+      </div>
+      <div class="settings-section" style="margin:0 0 16px;padding:14px 16px;">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
+          <div><strong>数据来源：万嘉 ERP Production V2</strong><div class="setting-desc" id="wanjiaDataStatus">正在检查连接状态…</div></div>
+          <span style="font-size:12px;color:var(--text-muted);">只读</span>
+        </div>
       </div>
       <div class="stat-row">
         <div class="stat-card">
-          <div class="stat-card-label">进行中活动</div>
-          <div class="stat-card-placeholder">— 待接入数据源</div>
+          <div class="stat-card-label">商家总数</div>
+          <div class="stat-card-placeholder" id="wanjiaMerchantCount">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-label">本周新增用户</div>
-          <div class="stat-card-placeholder">— 待接入数据源</div>
+          <div class="stat-card-label">动销商家</div>
+          <div class="stat-card-placeholder" id="wanjiaActiveMerchantCount">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-label">活跃门店</div>
-          <div class="stat-card-placeholder">— 待接入数据源</div>
+          <div class="stat-card-label">支付 GMV</div>
+          <div class="stat-card-placeholder" id="wanjiaPaymentGmv">—</div>
         </div>
       </div>
-      <div class="empty-state">
+      <div class="empty-state" id="wanjiaDataEmpty">
         <div class="empty-state-icon" style="background: var(--green-light);">🏪</div>
-        <div class="empty-state-title">暂无运营数据</div>
-        <div class="empty-state-desc">接入万嘉网络业务数据后，此处将展示活动列表、运营指标和门店动态。</div>
+        <div class="empty-state-title">万嘉数据通道尚未配置</div>
+        <div class="empty-state-desc">连接后将展示商家、GMV、动销、视频、直播与佣金汇总；不会回写飞书。</div>
       </div>
     </section>
 
@@ -1458,25 +1465,32 @@
           <h2>花火影像</h2>
           <p>项目策划、拍摄排期、后期制作</p>
         </div>
+        <button class="btn btn-sm" onclick="refreshBusinessData('huahuo')">↻ 刷新数据</button>
+      </div>
+      <div class="settings-section" style="margin:0 0 16px;padding:14px 16px;">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
+          <div><strong>数据来源：花火 ERP Development V2</strong><div class="setting-desc" id="huahuoDataStatus">正在检查连接状态…</div></div>
+          <span style="font-size:12px;color:var(--text-muted);">只读</span>
+        </div>
       </div>
       <div class="stat-row">
         <div class="stat-card">
           <div class="stat-card-label">进行中项目</div>
-          <div class="stat-card-placeholder">— 待接入数据源</div>
+          <div class="stat-card-placeholder" id="huahuoActiveProjects">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-label">待审核素材</div>
-          <div class="stat-card-placeholder">— 待接入数据源</div>
+          <div class="stat-card-label">待交付</div>
+          <div class="stat-card-placeholder" id="huahuoPendingDeliveries">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-label">本月交付</div>
-          <div class="stat-card-placeholder">— 待接入数据源</div>
+          <div class="stat-card-label">已收金额</div>
+          <div class="stat-card-placeholder" id="huahuoReceivedAmount">—</div>
         </div>
       </div>
-      <div class="empty-state">
+      <div class="empty-state" id="huahuoDataEmpty">
         <div class="empty-state-icon" style="background: var(--orange-light);">🎬</div>
-        <div class="empty-state-title">暂无影像项目</div>
-        <div class="empty-state-desc">接入项目管理系统后，此处将展示拍摄排期、后期进度和素材库。</div>
+        <div class="empty-state-title">花火数据通道尚未配置</div>
+        <div class="empty-state-desc">连接后将展示客户、项目、拍摄排期、交付与回款汇总；不会回写飞书。</div>
       </div>
     </section>
 
@@ -1524,6 +1538,13 @@
         <div class="page-header-left">
           <h2>ZOS 企业大脑</h2>
           <p>Obsidian 知识库 · AI 指令队列 · 知识图谱</p>
+        </div>
+        <button class="btn btn-sm" onclick="refreshBusinessData('brain')">↻ 刷新知识库</button>
+      </div>
+      <div class="settings-section" style="margin:0 0 16px;padding:14px 16px;">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
+          <div><strong>数据来源：Obsidian 企业大脑</strong><div class="setting-desc" id="brainDataStatus">正在检查连接状态…</div></div>
+          <span style="font-size:12px;color:var(--text-muted);">只读索引</span>
         </div>
       </div>
       <div class="module-grid">
@@ -1626,7 +1647,7 @@
         <div class="setting-row">
           <div>
             <div class="setting-label">工作台版本</div>
-            <div class="setting-desc">v1.0.9 · 2026-07-30</div>
+            <div class="setting-desc">v1.0.11 · 2026-07-30</div>
           </div>
         </div>
         <div class="setting-row">
@@ -1912,7 +1933,7 @@
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.0.10';
+  const APP_VERSION = '1.0.11';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
   const APP_RELEASE_DATE = '2026-07-30';
 
@@ -2708,6 +2729,7 @@
     renderDashboardStats();
     renderTodayView();
     updateBadges();
+    renderBusinessDataStates();
     checkOnboarding();
   }
 
@@ -2745,6 +2767,69 @@
     if (item) item.innerHTML = '<span class="' + (state.label.indexOf('已登录') === 0 ? 'check-icon' : 'cross-icon') + '">' + (state.label.indexOf('已登录') === 0 ? '✓' : '—') + '</span> Supabase — ' + state.label;
     if (note) note.textContent = state.note;
   }
+  // Business data is intentionally read-only. The cache is populated only by the
+  // future Supabase Edge Function; the PWA never stores ERP credentials.
+  const BUSINESS_DATA_CACHE_KEY = 'zos_business_data_cache_v1';
+  function businessDataCache() {
+    try { return JSON.parse(loadVal(BUSINESS_DATA_CACHE_KEY, '{}')) || {}; }
+    catch (error) { return {}; }
+  }
+  function displayCurrency(value) {
+    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY', maximumFractionDigits: 0 }).format(Number(value) || 0);
+  }
+  function businessConnectionMessage() {
+    var session = syncSession();
+    if (!session.userId || !session.accessToken) return '未登录 Supabase；只读数据通道尚未启用。';
+    return '已登录 Supabase；只读数据通道待部署，当前不会读取或写入飞书。';
+  }
+  function setBusinessValue(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+  function renderBusinessDataStates() {
+    var cache = businessDataCache();
+    var message = businessConnectionMessage();
+    ['wanjiaDataStatus', 'huahuoDataStatus', 'brainDataStatus'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = message;
+    });
+
+    var wanjia = cache.wanjia && cache.wanjia.summary;
+    if (wanjia) {
+      setBusinessValue('wanjiaMerchantCount', String(wanjia.totalMerchants || 0));
+      setBusinessValue('wanjiaActiveMerchantCount', String(wanjia.activeMerchants || 0));
+      setBusinessValue('wanjiaPaymentGmv', displayCurrency(wanjia.paymentGmv));
+      var wanjiaEmpty = document.getElementById('wanjiaDataEmpty');
+      if (wanjiaEmpty) wanjiaEmpty.style.display = 'none';
+      var wanjiaStatus = document.getElementById('wanjiaDataStatus');
+      if (wanjiaStatus) wanjiaStatus.textContent = '已读取缓存 · 更新于 ' + (cache.wanjia.fetchedAt || '未知时间') + ' · 只读';
+    } else {
+      setBusinessValue('wanjiaMerchantCount', '—');
+      setBusinessValue('wanjiaActiveMerchantCount', '—');
+      setBusinessValue('wanjiaPaymentGmv', '—');
+    }
+
+    var huahuo = cache.huahuo && cache.huahuo.summary;
+    if (huahuo) {
+      setBusinessValue('huahuoActiveProjects', String(huahuo.activeProjects || 0));
+      setBusinessValue('huahuoPendingDeliveries', String(huahuo.pendingDeliveries || 0));
+      setBusinessValue('huahuoReceivedAmount', displayCurrency(huahuo.receivedAmount));
+      var huahuoEmpty = document.getElementById('huahuoDataEmpty');
+      if (huahuoEmpty) huahuoEmpty.style.display = 'none';
+      var huahuoStatus = document.getElementById('huahuoDataStatus');
+      if (huahuoStatus) huahuoStatus.textContent = '已读取缓存 · 更新于 ' + (cache.huahuo.fetchedAt || '未知时间') + ' · 只读';
+    } else {
+      setBusinessValue('huahuoActiveProjects', '—');
+      setBusinessValue('huahuoPendingDeliveries', '—');
+      setBusinessValue('huahuoReceivedAmount', '—');
+    }
+  }
+  function refreshBusinessData(source) {
+    var labels = { wanjia: '万嘉网络', huahuo: '花火影像', brain: 'ZOS 企业大脑' };
+    toast((labels[source] || '该模块') + '只读数据通道尚未部署；当前不会读取或写入飞书。');
+    renderBusinessDataStates();
+  }
+  window.refreshBusinessData = refreshBusinessData;
   function fillSyncSettings() {
     var config = syncConfig(); var session = syncSession();
     var url = document.getElementById('syncUrl'); var key = document.getElementById('syncAnonKey');
@@ -2856,7 +2941,9 @@
     'inbox': function() { renderInbox(); },
     'tasks': function() { renderTasks(); },
     'enterprise': function() { renderProjects(); },
-    'zos-brain': function() { renderCommands(); },
+    'zos-brain': function() { renderCommands(); renderBusinessDataStates(); },
+    'local-life': function() { renderBusinessDataStates(); },
+    'spark-media': function() { renderBusinessDataStates(); },
     'dashboard': function() { renderDashboardStats(); }
   };
 
@@ -3058,6 +3145,7 @@
   renderDashboardStats();
   renderTodayView();
   fillSyncSettings();
+  renderBusinessDataStates();
   consumeSyncMagicLink();
   checkOnboarding();
   console.log('ZOS 跨端 AI 工作台 v' + APP_VERSION + ' 已就绪（' + APP_RELEASE_DATE + '）');
