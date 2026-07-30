@@ -14,6 +14,16 @@ async function requestJson(fetchImpl, url, options) {
   return body ? JSON.parse(body) : {};
 }
 
+export function magicLinkFragment(value) {
+  const raw = String(value || '').trim();
+  if (raw.startsWith('#')) return raw;
+  try {
+    return new URL(raw).hash;
+  } catch {
+    return '';
+  }
+}
+
 export function createSupabaseAuth({ url, anonKey, fetchImpl = fetch }) {
   required(url, 'url');
   required(anonKey, 'anonKey');

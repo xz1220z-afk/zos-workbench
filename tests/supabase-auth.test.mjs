@@ -1,10 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createSupabaseAuth } from '../src/supabase-auth.mjs';
+import { createSupabaseAuth, magicLinkFragment } from '../src/supabase-auth.mjs';
 
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
+
+test('magicLinkFragment extracts only the fragment from a pasted Supabase login URL', () => {
+  const fragment = magicLinkFragment('https://example.github.io/zos-workbench/#access_token=access-from-link&refresh_token=refresh-from-link&token_type=bearer');
+
+  assert.equal(fragment, '#access_token=access-from-link&refresh_token=refresh-from-link&token_type=bearer');
+});
 
 test('requestOtp sends only the email to Supabase Auth', async () => {
   const calls = [];
