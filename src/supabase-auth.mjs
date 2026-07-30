@@ -45,6 +45,15 @@ export function createSupabaseAuth({ url, anonKey, fetchImpl = fetch }) {
       });
     },
 
+    async signInWithPassword(email, password) {
+      required(email, 'email');
+      required(password, 'password');
+      const response = await requestJson(fetchImpl, endpoint(url, '/auth/v1/token?grant_type=password'), {
+        method: 'POST', headers, body: JSON.stringify({ email, password }),
+      });
+      return sessionFromResponse(response);
+    },
+
     async verifyOtp(email, token) {
       required(email, 'email');
       required(token, 'token');

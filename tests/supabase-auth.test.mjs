@@ -26,6 +26,24 @@ test('requestOtp sends only the email to Supabase Auth', async () => {
   assert.deepEqual(JSON.parse(calls[0].options.body), { email: 'ceo@example.com', create_user: true });
 });
 
+test('signInWithPassword returns a private sync session without persisting the password', async () => {
+  const calls = [];
+  const auth = createSupabaseAuth({
+    url: 'https://project.supabase.co', anonKey: 'public-anon-key',
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return jsonResponse({ access_token: 'access-password', refresh_token: 'refresh-password', user: { id: 'user-password' } });
+    },
+  });
+
+  const session = await auth.signInWithPassword('ceo@example.com', 'not-stored-here');
+
+  assert.deepEqual(session, { accessToken: 'access-password', refreshToken: 'refresh-password', userId: 'user-password' });
+  assert.match(calls[0].url, /\/auth\/v1\/token\?grant_type=password$/);
+  assert.equal(calls[0].options.headers.apikey, 'public-anon-key');
+  assert.deepEqual(JSON.parse(calls[0].options.body), { email: 'ceo@example.com', password: 'not-stored-here' });
+});
+
 test('verifyOtp returns only the session material needed for private sync', async () => {
   const auth = createSupabaseAuth({
     url: 'https://project.supabase.co', anonKey: 'public-anon-key',
