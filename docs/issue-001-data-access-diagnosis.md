@@ -118,3 +118,67 @@ meta   : { mode:'read_only' }
 - Dashboard 接线正确、Edge Function 返回结构正确、前端消费形状匹配——**代码链路本身无导致"全部为空"的硬缺陷**。
 - 空白最可能是**未触发取数（H1）** 或 **飞书侧 0 条/取数错误（H2/H3）**；字段漂移（H4）解释不了"空白"但解释"占位值"。
 - **本诊断不改任何代码**。任何修复须待 **2026-08-07 Production Review** 闸门开启后，作为 V1.3 候选进入开发流程（遵循版本原则：开发→测试→Release→部署→观察→Review）。
+
+---
+
+## 续查（2026-07-31 续）：用户提供线索 —— 首次同步返回 HTTP 502
+
+### 1. 尝试读取 Edge Function 日志
+
+- 执行 `supabase functions logs zos-business-data --project-ref dtwvyramgbwtlyhmkhkd` → **CLI v2.110.0 已移除 `logs` 子命令**，无法经 CLI 取日志。
+- 函数日志经 Supabase Management API 需访问令牌；按安全约束（不触碰/不持有 token、不直写生产事实源）**未提取令牌**，故未在沙箱拉到真实运行时日志。
+- 转向**代码级精确定位**（纯只读），结论见下。
+
+### 2. 门控排除（由 HTTP 状态码反推）
+
+函数按以下顺序返回，状态码唯一：
+
+| 行 | 条件 | 返回 |
+|----|------|------|
+| 233 | 无 Bearer token | 401 `authentication_required` |
+| 237 | 缺 SUPABASE_URL / publishable key | 503 `service_not_configured` |
+| 243 | 用户 JWT 无效 | 401 `authentication_invalid` |
+| 247 | 缺 FEISHU_APP_ID / FEISHU_APP_SECRET | 503 `source_not_configured` |
+| 271-272 | try 内任意抛错 | **502 `source_read_failed`** |
+
+用户看到的是 **502（非 401/503）** → 反推：用户已登录（过 233/243）、Supabase 环境变量齐备（过 237）、**Feishu appId/appSecret 环境变量也存在**（过 247）。函数已进入 249 行 `try` 块，在**飞书交互阶段**抛错。
+
+### 3. 飞书交互阶段仅两个抛错点（均被 catch 吞为 502）
+
+- **`getTenantAccessToken`（197-208）**：飞书返回 `code!==0` 或无 token → `throw feishu_auth_failed`（205）
+  - 触发：env 中的 `FEISHU_APP_ID`/`FEISHU_APP_SECRET` 错误/失效/与 bitable 不匹配
+- **`searchRecords`（210-225）**：飞书返回非 2xx 或 `code!==0` 或 `items` 非数组 → `throw feishu_read_failed`（222）
+  - 触发：硬编码 `appToken`（11-22 行）失效/错配/被撤销，**或** `tableId`（14/18-20 行）错误/表不存在，**或** 飞书应用无 bitable 读权限/缺 `bitable:app` 读 scope
+
+> ⚠️ **关键盲区**：271-272 的 catch 只返回 `source_read_failed`，**丢弃了底层 `error.message`**。因此单看 HTTP 响应，**无法区分是 token 获取失败还是 searchRecords 失败，也无法区分具体是哪个 appToken/tableId/权限问题**。
+
+### 4. 实际错误（格式化输出）
+
+```
+错误位置：
+  Edge Function zos-business-data，主流程 try 块（index.ts 249-273）；
+  具体为飞书调用链 getTenantAccessToken(197-208) 或 searchRecords(210-225)；
+  最终由 catch-all（271-272 行）统一返回。
+
+错误类型：
+  HTTP 502；函数体 { "error": "source_read_failed" }。
+  （注意：这是吞掉底层异常的兜底类型，并非精确错误类型）
+
+错误信息：
+  函数通过全部门控（401/503 均未触发）后，于飞书交互阶段抛异常被 catch；
+  底层真实原因可能是以下之一，但响应中未透出：
+    - feishu_auth_failed：FEISHU_APP_ID/SECRET 失效或错误
+    - feishu_read_failed：硬编码 appToken(13/17行) 失效/错配、tableId(14/18-20行)
+      错误、或飞书应用缺 bitable 读权限
+  根因未定（需函数日志或放开错误透出才能细分）。
+
+影响范围：
+  全部业务取数失败 → Dashboard 万嘉网络/花火影像/ZOS企业大脑 显示「待接入」、
+  企业项目 0。与用户报告的症状完全一致。
+```
+
+### 5. 续查结论
+
+- 502 已**定位到飞书层**（非前端、非 Supabase 配置、非登录态）。
+- **根因细分受阻于 catch-all 吞错**——这是生产可观测性的真实缺陷（属 P1/P2 级改进项，列入 V1.3 候选）。
+- 本续查**不改任何代码**；修复须在 **2026-08-07 Production Review** 后作为 V1.3 候选开发。
