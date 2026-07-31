@@ -96,11 +96,12 @@
 - 影响：万嘉网络/花火影像/ZOS企业大脑显示「待接入」、企业项目 0，核心经营数据不可见，决策辅助失效
 - 是否影响业务：Y（若确为真实取数失败）；若仅为「未登录/未触发刷新」则为预期行为
 - 推荐优先级：高（验证后定）
-- 描述：Dashboard 首页全部业务数据为空。经静态代码链路诊断，Dashboard 已正确接线 Edge Function 且取数受「Supabase 登录 + 手动刷新」门控；未触发取数或飞书侧返回 0 条/取数错误均可导致此现象。飞书字段名为硬编码假定名，但字段漂移只导致占位值而非空白。
+- 描述：Dashboard 首页全部业务数据为空。首轮静态诊断确认前端已正确接线 Edge Function（取数受「Supabase 登录 + 手动刷新」门控），代码链路无导致"全部为空"的硬缺陷。续查（用户提供首次同步返回 HTTP 502）定位到：用户已登录（非 401）、Supabase/Feishu 环境变量均齐备（非 503），函数进入 try 块后于**飞书交互阶段**抛异常，被 271-272 行 catch-all 统一吞掉并返回 `source_read_failed`(502)。底层真实原因（tenant token 获取失败 feishu_auth_failed / searchRecords 失败 feishu_read_failed）未透出，无法从 HTTP 单点区分。硬编码飞书 appToken/tableId（11-22 行）若失效/错配/缺 bitable 读权限均可触发。
 - 关联V1.3需求：（待 2026-08-07 Review 定）
-- 状态：诊断完成，待用户浏览器验证根因（详见 `docs/issue-001-data-access-diagnosis.md`）
+- 状态：诊断中（502 定位到飞书层；配置核对完成，根因细分待人工确认硬编码 appToken/tableId 或放开错误透出）
+- 关联报告：`docs/issue-001-data-access-diagnosis.md`（链路+502）、`docs/issue-001-config-diagnosis.md`（配置层）
 
-> 诊断结论：代码链路无导致"全部为空"的硬缺陷；空白最可能为 H1 未触发取数 或 H2/H3 飞书侧 0 条/取数错误。本冻结期不改代码，修复须待 Review 闸门。
+> 诊断结论（续查）：HTTP 502 = 函数通过全部门控（401/503 均非）后，在飞书调用链（getTenantAccessToken 197-208 或 searchRecords 210-225）抛错，被 catch-all 吞为 `source_read_failed`。**底层错误被吞是诊断盲区**，建议 V1.3 在 catch 中返回 error.message 以便定位。本冻结期不改代码，修复须待 Review 闸门。
 
 > 新需求统一进入 V1.3 需求池，按 A 必须开发 / B 优化 / C 暂缓 分类（见各日记录第 6 节与下方汇总）。
 
