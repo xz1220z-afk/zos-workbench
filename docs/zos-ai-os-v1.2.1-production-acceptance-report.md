@@ -22,7 +22,7 @@
 | Migration 本地基线 | ✅ | `supabase/migrations/` 含 `001_zos_sync.sql` / `002_business_data_cache.sql` / `003_projects_cache.sql` |
 | Migration 远端 applied 状态 | ⚠️ 未在本沙箱核验 | `supabase migration list --linked` 直连 Postgres，需数据库密码；本沙箱无密码且按约束不触碰。见「已知限制」。 |
 
-> 说明：本地三份迁移文件即预期基线；远端是否已 applied 不影响本次 Edge Function 部署（部署走 Management API，不经 DB）。**函数运行时会写入 `zos_business_cache` 表**，该表由迁移 002 创建——故任务4 的真实链路贯通本身即可反证迁移已 applied（若未应用，用户登录后取数将报错）。
+> 说明：本地三份迁移文件即预期基线；远端是否已 applied 不能由函数部署反证。当前 `zos-business-data` 直接代理飞书并返回只读响应，**不会写入** `zos_business_cache`；因此迁移是否已应用仍须通过数据库控制台或一次已登录用户的受限 REST 回读单独验收。
 
 ---
 
@@ -54,6 +54,8 @@ Deployed Functions on project dtwvyramgbwtlyhmkhkd: zos-business-data
 ID 8be3aec8-... | NAME zos-business-data | STATUS ACTIVE | VERSION 2 | UPDATED_AT 2026-07-31 02:29:51
 ```
 → **生产环境已生效，承载 V1.2.1 修复代码。**
+
+> 后续只读复核（2026-08-01）发现该次命令的 `--no-verify-jwt` 使平台返回 `verify_jwt:false`，与仓库 `config.toml` 期望的 `true` 不一致。该差异已登记为 ISSUE-002；函数内部的 `auth.getUser` 仍为实际鉴权门，但下次发布必须恢复平台网关验证并回读。
 
 ---
 
