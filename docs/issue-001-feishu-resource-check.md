@@ -82,7 +82,20 @@ curl 'https://open.feishu.cn/open-apis/bitable/v1/apps/AWFUwAbItiI4TjkPMErcpv5On
 
 ---
 
-## 五、结论
+## 五、2026-08-01 已登录浏览器只读观察
+
+以下观察来自已登录的飞书网页，仅证明**当前用户账号**的页面访问能力；不读取应用凭证，也**不能替代**飞书应用身份的 API 权限核验。
+
+| 资源 | 观察结果 | 可得结论 | 仍待核对 |
+|------|----------|----------|----------|
+| 万嘉 Base + `tblrI2MjVtlOgpe7` | 以源码 appToken/tableId 打开后，页面加载为「万嘉 ERP Production V2」，并显示 342 条记录 | Base 与该商家表对当前已登录用户可见；“资源不存在”不是此项 502 的优先假设 | `FEISHU_APP_ID` 对应应用是否具备 API 读取权限；字段名是否匹配 |
+| 花火 Base `EqzkwDOMEigNflkDoJdcw7FSn4d` | 已登录网页可打开「花火 ERP Development V2」 | Base 对当前已登录用户可见 | 函数硬编码的 `tblZ2QIcA2ESJx4W`、`tbl3FeKyg3Tvrm0j`、`tblllwWwvrEFgfJM` 是否仍存在，及应用 API 读取权限 |
+
+**当前优先级调整**：万嘉硬编码资源失效的可能性下降；ISSUE-001 仍可能由飞书应用凭证失效、应用缺 bitable 读权限，或花火三张硬编码表任一失效/无权限触发。不得仅凭网页登录成功就认定 Edge Function 有权限。
+
+---
+
+## 六、结论
 
 - 本项（飞书 Base/Table 存在性 + 读取权限）**须经人工核对回填**，沙箱因无凭证且受安全约束无法代执行；报告不臆造结果。
 - 无论最终判定为「资源不存在」「存在但无权限」或「正常」，修复都**必须改码**（调整硬编码 appToken/tableId，或改用环境变量驱动）或放开 `catch` 错误透出——均属冻结态外动作，须待 **2026-08-07 Production Review** 后作为 V1.3 候选开发。
