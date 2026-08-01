@@ -1,3 +1,7 @@
 [functions.zos-business-data]
 # This endpoint only returns read-only business summaries to authenticated users.
 verify_jwt = true
+
+[functions.zos-brain-index]
+# This endpoint accepts only user-authorized, metadata-only Obsidian indexes.
+verify_jwt = true

@@ -1678,6 +1678,10 @@
           <div><strong>数据来源：Obsidian 企业大脑</strong><div class="setting-desc" id="brainDataStatus">正在检查连接状态…</div></div>
           <span class="read-only-badge">只读索引 · 不含正文</span>
         </div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <label class="btn btn-sm" style="cursor:pointer;">📂 选择本机索引并同步<input type="file" id="brainIndexFile" accept="application/json,.json" style="display:none;" onchange="uploadBrainIndexFile(this)" /></label>
+          <span class="setting-desc">只上传路径、标题、标签和时间；不会上传笔记正文。</span>
+        </div>
       </div>
 
       <div class="stat-row">
@@ -1848,7 +1852,7 @@
         <div class="setting-row">
           <div>
             <div class="setting-label">工作台版本</div>
-            <div class="setting-desc">v1.2.1 · 2026-07-31</div>
+            <div class="setting-desc">v1.2.2 · 2026-08-01</div>
           </div>
         </div>
         <div class="setting-row">
@@ -2155,9 +2159,9 @@
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.2.1';
+  const APP_VERSION = '1.2.2';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
-  const APP_RELEASE_DATE = '2026-07-31';
+  const APP_RELEASE_DATE = '2026-08-01';
 
   // ==================== DATA LAYER ====================
   const KEYS = { TASKS:'zos_tasks', INBOX:'zos_inbox', PROJECTS:'zos_projects', COMMANDS:'zos_commands', TOMBSTONES:'zos_tombstones', ONBOARDED:'zos_onboarded', DEVICE:'zos_device_id', SCHEMA:'zos_schema_version', SYNC_CONFIG:'zos_supabase_config', SYNC_SESSION:'zos_supabase_session' };
@@ -3179,6 +3183,33 @@
     validateBrainIndex(payload);
     return payload;
   }
+
+  async function uploadBrainIndexFile(input) {
+    var file = input && input.files && input.files[0];
+    if (!file) return;
+    try {
+      var config = syncConfig(); var session = syncSession();
+      if (!session.userId || !session.accessToken) throw new Error('请先完成 Supabase 邮箱登录');
+      if (file.size > 2 * 1024 * 1024) throw new Error('索引文件超过 2 MB 上限');
+      var payload = JSON.parse(await file.text());
+      validateBrainIndex(payload);
+      toast('正在同步企业大脑只读索引…');
+      var endpoint = syncEndpoint(config.url, '/functions/v1/zos-brain-index');
+      var response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { apikey: config.anonKey, Authorization: 'Bearer ' + session.accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) throw new Error('索引同步失败（' + response.status + '）');
+      await refreshBusinessData('brain');
+      toast('企业大脑只读索引已同步，可在其他已登录设备刷新查看');
+    } catch (error) {
+      toast('企业大脑索引未同步：' + error.message);
+    } finally {
+      input.value = '';
+    }
+  }
+  window.uploadBrainIndexFile = uploadBrainIndexFile;
 
   function brainNoteFolderGroup(note) {
     var path = (note.path || '').replace(/\\/g, '/').toLowerCase();

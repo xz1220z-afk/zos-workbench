@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   isPathIncluded,
   extractNoteMetadata,
@@ -100,4 +101,16 @@ test('brain cache client returns validated read_only payload', async () => {
   const result = await client.fetchIndex();
   assert.equal(result.mode, 'read_only');
   assert.equal(result.notes.length, 1);
+});
+
+test('brain upload edge function only accepts validated metadata for the signed-in user', async () => {
+  const source = await readFile(new URL('../supabase/functions/zos-brain-index/index.ts', import.meta.url), 'utf8');
+  assert.match(source, /auth\.getUser/);
+  assert.match(source, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(source, /mode !== 'read_only'/);
+  assert.match(source, /source !== 'brain'/);
+  assert.match(source, /\['content', 'body', 'text', 'markdown'\]/);
+  assert.match(source, /upsert\(/);
+  assert.match(source, /onConflict:\s*'user_id,source'/);
+  assert.doesNotMatch(source, /FEISHU_APP_SECRET|service_role[^_]/i);
 });
