@@ -122,7 +122,7 @@ HTTP 401
 ---
 
 ## 已知限制
-1. **迁移远端状态未直连核验**：`migration list --linked` 需数据库密码，本沙箱无；以「函数写入 `zos_business_cache` 成功即反证迁移已应用」作为间接验证。
+1. **迁移远端状态未直连核验**：`migration list --linked` 的远端连接被终止，本沙箱不处理数据库密码；且当前业务函数不写 `zos_business_cache`，不存在可替代的间接证明。必须在 Supabase SQL 控制台或已登录用户的受限 REST 读路径回读确认。
 2. **认证数据链需用户 JWT**：函数强制用户级鉴权，沙箱无法代跑；已在 4.2 给出用户侧验收清单与 curl 模板。
 3. **飞书字段名假设**：`'最近更新时间'/'更新时间'` 为假定列名；若实际表列名不同，会回退 `shootingDate`（已兜底，精度略降），建议首次取数后核对。
 4. **环境变量延续**：本次部署保留既有函数环境变量（`SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEYS`/`FEISHU_APP_ID`/`FEISHU_APP_SECRET`），未改动、未明文入仓。
@@ -132,4 +132,4 @@ HTTP 401
 - 环境：Supabase `dtwvyramgbwtlyhmkhkd`（Tokyo）
 - 结果：Edge Function `zos-business-data` → **ACTIVE**，承载 V1.2.1 P1 修复（花火 `updatedAt` 数据契约）
 - 测试：RC 阶段 118/118、PWA 1/1、内联脚本语法 OK；本次 deploy 成功、函数存活、鉴权生效
-- 剩余动作：用户在 Dashboard 登录后按 4.2 完成数据链最终勾选，即可签署 Production 验收通过
+- 剩余动作：完成认证数据链、远端迁移、飞书应用 API 权限核验，并在下一次部署时消除 ISSUE-002 的 `verify_jwt` 配置漂移后，才可签署完整 Production 验收通过。
