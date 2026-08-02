@@ -518,6 +518,15 @@
   }
   .empty-state-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
   .empty-state-desc { font-size: 14px; color: var(--text-muted); max-width: 400px; }
+  .source-rail { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin: 0 0 16px; padding: 13px 16px; border: 1px solid var(--border); border-left: 3px solid var(--primary); border-radius: var(--radius); background: var(--card); }
+  .source-rail-main { min-width: 0; }
+  .source-rail-title { font-size: 13px; font-weight: 650; color: var(--text); }
+  .source-rail-status, .source-rail-updated, .source-rail-empty { margin-top: 3px; font-size: 12px; line-height: 1.55; color: var(--text-muted); }
+  .source-rail-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: flex-end; text-align: right; }
+  .source-rail-error { display: none; width: 100%; margin: 9px 0 0; color: var(--red); font-size: 12px; line-height: 1.55; }
+  .source-rail.has-error { border-left-color: var(--red); }
+  .source-rail.has-error .source-rail-error { display: block; }
+  .page-detail-container { min-width: 0; overflow: auto; }
 
   .stat-row {
     display: grid;
@@ -1157,6 +1166,8 @@
     .list-item { flex-direction: column; }
     .list-item-actions { justify-content: flex-start; margin-top: 8px; }
     .project-card-footer { flex-direction: column; align-items: flex-start; }
+    .source-rail { flex-direction: column; gap: 9px; }
+    .source-rail-meta { justify-content: flex-start; text-align: left; }
     .btn { min-height: 44px; }
     .modal { max-width: 100%; border-radius: var(--radius) var(--radius) 0 0; margin-top: auto; max-height: 90vh; }
   }
@@ -1524,12 +1535,16 @@
     </section>
 
     <!-- ===== 今日视图 ===== -->
-    <section class="page" id="page-today">
+    <section class="page" id="page-today" data-source="local">
       <div class="page-header">
         <div class="page-header-left">
           <h2>今日视图</h2>
           <p id="todayDateLabel">聚焦今天最重要的事</p>
         </div>
+      </div>
+      <div class="source-rail" data-source-rail data-source="local">
+        <div class="source-rail-main"><div class="source-rail-title">数据来源：本地行动清单</div><div class="source-rail-status" data-source-status>本页仅读取本设备的任务、收集箱和待执行指令。</div><div class="source-rail-updated" data-source-updated>最近更改保存在当前设备。</div><div class="source-rail-empty" data-source-empty-state>暂无待推进事项时，会在下方分别说明。</div><div class="source-rail-error" data-source-error hidden>本地数据暂不可读取；请检查浏览器存储后重试。</div></div>
+        <div class="source-rail-meta"><span class="read-only-badge">本地</span></div>
       </div>
       <div class="today-section">
         <div class="today-section-header">📌 今日任务</div>
@@ -1546,12 +1561,16 @@
     </section>
 
     <!-- ===== 收集箱 ===== -->
-    <section class="page" id="page-inbox">
+    <section class="page" id="page-inbox" data-source="local">
       <div class="page-header">
         <div class="page-header-left">
           <h2>收集箱</h2>
           <p>灵感、待办、杂项——先记下来，再处理</p>
         </div>
+      </div>
+      <div class="source-rail" data-source-rail data-source="local">
+        <div class="source-rail-main"><div class="source-rail-title">数据来源：本地收集箱</div><div class="source-rail-status" data-source-status>新收集内容仅保存到当前设备，需你手动转换或导出。</div><div class="source-rail-updated" data-source-updated>最近更改保存在当前设备。</div><div class="source-rail-error" data-source-error hidden>本地收集箱暂不可读取；请检查浏览器存储后重试。</div></div>
+        <div class="source-rail-meta"><span class="read-only-badge">本地</span></div>
       </div>
       <div class="inbox-input-area">
         <div class="inbox-input-row">
@@ -1566,7 +1585,7 @@
         <button class="filter-tab" data-filter="converted">已转换</button>
       </div>
       <div id="inboxList"></div>
-      <div class="empty-state" id="inboxEmpty">
+      <div class="empty-state" id="inboxEmpty" data-source-empty-state>
         <div class="empty-state-icon" style="background: var(--primary-light);">📥</div>
         <div class="empty-state-title">收集箱为空</div>
         <div class="empty-state-desc">把一闪而过的想法、随手记下的任务都丢进来，之后再逐个处理。</div>
@@ -1574,7 +1593,7 @@
     </section>
 
     <!-- ===== 任务 ===== -->
-    <section class="page" id="page-tasks">
+    <section class="page" id="page-tasks" data-source="local">
       <div class="page-header">
         <div class="page-header-left">
           <h2>任务</h2>
@@ -1582,13 +1601,17 @@
         </div>
         <button class="btn btn-primary" onclick="openTaskAdd()">＋ 新建任务</button>
       </div>
+      <div class="source-rail" data-source-rail data-source="local">
+        <div class="source-rail-main"><div class="source-rail-title">数据来源：本地任务</div><div class="source-rail-status" data-source-status>任务和完成状态仅保存在当前设备，不会外发或自动同步。</div><div class="source-rail-updated" data-source-updated>最近更改保存在当前设备。</div><div class="source-rail-error" data-source-error hidden>本地任务暂不可读取；请检查浏览器存储后重试。</div></div>
+        <div class="source-rail-meta"><span class="read-only-badge">本地</span></div>
+      </div>
       <div class="filter-tabs" id="taskFilter">
         <button class="filter-tab active" data-filter="all">全部</button>
         <button class="filter-tab" data-filter="todo">进行中</button>
         <button class="filter-tab" data-filter="done">已完成</button>
       </div>
       <div id="taskList"></div>
-      <div class="empty-state" id="taskEmpty">
+      <div class="empty-state" id="taskEmpty" data-source-empty-state>
         <div class="empty-state-icon" style="background: var(--green-light);">✅</div>
         <div class="empty-state-title">暂无任务</div>
         <div class="empty-state-desc">点击「新建任务」开始记录你的工作事项。</div>
@@ -1596,13 +1619,17 @@
     </section>
 
     <!-- ===== 万嘉网络 ===== -->
-    <section class="page" id="page-local-life">
+    <section class="page" id="page-local-life" data-source="wanjia">
       <div class="page-header">
         <div class="page-header-left">
           <h2>万嘉网络</h2>
           <p>活动管理、门店运营、用户增长</p>
         </div>
         <button class="btn btn-sm" onclick="refreshBusinessData('wanjia')">↻ 刷新数据</button>
+      </div>
+      <div class="source-rail" data-source-rail data-source="wanjia">
+        <div class="source-rail-main"><div class="source-rail-title">数据来源：万嘉 ERP Production V2</div><div class="source-rail-status" data-source-status>正在检查只读连接状态…</div><div class="source-rail-updated" data-source-updated>等待首次手动刷新。</div><div class="source-rail-error" data-source-error hidden>最近一次读取失败；请核对登录、权限或数据源后重试。</div></div>
+        <div class="source-rail-meta"><span class="read-only-badge">飞书只读汇总</span></div>
       </div>
       <div class="settings-section" style="margin:0 0 16px;padding:14px 16px;">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
@@ -1624,23 +1651,27 @@
           <div class="stat-card-placeholder" id="wanjiaPaymentGmv">—</div>
         </div>
       </div>
-      <div class="empty-state" id="wanjiaDataEmpty">
+      <div class="empty-state" id="wanjiaDataEmpty" data-source-empty-state>
         <div class="empty-state-icon" style="background: var(--green-light);">🏪</div>
         <div class="empty-state-title">万嘉只读汇总等待首次刷新</div>
         <div class="empty-state-desc">完成 Supabase 登录后点击「刷新数据」即可读取商家、GMV、动销、视频、直播与佣金汇总；不会回写飞书。</div>
       </div>
       <div class="section-title" style="margin-top:18px;">📋 商家运营项目明细 <span class="read-only-badge">只读</span></div>
-      <div id="wanjiaRecordList" class="record-list"></div>
+      <div class="page-detail-container"><div id="wanjiaRecordList" class="record-list"></div></div>
     </section>
 
     <!-- ===== 花火影像 ===== -->
-    <section class="page" id="page-spark-media">
+    <section class="page" id="page-spark-media" data-source="huahuo">
       <div class="page-header">
         <div class="page-header-left">
           <h2>花火影像</h2>
           <p>项目策划、拍摄排期、后期制作</p>
         </div>
         <button class="btn btn-sm" onclick="refreshBusinessData('huahuo')">↻ 刷新数据</button>
+      </div>
+      <div class="source-rail" data-source-rail data-source="huahuo">
+        <div class="source-rail-main"><div class="source-rail-title">数据来源：花火 ERP Development V2</div><div class="source-rail-status" data-source-status>正在检查只读连接状态…</div><div class="source-rail-updated" data-source-updated>等待首次手动刷新。</div><div class="source-rail-error" data-source-error hidden>最近一次读取失败；请核对登录、权限或数据源后重试。</div></div>
+        <div class="source-rail-meta"><span class="read-only-badge">飞书只读汇总</span></div>
       </div>
       <div class="settings-section" style="margin:0 0 16px;padding:14px 16px;">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
@@ -1662,17 +1693,17 @@
           <div class="stat-card-placeholder" id="huahuoReceivedAmount">—</div>
         </div>
       </div>
-      <div class="empty-state" id="huahuoDataEmpty">
+      <div class="empty-state" id="huahuoDataEmpty" data-source-empty-state>
         <div class="empty-state-icon" style="background: var(--orange-light);">🎬</div>
         <div class="empty-state-title">花火只读汇总等待首次刷新</div>
         <div class="empty-state-desc">完成 Supabase 登录后点击「刷新数据」即可读取客户、项目、拍摄排期、交付与回款汇总；不会回写飞书。</div>
       </div>
       <div class="section-title" style="margin-top:18px;">🎬 拍摄项目明细 <span class="read-only-badge">只读</span></div>
-      <div id="huahuoRecordList" class="record-list"></div>
+      <div class="page-detail-container"><div id="huahuoRecordList" class="record-list"></div></div>
     </section>
 
     <!-- ===== 风险中心 · 老板决策页 ===== -->
-    <section class="page" id="page-risk">
+    <section class="page" id="page-risk" data-source="risk">
       <div class="page-header">
         <div class="page-header-left">
           <h2>风险中心 · 老板决策页</h2>
@@ -1681,24 +1712,32 @@
         <button class="btn btn-sm" onclick="refreshBusinessData('wanjia');refreshBusinessData('huahuo');refreshBusinessData('projects');">↻ 刷新风险源</button>
         <button class="btn btn-sm btn-primary" onclick="generateDailyReport()">📊 生成今日经营日报</button>
       </div>
-      <div class="boss-banner" id="riskBanner"></div>
+      <div class="source-rail" data-source-rail data-source="risk">
+        <div class="source-rail-main"><div class="source-rail-title">数据来源：万嘉、花火与企业项目的只读聚合</div><div class="source-rail-status" data-source-status>按现有缓存生成风险提示，不会写回任何事实源。</div><div class="source-rail-updated" data-source-updated>等待来源数据刷新。</div><div class="source-rail-error" data-source-error hidden>部分风险来源读取失败；当前结果可能不完整，请刷新后再决策。</div></div>
+        <div class="source-rail-meta"><span class="read-only-badge">只读聚合</span></div>
+      </div>
+      <div class="boss-banner" id="riskBanner" data-source-empty-state></div>
       <div class="risk-sort">
         <span class="risk-sort-label">排序</span>
         <button class="sort-btn active" id="sortLevelBtn" onclick="setRiskSort('level')">按风险等级</button>
         <button class="sort-btn" id="sortSourceBtn" onclick="setRiskSort('source')">按来源</button>
         <span class="read-only-badge">只读 · 不回写</span>
       </div>
-      <div id="riskDecisionList" class="decision-list"></div>
+      <div class="page-detail-container"><div id="riskDecisionList" class="decision-list"></div></div>
     </section>
 
     <!-- ===== 企业项目 ===== -->
-    <section class="page" id="page-enterprise">
+    <section class="page" id="page-enterprise" data-source="local">
       <div class="page-header">
         <div class="page-header-left">
           <h2>企业项目</h2>
           <p>项目看板、里程碑管理、资源调度</p>
         </div>
         <button class="btn btn-primary" onclick="openProjectAdd()">＋ 新建项目</button>
+      </div>
+      <div class="source-rail" data-source-rail data-source="local">
+        <div class="source-rail-main"><div class="source-rail-title">数据来源：本地项目管理</div><div class="source-rail-status" data-source-status>此页显示当前设备手动创建的项目；企业只读索引在 ZOS 企业大脑页面单独查看。</div><div class="source-rail-updated" data-source-updated>最近更改保存在当前设备。</div><div class="source-rail-error" data-source-error hidden>本地项目暂不可读取；请检查浏览器存储后重试。</div></div>
+        <div class="source-rail-meta"><span class="read-only-badge">本地</span></div>
       </div>
       <div class="stat-row" id="projectStats">
         <div class="stat-card">
@@ -1722,7 +1761,7 @@
         <button class="filter-tab" data-filter="paused">暂停</button>
       </div>
       <div id="projectList"></div>
-      <div class="empty-state" id="projectEmpty">
+      <div class="empty-state" id="projectEmpty" data-source-empty-state>
         <div class="empty-state-icon" style="background: var(--blue-light);">📋</div>
         <div class="empty-state-title">暂无项目</div>
         <div class="empty-state-desc">创建一个项目来管理你的工作任务。所有数据保存在当前设备本地。</div>
@@ -1730,13 +1769,17 @@
     </section>
 
     <!-- ===== ZOS 企业大脑 ===== -->
-    <section class="page" id="page-zos-brain">
+    <section class="page" id="page-zos-brain" data-source="brain">
       <div class="page-header">
         <div class="page-header-left">
           <h2>ZOS 企业大脑</h2>
           <p>Obsidian 知识库 · AI 指令队列 · 知识图谱</p>
         </div>
         <button class="btn btn-sm" onclick="refreshBusinessData('brain')">↻ 刷新知识库</button>
+      </div>
+      <div class="source-rail" data-source-rail data-source="brain">
+        <div class="source-rail-main"><div class="source-rail-title">数据来源：Obsidian 企业大脑只读元数据</div><div class="source-rail-status" data-source-status>只显示路径、标题、标签和时间，不读取或写入笔记正文。</div><div class="source-rail-updated" data-source-updated>等待首次手动同步。</div><div class="source-rail-error" data-source-error hidden>最近一次知识索引读取失败；请核对登录、权限或本机索引后重试。</div></div>
+        <div class="source-rail-meta"><span class="read-only-badge">只读元数据</span></div>
       </div>
       <div class="settings-section" style="margin:0 0 16px;padding:14px 16px;">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
@@ -1766,7 +1809,7 @@
         <input type="text" id="brainSearch" placeholder="搜索标题或标签…" oninput="renderBrainIndex()" />
       </div>
       <div id="brainNoteList" class="brain-note-list"></div>
-      <div class="empty-state" id="brainDataEmpty">
+      <div class="empty-state" id="brainDataEmpty" data-source-empty-state>
         <div class="empty-state-icon" style="background: var(--purple-light);">🧠</div>
         <div class="empty-state-title">企业大脑只读索引等待首次同步</div>
         <div class="empty-state-desc">在本地运行 obsidian-metadata-scan 生成只读元数据索引并同步到云端后，点击「刷新知识库」即可跨端查看笔记目录；本工作台绝不读取或写入知识库正文。</div>
@@ -1793,7 +1836,7 @@
           <button class="filter-tab" data-filter="政府项目" onclick="setProjectFilter(this)">政府项目</button>
           <button class="filter-tab" data-filter="ERP建设" onclick="setProjectFilter(this)">ERP建设</button>
         </div>
-        <div id="projectList" class="project-list"></div>
+        <div class="page-detail-container"><div id="projectList" class="project-list"></div></div>
         <div class="empty-state" id="projectDataEmpty">
           <div class="empty-state-icon" style="background: var(--blue-light);">📊</div>
           <div class="empty-state-title">项目中心等待首次同步</div>
@@ -1856,12 +1899,16 @@
     </section>
 
     <!-- ===== 隐私与数据 ===== -->
-    <section class="page" id="page-privacy">
+    <section class="page" id="page-privacy" data-source="local">
       <div class="page-header">
         <div class="page-header-left">
           <h2>数据来源与隐私</h2>
           <p>了解你的数据在哪里、如何被处理</p>
         </div>
+      </div>
+      <div class="source-rail" data-source-rail data-source="local">
+        <div class="source-rail-main"><div class="source-rail-title">数据来源：本机配置与连接说明</div><div class="source-rail-status" data-source-status>这里说明各来源的处理边界，不会触发上传或写入。</div><div class="source-rail-updated" data-source-updated>状态随本机配置更新。</div><div class="source-rail-empty" data-source-empty-state>尚未配置外部连接时，工作台继续仅在本机运行。</div><div class="source-rail-error" data-source-error hidden>本机配置暂不可读取；请检查浏览器存储后重试。</div></div>
+        <div class="source-rail-meta"><span class="read-only-badge">说明</span></div>
       </div>
       <div class="privacy-card">
         <h3>💾 数据存储位置</h3>
@@ -1905,12 +1952,16 @@
     </section>
 
     <!-- ===== 设置 ===== -->
-    <section class="page" id="page-settings">
+    <section class="page" id="page-settings" data-source="local">
       <div class="page-header">
         <div class="page-header-left">
           <h2>设置</h2>
           <p>工作台偏好配置</p>
         </div>
+      </div>
+      <div class="source-rail" data-source-rail data-source="local">
+        <div class="source-rail-main"><div class="source-rail-title">数据来源：本机工作台设置</div><div class="source-rail-status" data-source-status>所有修改需要你手动提交；此页不会自动同步业务数据。</div><div class="source-rail-updated" data-source-updated>设置保存在当前设备。</div><div class="source-rail-empty" data-source-empty-state>未配置云端时，工作台保持本机模式。</div><div class="source-rail-error" data-source-error hidden>本机设置暂不可读取；请检查浏览器存储后重试。</div></div>
+        <div class="source-rail-meta"><span class="read-only-badge">本地配置</span></div>
       </div>
       <div class="settings-section">
         <h3>系统信息</h3>
@@ -3194,6 +3245,35 @@
     var el = document.getElementById(id);
     if (el) el.textContent = value;
   }
+  function formatSourceUpdate(value, fallback) {
+    if (!value) return fallback || '等待首次手动刷新。';
+    var date = new Date(value);
+    return '最近更新：' + (isNaN(date.getTime()) ? String(value) : date.toLocaleString('zh-CN', { hour12: false }));
+  }
+  function renderSourceRails() {
+    var cache = businessDataCache();
+    var errors = commandCenterReadErrors || {};
+    document.querySelectorAll('[data-source-rail]').forEach(function(rail) {
+      var source = rail.dataset.source;
+      var sourceErrors = source === 'risk'
+        ? ['wanjia', 'huahuo', 'projects'].map(function(key) { return errors[key]; }).filter(Boolean)
+        : (errors[source] ? [errors[source]] : []);
+      var fetchedAt = source === 'wanjia' && cache.wanjia ? cache.wanjia.fetchedAt
+        : source === 'huahuo' && cache.huahuo ? cache.huahuo.fetchedAt
+        : source === 'brain' && cache.brain ? cache.brain.fetchedAt
+        : source === 'risk' ? [cache.wanjia && cache.wanjia.fetchedAt, cache.huahuo && cache.huahuo.fetchedAt].filter(Boolean).sort().pop()
+        : null;
+      var status = rail.querySelector('[data-source-status]');
+      var updated = rail.querySelector('[data-source-updated]');
+      var error = rail.querySelector('[data-source-error]');
+      if (status && (source === 'wanjia' || source === 'huahuo')) status.textContent = fetchedAt ? '已读取只读汇总；不会回写飞书。' : businessConnectionMessage();
+      if (status && source === 'brain') status.textContent = fetchedAt ? '已读取只读元数据；不含 Markdown 正文。' : businessConnectionMessage();
+      if (status && source === 'risk') status.textContent = fetchedAt ? '基于已缓存的只读来源生成风险提示，不会写回事实源。' : '尚无可聚合的来源数据；请手动刷新各只读来源。';
+      if (updated && (source === 'wanjia' || source === 'huahuo' || source === 'brain' || source === 'risk')) updated.textContent = formatSourceUpdate(fetchedAt);
+      rail.classList.toggle('has-error', sourceErrors.length > 0);
+      if (error) { error.hidden = sourceErrors.length === 0; if (sourceErrors.length) error.textContent = '最近一次读取失败：' + sourceErrors.join('；'); }
+    });
+  }
   function renderBusinessDataStates() {
     var cache = businessDataCache();
     var message = businessConnectionMessage();
@@ -3233,6 +3313,7 @@
       setBusinessValue('huahuoPendingDeliveries', '—');
       setBusinessValue('huahuoReceivedAmount', '—');
     }
+    renderSourceRails();
     renderCommandCenter();
   }
   async function refreshBusinessData(source) {

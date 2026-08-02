@@ -114,3 +114,19 @@ test('brain upload edge function only accepts validated metadata for the signed-
   assert.match(source, /onConflict:\s*'user_id,source'/);
   assert.doesNotMatch(source, /FEISHU_APP_SECRET|service_role[^_]/i);
 });
+
+test('action and knowledge pages declare their source-aware empty and error states', async () => {
+  const page = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  for (const [id, source] of [
+    ['today', 'local'], ['inbox', 'local'], ['tasks', 'local'], ['enterprise', 'local'],
+    ['zos-brain', 'brain'], ['privacy', 'local'], ['settings', 'local'],
+  ]) {
+    const section = page.match(new RegExp(`<section class="page" id="page-${id}"[\\s\\S]*?<\\/section>`))?.[0] || '';
+    assert.match(section, new RegExp(`data-source="${source}"`), `${id} source declaration`);
+    assert.match(section, /data-source-rail/, `${id} source rail`);
+    assert.match(section, /data-source-empty-state/, `${id} empty state`);
+    assert.match(section, /data-source-error/, `${id} error state`);
+  }
+  const brainSection = page.match(/<section class="page" id="page-zos-brain"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(brainSection, /不含正文/);
+});
