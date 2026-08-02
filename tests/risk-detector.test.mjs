@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   daysSince,
   isDone,
@@ -103,4 +104,14 @@ test('bucketRisks splits into high / delayed / followUp', () => {
 
 test('detectRisks throws on bad kind', () => {
   assert.throws(() => detectRisks([], 'nope'), /kind must/);
+});
+
+test('risk page keeps source-aware empty and read-failure states', async () => {
+  const page = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const section = page.match(/<section class="page" id="page-risk"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(section, /data-source="risk"/);
+  assert.match(section, /data-source-rail/);
+  assert.match(section, /data-source-empty-state/);
+  assert.match(section, /data-source-error/);
+  assert.match(section, /不直写事实源/);
 });

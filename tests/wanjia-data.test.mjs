@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   extractWanjiaRecord,
   buildWanjiaIndex,
@@ -116,4 +117,14 @@ test('buildWanjiaIndex drops records without id and stays read_only', () => {
 test('forbidden fields are declared and non-empty', () => {
   assert.ok(FORBIDDEN_WANJIA_FIELDS.includes('description'));
   assert.ok(FORBIDDEN_WANJIA_FIELDS.length >= 8);
+});
+
+test('万嘉 page keeps a read-only source rail with empty and error states', async () => {
+  const page = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const section = page.match(/<section class="page" id="page-local-life"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(section, /data-source="wanjia"/);
+  assert.match(section, /data-source-rail/);
+  assert.match(section, /data-source-empty-state/);
+  assert.match(section, /data-source-error/);
+  assert.match(section, /不会回写飞书/);
 });

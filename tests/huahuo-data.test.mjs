@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   extractHuahuoRecord,
   buildHuahuoIndex,
@@ -119,4 +120,14 @@ test('buildHuahuoIndex drops records without id and stays read_only', () => {
 test('forbidden fields are declared and non-empty', () => {
   assert.ok(FORBIDDEN_HUAHUO_FIELDS.includes('description'));
   assert.ok(FORBIDDEN_HUAHUO_FIELDS.length >= 8);
+});
+
+test('花火 page keeps a read-only source rail with empty and error states', async () => {
+  const page = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const section = page.match(/<section class="page" id="page-spark-media"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(section, /data-source="huahuo"/);
+  assert.match(section, /data-source-rail/);
+  assert.match(section, /data-source-empty-state/);
+  assert.match(section, /data-source-error/);
+  assert.match(section, /不会回写飞书/);
 });

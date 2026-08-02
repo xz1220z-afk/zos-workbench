@@ -6,8 +6,8 @@ const [indexHtml, serviceWorker] = await Promise.all([
   readFile(new URL('../sw.js', import.meta.url), 'utf8'),
 ]);
 
-assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.2\.2';/,
-  'Service Worker cache must match the current v1.2.2 application release');
+assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.2\.3';/,
+  'A command-center UI release must receive a new Service Worker cache revision');
 assert.doesNotMatch(indexHtml, /本地生活运营/,
   'Current UI must use the 万嘉网络 brand name');
 assert.match(indexHtml, /万嘉网络/,
@@ -16,9 +16,9 @@ assert.match(indexHtml, /refreshSession\(session\.refreshToken\)/,
   'Sync must refresh an existing Supabase session before pulling data');
 assert.match(indexHtml, /const PUBLIC_APP_URL = 'https:\/\/xz1220z-afk\.github\.io\/zos-workbench\/'/,
   'The public app URL must be explicit so auth callbacks stay on the GitHub Pages subpath');
-assert.match(indexHtml, /const APP_VERSION = '1\.2\.2'/,
+assert.match(indexHtml, /const APP_VERSION = '1\.2\.3'/,
   'The inline application version must match the current release');
-assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v1\.2\.2/,
+assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v1\.2\.3/,
   'The settings page version label must match the current release');
 assert.match(indexHtml, /requestOtp\(email, PUBLIC_APP_URL\)/,
   'Magic-link requests must redirect to the public app subpath');
@@ -98,5 +98,63 @@ assert.match(indexHtml, /生成今日经营日报/,
   '首页与风险页必须提供「生成今日经营日报」按钮');
 assert.match(indexHtml, /class="level-badge/,
   '决策卡片必须按风险等级着色（红 / 黄 / 绿）');
+
+// ===== CEO command center shell =====
+assert.match(indexHtml, /class="zos-command"/,
+  '应用壳必须声明 zos-command 深色主题类');
+assert.match(indexHtml, /--cc-background:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义深色背景令牌');
+assert.match(indexHtml, /--cc-panel:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义面板令牌');
+assert.match(indexHtml, /--cc-border:\s*rgba?\(/i,
+  '指挥中心必须定义低对比边框令牌');
+assert.match(indexHtml, /--cc-text:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义正文令牌');
+assert.match(indexHtml, /--cc-text-muted:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义弱化正文令牌');
+assert.match(indexHtml, /--cc-accent-gold:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义金色强调令牌');
+assert.match(indexHtml, /--cc-success:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义成功状态令牌');
+assert.match(indexHtml, /--cc-warning:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义警告状态令牌');
+assert.match(indexHtml, /--cc-risk:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义风险状态令牌');
+assert.match(indexHtml, /\.zos-command \.sidebar[\s\S]{0,240}var\(--cc-panel\)/,
+  '侧边栏必须消费深色面板令牌');
+assert.match(indexHtml, /\.zos-command \.topbar[\s\S]{0,240}var\(--cc-panel\)/,
+  '顶栏必须消费深色面板令牌');
+assert.match(indexHtml, /\.zos-command \.bottom-nav[\s\S]{0,240}var\(--cc-panel\)/,
+  '底部导航必须消费深色面板令牌');
+assert.match(indexHtml, /@media \(min-width: 1025px\)/,
+  '桌面断点必须保留');
+assert.match(indexHtml, /@media \(max-width: 1024px\)/,
+  '平板断点必须保留');
+assert.match(indexHtml, /@media \(max-width: 767px\)[\s\S]{0,600}\.sidebar\s*\{\s*display:\s*none;/,
+  '移动端必须隐藏桌面侧边导航');
+assert.match(indexHtml, /env\(safe-area-inset-bottom\)/,
+  '移动端底部导航必须保留安全区内边距');
+assert.match(indexHtml, /@media \(min-width: 1200px\)[\s\S]{0,240}\.zos-command \.command-grid\s*\{\s*grid-template-columns:\s*repeat\(3,/,
+  '1200px 及以上的桌面壳必须提供三列布局');
+assert.match(indexHtml, /@media \(min-width: 768px\) and \(max-width: 1199px\)[\s\S]{0,240}\.zos-command \.command-grid\s*\{\s*grid-template-columns:\s*repeat\(2,/,
+  '768–1199px 的平板壳必须提供两列布局');
+assert.match(indexHtml, /@media \(max-width: 767px\)[\s\S]{0,1800}\.zos-command \.command-grid\s*\{\s*grid-template-columns:\s*1fr;/,
+  '移动端壳必须提供单列布局');
+assert.match(indexHtml, /<nav class="bottom-nav" id="bottomNav">/,
+  '既有底部导航必须保留');
+
+const pageIds = new Set([...indexHtml.matchAll(/<section class="page(?: active)?" id="page-([^"]+)"/g)].map(([, id]) => id));
+const navigationTargets = [...indexHtml.matchAll(/<(?:div|button)\b[^>]*\bclass="(?:nav-item|bottom-nav-item|mobile-more-item)[^"]*"[^>]*\bdata-page="([^"]+)"/g)]
+  .map(([, pageId]) => pageId);
+assert.deepEqual(navigationTargets.filter((pageId) => !pageIds.has(pageId)), [],
+  '每个侧栏或移动导航目标都必须指向现有页面');
+assert.match(indexHtml, /@media \(min-width: 1200px\)/,
+  '桌面断点必须存在');
+assert.match(indexHtml, /@media \(min-width: 768px\) and \(max-width: 1199px\)/,
+  '平板断点必须存在');
+assert.match(indexHtml, /@media \(max-width: 767px\)/,
+  '移动端断点必须存在');
+assert.match(indexHtml, /@media \(max-height: 420px\) and \(max-width: 767px\)\s*\{[\s\S]{0,220}\.bottom-nav\s*\{\s*display:\s*flex;/,
+  '横屏或键盘展开时，移动端必须保留可达的底部导航');
 
 console.log('PWA baseline privacy and cache version checks passed');
