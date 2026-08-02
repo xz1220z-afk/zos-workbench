@@ -16,6 +16,15 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.png"/>
 <style>
   :root {
+    --cc-background: #080d18;
+    --cc-panel: #111a2b;
+    --cc-border: rgba(175, 191, 219, 0.16);
+    --cc-text: #edf3ff;
+    --cc-text-muted: #9aa9c2;
+    --cc-accent-gold: #d8b46a;
+    --cc-success: #42c7a5;
+    --cc-warning: #e5a854;
+    --cc-risk: #e06c75;
     --sidebar-bg: rgba(20, 20, 40, 0.65);
     --sidebar-hover: rgba(255, 255, 255, 0.08);
     --sidebar-active: rgba(79, 70, 229, 0.25);
@@ -1000,12 +1009,59 @@
   .bottom-nav-item.active { color: var(--primary); }
   .bottom-nav-item .bn-icon { font-size: 20px; }
 
+  /* ===== CEO command center shell ===== */
+  .zos-command {
+    --bg: var(--cc-background);
+    --card-bg: var(--cc-panel);
+    --card-bg-solid: #172238;
+    --card-border: var(--cc-border);
+    --text: var(--cc-text);
+    --text-secondary: #c1ccde;
+    --text-muted: var(--cc-text-muted);
+    --border: var(--cc-border);
+    --border-soft: rgba(175, 191, 219, 0.1);
+    --sidebar-bg: #0d1525;
+    --sidebar-hover: rgba(216, 180, 106, 0.1);
+    --sidebar-active: rgba(216, 180, 106, 0.16);
+    --sidebar-text: #b9c5d9;
+    --sidebar-text-active: var(--cc-accent-gold);
+    --primary: var(--cc-accent-gold);
+    --primary-light: rgba(216, 180, 106, 0.12);
+    --green: var(--cc-success);
+    --orange: var(--cc-warning);
+    --red: var(--cc-risk);
+    --shadow: 0 2px 12px rgba(0, 0, 0, 0.24);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.32);
+  }
+  .zos-command::before,
+  .zos-command::after,
+  .zos-command .main::before { opacity: 0; }
+  .zos-command .sidebar {
+    background: var(--cc-panel);
+    border-right-color: var(--cc-border);
+  }
+  .zos-command .topbar {
+    background: var(--cc-panel);
+    border-bottom-color: var(--cc-border);
+  }
+  .zos-command .content { background: var(--cc-background); }
+  .zos-command .bottom-nav {
+    background: var(--cc-panel);
+    border-top-color: var(--cc-border);
+  }
+  .zos-command .command-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
   /* ===== Responsive ===== */
   @media (min-width: 1025px) {
     .sidebar-toggle { display: flex; }
   }
 
   @media (max-width: 1024px) {
+    .zos-command .command-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .sidebar {
       position: fixed;
       left: -280px;
@@ -1033,6 +1089,9 @@
   }
 
   @media (max-width: 767px) {
+    .zos-command .sidebar { display: none; }
+    .zos-command .topbar-hamburger { display: none; }
+    .zos-command .command-grid { grid-template-columns: 1fr; }
     .bottom-nav { display: flex; }
     .content { padding: 16px 16px 80px; }
     .module-grid { grid-template-columns: 1fr; }
@@ -1303,7 +1362,7 @@
   .action-list { margin: 4px 0 0; padding-left: 18px; font-size: 13px; color: var(--text); line-height: 1.7; }
 </style>
 </head>
-<body>
+<body class="zos-command">
 
 <!-- ===== Sidebar ===== -->
 <aside class="sidebar" id="sidebar">

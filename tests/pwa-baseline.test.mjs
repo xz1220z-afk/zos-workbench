@@ -99,4 +99,48 @@ assert.match(indexHtml, /生成今日经营日报/,
 assert.match(indexHtml, /class="level-badge/,
   '决策卡片必须按风险等级着色（红 / 黄 / 绿）');
 
+// ===== CEO command center shell =====
+assert.match(indexHtml, /class="zos-command"/,
+  '应用壳必须声明 zos-command 深色主题类');
+assert.match(indexHtml, /--cc-background:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义深色背景令牌');
+assert.match(indexHtml, /--cc-panel:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义面板令牌');
+assert.match(indexHtml, /--cc-border:\s*rgba?\(/i,
+  '指挥中心必须定义低对比边框令牌');
+assert.match(indexHtml, /--cc-text:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义正文令牌');
+assert.match(indexHtml, /--cc-text-muted:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义弱化正文令牌');
+assert.match(indexHtml, /--cc-accent-gold:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义金色强调令牌');
+assert.match(indexHtml, /--cc-success:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义成功状态令牌');
+assert.match(indexHtml, /--cc-warning:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义警告状态令牌');
+assert.match(indexHtml, /--cc-risk:\s*#[0-9a-f]{6}/i,
+  '指挥中心必须定义风险状态令牌');
+assert.match(indexHtml, /\.zos-command \.sidebar[\s\S]{0,240}var\(--cc-panel\)/,
+  '侧边栏必须消费深色面板令牌');
+assert.match(indexHtml, /\.zos-command \.topbar[\s\S]{0,240}var\(--cc-panel\)/,
+  '顶栏必须消费深色面板令牌');
+assert.match(indexHtml, /\.zos-command \.bottom-nav[\s\S]{0,240}var\(--cc-panel\)/,
+  '底部导航必须消费深色面板令牌');
+assert.match(indexHtml, /@media \(min-width: 1025px\)/,
+  '桌面断点必须保留');
+assert.match(indexHtml, /@media \(max-width: 1024px\)/,
+  '平板断点必须保留');
+assert.match(indexHtml, /@media \(max-width: 767px\)[\s\S]{0,600}\.sidebar\s*\{\s*display:\s*none;/,
+  '移动端必须隐藏桌面侧边导航');
+assert.match(indexHtml, /env\(safe-area-inset-bottom\)/,
+  '移动端底部导航必须保留安全区内边距');
+assert.match(indexHtml, /\.zos-command \.command-grid\s*\{\s*display:\s*grid;[\s\S]{0,120}repeat\(3,/,
+  '桌面壳必须提供三列布局');
+assert.match(indexHtml, /@media \(max-width: 1024px\)[\s\S]{0,1800}\.zos-command \.command-grid\s*\{\s*grid-template-columns:\s*repeat\(2,/,
+  '平板壳必须提供两列布局');
+assert.match(indexHtml, /@media \(max-width: 767px\)[\s\S]{0,1800}\.zos-command \.command-grid\s*\{\s*grid-template-columns:\s*1fr;/,
+  '移动端壳必须提供单列布局');
+assert.match(indexHtml, /<nav class="bottom-nav" id="bottomNav">/,
+  '既有底部导航必须保留');
+
 console.log('PWA baseline privacy and cache version checks passed');
