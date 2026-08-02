@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zos-workbench-v1.3.0';
+const CACHE_NAME = 'zos-workbench-v1.4.0';
 // Resolve from the service worker scope so the PWA works both at a domain root
 // and from a GitHub Pages project path such as /zos-workbench/.
 const ASSETS_TO_CACHE = [
@@ -27,6 +27,12 @@ const ASSETS_TO_CACHE = [
   'src/app/daily-brief.mjs',
   'src/app/feishu-approvals.mjs',
   'src/app/monitoring.mjs',
+  'src/app/intelligence-center.mjs',
+  'src/app/calendar-center.mjs',
+  'src/app/search-center.mjs',
+  'src/app/life-os.mjs',
+  'src/app/relation-center.mjs',
+  'src/app/review-center.mjs',
   'src/app/views/view-utils.mjs',
   'src/app/views/dashboard-view.mjs',
   'src/app/views/decision-view.mjs',
@@ -34,6 +40,13 @@ const ASSETS_TO_CACHE = [
   'src/app/views/health-view.mjs',
   'src/app/views/business-view.mjs',
   'src/app/views/mobile-view.mjs',
+  'src/app/views/intelligence-view.mjs',
+  'src/app/views/calendar-view.mjs',
+  'src/app/views/life-view.mjs',
+  'src/app/views/search-view.mjs',
+  'src/app/views/lingli-view.mjs',
+  'src/app/views/relation-view.mjs',
+  'src/app/views/review-view.mjs',
   'icons/icon-192x192.png',
   'icons/icon-512x512.png',
   'icons/icon-maskable-512x512.png',

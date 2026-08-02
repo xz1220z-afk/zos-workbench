@@ -3,6 +3,8 @@ const DEFAULT_TITLES = Object.freeze({
   'local-life': '万嘉网络', 'spark-media': '花火影像', enterprise: '企业项目',
   targets: '经营目标', health: '数据健康', 'zos-brain': 'ZOS 企业大脑',
   risk: '风险中心', inbox: '收集箱', tasks: '任务', privacy: '隐私与数据', settings: '设置',
+  life: '生活首页', lingli: '玲丽教育', calendar: '日历中心', intelligence: '情报中心',
+  search: '全局搜索', relations: '关系与跟进', reviews: '复盘中心',
 });
 
 export function createRouter({ document, onEnter = {}, titles = DEFAULT_TITLES } = {}) {

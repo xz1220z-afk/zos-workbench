@@ -17,3 +17,7 @@ verify_jwt = true
 [functions.zos-monitor]
 # Accepts sanitized operating events and stores them server-side for the authenticated owner.
 verify_jwt = true
+
+[functions.zos-intelligence-data]
+# Reads private intelligence summaries; optional Feishu refresh uses server-only configured targets.
+verify_jwt = true

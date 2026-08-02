@@ -7,8 +7,8 @@ import { createCeoOsApplication } from '../src/app.mjs';
 function fakeStore(targets = []) {
   const listeners = new Set();
   const state = {
-    schemaVersion: '1.3', deviceId: 'device-1', tombstones: [],
-    collections: { tasks: [], inbox: [], projects: [], commands: [], decisions: [], targets },
+    schemaVersion: '1.4', deviceId: 'device-1', tombstones: [],
+    collections: { tasks: [], inbox: [], projects: [], commands: [], decisions: [], targets, intelligence: [], calendar: [], life: [] },
   };
   return {
     load: () => structuredClone(state),
@@ -97,4 +97,19 @@ test('service worker caches the complete transitive browser module graph', async
     'src/app/browser-runtime.mjs', 'src/business-data-client.mjs', 'src/supabase-auth.mjs',
     'src/supabase-transport.mjs', 'src/sync-engine.mjs', 'src/data-model.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
+});
+
+test('calendar creation and review generation stay in private synchronized collections', () => {
+  const store = fakeStore();
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} },
+    storage: { getItem: () => 'device-1', setItem() {} }, store, createOperatingRuntime: false,
+    now: () => '2026-08-02T08:00:00.000Z',
+  });
+  const event = app.captureCalendar({ title: '团队周会', startAt: '2026-08-03 10:00' });
+  const review = app.generateReview('weekly_business');
+  assert.equal(event.privacy, 'work');
+  assert.equal(store.load().collections.calendar.length, 1);
+  assert.equal(review.status, 'pending_review');
+  assert.equal(store.load().collections.inbox.at(-1).kind, 'review_draft');
 });

@@ -29,6 +29,16 @@ async function upsert(fetchImpl, url, anonKey, token, table, conflict, rows) {
   if (!response.ok) throw new Error(`${table}_persist_failed`);
 }
 
+async function loadIntelligenceRows(fetchImpl, config, token, { refresh = false } = {}) {
+  const endpoint = new URL('/functions/v1/zos-intelligence-data', `${config.url.replace(/\/$/, '')}/`);
+  if (refresh) endpoint.searchParams.set('refresh', 'feishu');
+  const response = await fetchImpl(endpoint, { headers: { apikey: config.anonKey, Authorization: `Bearer ${token}` } });
+  if (!response.ok) throw new Error('intelligence_read_failed');
+  const payload = await response.json();
+  if (!Array.isArray(payload.items)) throw new Error('intelligence_contract_invalid');
+  return payload.items;
+}
+
 export async function createBrowserOperatingRuntime({
   storage, store, deviceId, now = () => new Date().toISOString(), fetchImpl = globalThis.fetch,
   eventTarget = globalThis, document = globalThis.document,
@@ -91,5 +101,8 @@ export async function createBrowserOperatingRuntime({
     eventTarget, visibility: document,
   });
 
-  return { operatingLoop, syncController, session };
+  return {
+    operatingLoop, syncController, session,
+    loadIntelligence: (options) => loadIntelligenceRows(fetchImpl, config, session.accessToken, options),
+  };
 }

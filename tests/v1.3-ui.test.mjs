@@ -20,7 +20,7 @@ test('desktop and mobile navigation expose the approved CEO OS information archi
   const bottom = indexHtml.match(/<nav class="bottom-nav" id="bottomNav">([\s\S]*?)<\/nav>/)?.[1] || '';
   const labels = [...bottom.matchAll(/<button[^>]*class="bottom-nav-item[^>]*>[\s\S]*?<span[^>]*>[\s\S]*?<\/span>\s*([^<]+?)\s*<\/button>/g)]
     .map(([, label]) => label.trim());
-  assert.deepEqual(labels, ['首页', '决策', '行动', '业务', '更多']);
+  assert.deepEqual(labels, ['首页', '决策', '行动', '日历', '更多']);
 });
 
 test('HTML is a modular shell with external design and application entrypoints', () => {

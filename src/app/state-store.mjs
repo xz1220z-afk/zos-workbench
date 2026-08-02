@@ -1,11 +1,13 @@
 import { createRecord, markDeleted, normalizeRecord, touchRecord } from '../data-model.mjs';
 
-const STATE_KEY = 'zos_ceo_os_state_v1_3';
-const BASE_REVISIONS_KEY = 'zos_ceo_os_base_revisions_v1_3';
+const STATE_KEY = 'zos_ceo_os_state_v1_4';
+const PREVIOUS_STATE_KEY = 'zos_ceo_os_state_v1_3';
+const BASE_REVISIONS_KEY = 'zos_ceo_os_base_revisions_v1_4';
+const PREVIOUS_BASE_REVISIONS_KEY = 'zos_ceo_os_base_revisions_v1_3';
 const LEGACY_KEYS = {
   tasks: 'zos_tasks', inbox: 'zos_inbox', projects: 'zos_projects', commands: 'zos_commands',
 };
-const ENTITY_TYPES = ['tasks', 'inbox', 'projects', 'commands', 'decisions', 'targets'];
+const ENTITY_TYPES = ['tasks', 'inbox', 'projects', 'commands', 'decisions', 'targets', 'intelligence', 'calendar', 'life'];
 const FORBIDDEN_KEY = /(password|passcode|access[_-]?token|refresh[_-]?token|authorization|api[_-]?key|anon[_-]?key|secret)/i;
 
 function clone(value) {
@@ -54,7 +56,7 @@ function normalizeState(input, context) {
     .map((record) => normalizedRecord(record, context))
     .filter((record) => record.deletedAt);
   return {
-    schemaVersion: '1.3',
+    schemaVersion: '1.4',
     deviceId: input?.deviceId || context.deviceId,
     collections,
     tombstones,
@@ -91,7 +93,7 @@ export function createStateStore(config = {}) {
   }
 
   let state = (() => {
-    const current = parse(storage, STATE_KEY, null);
+    const current = parse(storage, STATE_KEY, null) || parse(storage, PREVIOUS_STATE_KEY, null);
     return persist(current ? normalizeState(current, context) : migrateLegacy(storage, context));
   })();
 
@@ -152,7 +154,7 @@ export function createStateStore(config = {}) {
       return () => listeners.delete(listener);
     },
     loadBaseRevisions() {
-      const value = parse(storage, BASE_REVISIONS_KEY, {});
+      const value = parse(storage, BASE_REVISIONS_KEY, null) || parse(storage, PREVIOUS_BASE_REVISIONS_KEY, {});
       return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
     },
     saveBaseRevisions(revisions) {

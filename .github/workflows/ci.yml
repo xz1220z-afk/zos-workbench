@@ -20,10 +20,7 @@ jobs:
         with:
           node-version: 20
       - name: Run regression tests
-        run: >-
-          node --test tests/data-model.test.mjs tests/pwa-baseline.test.mjs
-          tests/supabase-migration.test.mjs tests/sync-engine.test.mjs
-          tests/supabase-transport.test.mjs tests/supabase-auth.test.mjs
+        run: node --test
       - name: Check inline JavaScript syntax
         run: |
           node --input-type=module - <<'NODE'

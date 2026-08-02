@@ -104,7 +104,7 @@ test('mobile navigation has five primary destinations and routes secondary pages
   const mobileLabels = [...bottomNav.matchAll(/<button class="bottom-nav-item[^>]*>[\s\S]*?<span class="bn-icon">[\s\S]*?<\/span>\s*([^<\s][^<]*?)\s*<\/button>/g)]
     .map(([, label]) => label.trim());
 
-  assert.deepEqual(mobileLabels, ['首页', '决策', '行动', '业务', '更多'],
+  assert.deepEqual(mobileLabels, ['首页', '决策', '行动', '日历', '更多'],
     'mobile navigation must expose the agreed five destinations');
   assert.match(indexHtml, /id="mobileMoreMenu"[\s\S]*?data-page="enterprise"[\s\S]*?data-page="targets"[\s\S]*?data-page="health"[\s\S]*?data-page="zos-brain"[\s\S]*?data-page="risk"[\s\S]*?data-page="settings"/,
     'More must keep projects, targets, health, knowledge, risk, and settings routes reachable');

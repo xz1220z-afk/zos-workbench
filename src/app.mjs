@@ -5,8 +5,21 @@ import { render as renderTargets } from './app/views/targets-view.mjs';
 import { render as renderHealth } from './app/views/health-view.mjs';
 import { render as renderMobile } from './app/views/mobile-view.mjs';
 import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs';
+import { buildCalendar, calendarPeriod, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs';
+import { normalizeIntelligenceItem, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs';
+import { summarizeLife } from './app/life-os.mjs';
+import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs';
+import { render as renderIntelligence } from './app/views/intelligence-view.mjs';
+import { render as renderCalendar } from './app/views/calendar-view.mjs';
+import { render as renderLife } from './app/views/life-view.mjs';
+import { render as renderSearch } from './app/views/search-view.mjs';
+import { render as renderLingli } from './app/views/lingli-view.mjs';
+import { buildRelations } from './app/relation-center.mjs';
+import { createReviewDraft } from './app/review-center.mjs';
+import { render as renderRelations } from './app/views/relation-view.mjs';
+import { render as renderReviews } from './app/views/review-view.mjs';
 
-export const APP_VERSION = '1.3.0';
+export const APP_VERSION = '1.4.0';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
@@ -20,7 +33,9 @@ export function createCeoOsApplication(config = {}) {
   const store = config.store || createStateStore({ storage, now, deviceId, createId: browserId });
   const runtime = {
     health: [], gaps: [], briefs: [], conflicts: [], approvals: [], decisions: [], targets: [],
-    businessExceptions: [], syncStatus: '等待首次同步', loopConnected: false,
+    businessExceptions: [], intelligence: [], intelligenceState: 'loading', intelligenceCompany: 'all',
+    calendarView: 'week', searchQuery: '', searchResults: [],
+    syncStatus: '等待首次同步', loopConnected: false,
   };
   let operatingRuntime = config.operatingRuntime || null;
   let actionsBound = false;
@@ -33,6 +48,33 @@ export function createCeoOsApplication(config = {}) {
     const state = store.load();
     const decisions = runtime.loopConnected ? runtime.decisions : (state.collections.decisions || []);
     const brief = runtime.brief || runtime.briefs.at(-1) || null;
+    const intelligence = runtime.intelligence.length ? runtime.intelligence : (state.collections.intelligence || []);
+    const life = state.collections.life || [];
+    const sources = runtime.sources || {};
+    const businessRecords = ['wanjia', 'huahuo', 'lingli'].flatMap((source) => {
+      const payload = sources[source]?.records;
+      const rows = Array.isArray(payload) ? payload : payload?.records || [];
+      return rows.map((item) => ({ ...item, source, company: source, title: item.merchantName || item.projectName || item.name }));
+    });
+    const projects = state.collections.projects || [];
+    const calendar = buildCalendar({
+      calendar: state.collections.calendar || [],
+      tasks: state.collections.tasks || [],
+      projects: [...projects, ...businessRecords].map((item) => ({ ...item, dueAt: item.dueAt || item.dueDate || item.shootingDate })),
+      life,
+      intelligence,
+    }).map((item) => item.company === 'life' ? redactLifeEventForWork(item) : item);
+    const visibleCalendar = calendarPeriod(calendar, { view: runtime.calendarView, anchor: now() });
+    const filteredIntelligence = runtime.intelligenceCompany === 'all'
+      ? todayMustRead(intelligence, { now: now(), limit: 100 })
+      : intelligence.filter((item) => (item.relevantCompanies || []).includes(runtime.intelligenceCompany));
+    const searchIndex = buildSearchIndex({
+      business: businessRecords,
+      knowledge: runtime.brain?.notes || [],
+      intelligence,
+      actions: [...(state.collections.tasks || []), ...(state.collections.inbox || [])],
+      life,
+    });
     return {
       ...runtime,
       decisions,
@@ -41,6 +83,18 @@ export function createCeoOsApplication(config = {}) {
       inbox: state.collections.inbox || [],
       todayTop3: brief?.sections?.todayTop3 || [],
       brief,
+      sources,
+      intelligence: filteredIntelligence,
+      intelligenceCompany: runtime.intelligenceCompany,
+      mustRead: todayMustRead(intelligence, { now: now() }),
+      calendar: visibleCalendar,
+      calendarView: runtime.calendarView,
+      calendarConflicts: detectCalendarConflicts(calendar),
+      relations: buildRelations(businessRecords),
+      life,
+      lifeSummary: summarizeLife(life),
+      searchResults: searchWorkspace(searchIndex, runtime.searchQuery),
+      today: now().slice(0, 10),
     };
   }
 
@@ -124,6 +178,27 @@ export function createCeoOsApplication(config = {}) {
     return item;
   }
 
+  function captureCalendar(input = {}) {
+    const title = String(input.title || '').trim();
+    const start = new Date(String(input.startAt || '').replace(' ', 'T'));
+    if (!title || Number.isNaN(start.getTime())) throw new Error('日程标题和时间不能为空');
+    const item = store.saveEntity('calendar', {
+      title, startAt: start.toISOString(), endAt: input.endAt || null,
+      company: input.company || 'ceo', privacy: input.privacy || 'work', status: 'scheduled',
+    });
+    signalLocalChange();
+    renderAll();
+    return item;
+  }
+
+  function generateReview(type) {
+    const draft = createReviewDraft(type, { ...viewModel(), date: now().slice(0, 10), generatedAt: now() });
+    const item = store.saveEntity('inbox', draft);
+    signalLocalChange();
+    renderAll();
+    return item;
+  }
+
   function bindActions() {
     if (actionsBound || !document?.addEventListener) return;
     actionsBound = true;
@@ -132,14 +207,55 @@ export function createCeoOsApplication(config = {}) {
       const executeButton = event.target?.closest?.('[data-execute-approval]');
       const refreshButton = event.target?.closest?.('[data-refresh-source]');
       const captureButton = event.target?.closest?.('[data-quick-capture]');
+      const pageButton = event.target?.closest?.('[data-page]');
+      const intelligenceButton = event.target?.closest?.('[data-intelligence-status]');
+      const intelligenceRefresh = event.target?.closest?.('[data-refresh-intelligence]');
+      const lifeCapture = event.target?.closest?.('[data-life-capture]');
+      const calendarCapture = event.target?.closest?.('[data-calendar-capture]');
+      const calendarView = event.target?.closest?.('[data-calendar-view]');
+      const intelligenceCompany = event.target?.closest?.('[data-intelligence-company]');
+      const reviewDraft = event.target?.closest?.('[data-review-draft]');
       try {
         if (previewButton) await previewDecision(previewButton.dataset.previewDecision);
         else if (executeButton) await executeApproval(executeButton.dataset.executeApproval);
         else if (refreshButton) await refreshSource(refreshButton.dataset.refreshSource);
         else if (captureButton) quickCapture((config.prompt || globalThis.prompt)?.('记录一条想法或任务'));
+        else if (intelligenceButton) {
+          const current = viewModel().intelligence.find((item) => item.externalId === intelligenceButton.dataset.intelligenceId);
+          const next = transitionIntelligence(current, intelligenceButton.dataset.intelligenceStatus);
+          store.saveEntity('intelligence', { ...next, id: `intelligence:${next.externalId}` });
+          if (next.status === 'actioned') quickCapture(`跟进情报：${next.title}`);
+        } else if (intelligenceRefresh) {
+          runtime.intelligenceState = 'loading'; renderAll();
+          runtime.intelligence = ((await operatingRuntime?.loadIntelligence?.({ refresh: true })) || []).map(normalizeIntelligenceItem);
+          runtime.intelligenceState = runtime.intelligence.length ? null : 'empty'; renderAll();
+        } else if (intelligenceCompany) {
+          runtime.intelligenceCompany = intelligenceCompany.dataset.intelligenceCompany || 'all';
+          renderAll();
+        } else if (calendarView) {
+          runtime.calendarView = ['day', 'week', 'month'].includes(calendarView.dataset.calendarView) ? calendarView.dataset.calendarView : 'week';
+          renderAll();
+        } else if (calendarCapture) {
+          const ask = config.prompt || globalThis.prompt;
+          const title = ask?.('日程标题');
+          if (String(title || '').trim()) {
+            const startAt = ask?.('开始时间（YYYY-MM-DD HH:mm）', `${now().slice(0, 10)} 09:00`);
+            captureCalendar({ title, startAt });
+          }
+        } else if (lifeCapture) {
+          const title = (config.prompt || globalThis.prompt)?.('记录一条生活事项');
+          if (String(title || '').trim()) store.saveEntity('life', { title: String(title).trim(), area: 'review', status: 'open', privacy: 'private' });
+        } else if (reviewDraft) generateReview(reviewDraft.dataset.reviewDraft);
+        else if (pageButton && globalThis.window?.navigateTo) globalThis.window.navigateTo(pageButton.dataset.page);
       } catch { runtime.syncStatus = '操作未完成，请检查登录与数据权限'; renderAll(); }
     });
     document.addEventListener('submit', (event) => {
+      if (event.target?.id === 'globalSearchForm') {
+        event.preventDefault();
+        runtime.searchQuery = String(new FormData(event.target).get('query') || '').trim();
+        renderAll();
+        return;
+      }
       if (event.target?.id !== 'confirmedTargetForm') return;
       event.preventDefault();
       const data = new FormData(event.target);
@@ -157,6 +273,13 @@ export function createCeoOsApplication(config = {}) {
     renderTargets(document?.getElementById('targetCenterRoot'), model);
     renderHealth(document?.getElementById('healthCenterRoot'), model);
     renderMobile(document?.getElementById('mobileDashboardRoot'), model);
+    renderIntelligence(document?.getElementById('intelligenceCenterRoot'), model);
+    renderCalendar(document?.getElementById('calendarCenterRoot'), model);
+    renderLife(document?.getElementById('lifeCenterRoot'), model);
+    renderSearch(document?.getElementById('searchCenterRoot'), model);
+    renderLingli(document?.getElementById('lingliCenterRoot'), model);
+    renderRelations(document?.getElementById('relationCenterRoot'), model);
+    renderReviews(document?.getElementById('reviewCenterRoot'), model);
     const badge = document?.getElementById('decisionBadge');
     if (badge) {
       badge.textContent = String(model.decisions.filter((item) => ['open', 'pending_resolution'].includes(item.status)).length);
@@ -183,6 +306,10 @@ export function createCeoOsApplication(config = {}) {
       catch { runtime.syncStatus = '跨端同步失败，可稍后重试'; }
     }
     if (operatingRuntime?.operatingLoop) {
+      try {
+        runtime.intelligence = (await operatingRuntime.loadIntelligence?.() || []).map(normalizeIntelligenceItem);
+        runtime.intelligenceState = runtime.intelligence.length ? null : 'empty';
+      } catch { runtime.intelligenceState = 'failed'; }
       for (const source of ['wanjia', 'huahuo']) {
         try { await operatingRuntime.operatingLoop.refresh(source); }
         catch { runtime.health.push({ source, state: 'failed', safeCode: 'source_refresh_failed' }); }
@@ -204,7 +331,7 @@ export function createCeoOsApplication(config = {}) {
 
   return {
     start, render: renderAll, store, runtime, viewModel,
-    refreshSource, confirmTarget, previewDecision, executeApproval, quickCapture,
+    refreshSource, confirmTarget, previewDecision, executeApproval, quickCapture, captureCalendar, generateReview,
     get operatingRuntime() { return operatingRuntime; },
   };
 }

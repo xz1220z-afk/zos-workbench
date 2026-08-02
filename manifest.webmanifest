@@ -1,7 +1,7 @@
 {
   "name": "ZOS CEO OS",
   "short_name": "CEO OS",
-  "description": "ZOS CEO OS · 决策、行动、经营目标、万嘉网络、花火影像与企业大脑",
+  "description": "ZOS CEO OS · 工作与生活双首页、万嘉网络、花火影像、玲丽教育、日历、情报与企业大脑",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -31,6 +31,8 @@
   "shortcuts": [
     { "name": "待我决策", "short_name": "决策", "url": "./#decisions", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] },
     { "name": "今日行动", "short_name": "行动", "url": "./#today", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] },
-    { "name": "数据健康", "short_name": "健康", "url": "./#health", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] }
+    { "name": "数据健康", "short_name": "健康", "url": "./#health", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] },
+    { "name": "日历中心", "short_name": "日历", "url": "./#calendar", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] },
+    { "name": "情报中心", "short_name": "情报", "url": "./#intelligence", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] }
   ]
 }

@@ -1,6 +1,6 @@
 # 朱帅工作台（ZOS Workbench）
 
-ZOS 是朱帅个人使用的 CEO OS，当前以深色静态 PWA 形式发布。它把今日行动、待我决策、经营目标、万嘉网络、花火影像、项目和企业大脑放在同一个四端工作台中。
+ZOS 是朱帅个人使用的 CEO OS，当前以深色 PWA 形式发布。它把工作与生活双首页、今日行动、待我决策、经营目标、万嘉网络、花火影像、玲丽教育、日历、情报、关系、复盘和企业大脑放在同一个四端工作台中。
 
 ## 正式入口
 
@@ -9,10 +9,14 @@ ZOS 是朱帅个人使用的 CEO OS，当前以深色静态 PWA 形式发布。�
 
 注意：`https://xz1220z-afk.github.io/` 是用户主页根域名，目前没有配置 Pages，因此会显示 404。日常只使用上面的 `/zos-workbench/` 地址。
 
-## 当前能力（v1.3.0）
+## 当前能力（v1.4.0）
 
-- CEO 指挥中心、今日行动、待我决策、经营目标、数据健康和每日 CEO 简报
-- 万嘉 / 花火真实飞书事实只读聚合；企业大脑仅同步 Obsidian 元数据，不上传正文
+- CEO 指挥中心与独立 Life OS；工作端只显示私人日程的忙碌占位
+- 今日行动、待我决策、经营目标、数据健康和每日 CEO 简报
+- 日/周/月日历、冲突检测、私有生活事项、关系聚合、周/月复盘草稿和跨域全局搜索
+- 独立情报中心：飞书候选池只读拉取到 Supabase 私有摘要缓存，人工标记已读或转为行动
+- 万嘉 / 花火真实飞书事实只读聚合；玲丽教育保留真实空态，未接入前不显示虚构指标
+- 企业大脑仅同步 Obsidian 元数据，不上传正文
 - localStorage 本地持久化与自动四端同步；关键决策和目标并发修改必须人工解冲突
 - JSON 数据导出、校验、覆盖导入和清除
 - PWA 安装：Mac/Windows Edge 或 Chrome、iPhone Safari、Android Chrome
@@ -56,7 +60,7 @@ curl -fsSI https://xz1220z-afk.github.io/zos-workbench/sw.js
 
 ## Supabase 配置
 
-数据库迁移文件位于 `supabase/migrations/`；v1.3 新增决策、目标、指标快照、来源健康、审批和脱敏审计。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，发布步骤见 [`docs/zos-ceo-os-v1.3-deploy-checklist.md`](docs/zos-ceo-os-v1.3-deploy-checklist.md)。
+数据库迁移文件位于 `supabase/migrations/`；v1.4 在 v1.3 决策闭环上增加私有情报缓存及 intelligence/calendar/life 跨端实体。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，发布步骤见 [`docs/superpowers/plans/2026-08-02-zos-ceo-os-v1.4.md`](docs/superpowers/plans/2026-08-02-zos-ceo-os-v1.4.md)。
 
 邮箱登录链接必须回调到：
 

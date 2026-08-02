@@ -100,3 +100,20 @@ test('base revisions survive reload and missing legacy bases request a full-pull
   assert.equal(second.needsFullPull(['decisions:missing-base']), true);
   assert.equal(second.needsFullPull(['targets:target-1']), false);
 });
+
+test('v1.3 private state migrates to v1.4 without losing records or base revisions', () => {
+  const storage = memoryStorage({
+    zos_ceo_os_state_v1_3: JSON.stringify({
+      schemaVersion: '1.3', deviceId: 'device-old', tombstones: [oldTombstone],
+      collections: { tasks: [oldTask], decisions: [], targets: [] },
+    }),
+    zos_ceo_os_base_revisions_v1_3: JSON.stringify({ 'tasks:task-existing': 7 }),
+  });
+  const store = createStateStore({ storage, now: () => '2026-08-02T00:00:00.000Z', deviceId: 'device-new', createId: () => 'new-id' });
+  const state = store.load();
+  assert.equal(state.schemaVersion, '1.4');
+  assert.equal(state.collections.tasks[0].revision, 7);
+  assert.deepEqual(state.collections.life, []);
+  assert.deepEqual(state.collections.calendar, []);
+  assert.deepEqual(store.loadBaseRevisions(), { 'tasks:task-existing': 7 });
+});
