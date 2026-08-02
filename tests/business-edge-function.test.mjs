@@ -5,7 +5,8 @@ const source = await readFile(new URL('../supabase/functions/zos-business-data/i
 const sharedAuth = await readFile(new URL('../supabase/functions/_shared/auth.ts', import.meta.url), 'utf8');
 const sharedFeishu = await readFile(new URL('../supabase/functions/_shared/feishu.ts', import.meta.url), 'utf8');
 const sharedValues = await readFile(new URL('../supabase/functions/_shared/feishu-values.mjs', import.meta.url), 'utf8');
-const runtimeSource = `${source}\n${sharedAuth}\n${sharedFeishu}\n${sharedValues}`;
+const sharedBusiness = await readFile(new URL('../supabase/functions/_shared/business-data.ts', import.meta.url), 'utf8');
+const runtimeSource = `${source}\n${sharedAuth}\n${sharedFeishu}\n${sharedValues}\n${sharedBusiness}`;
 const migration = await readFile(new URL('../supabase/migrations/002_business_data_cache.sql', import.meta.url), 'utf8');
 const config = await readFile(new URL('../supabase/config.toml', import.meta.url), 'utf8');
 
@@ -24,23 +25,23 @@ assert.match(runtimeSource, /feishu_read_failed/,
   'Function reports the safe table-read failure reason to signed-in clients');
 assert.match(runtimeSource, /AbortSignal\.timeout\(12_000\)/,
   'Every Feishu request has a bounded timeout instead of leaving page refreshes pending indefinitely');
-assert.match(source, /sourceRecordId:\s*record\.record_id\s*\|\|\s*null/,
+assert.match(runtimeSource, /sourceRecordId:\s*record\.record_id\s*\|\|\s*null/,
   'Mapped records preserve the real Feishu record identity and never synthesize a write identity');
-assert.match(source, /writeAvailable:\s*Boolean\(record\.record_id\)/,
+assert.match(runtimeSource, /writeAvailable:\s*Boolean\(record\.record_id\)/,
   'Records without a real Feishu identity remain readable but cannot be written');
-assert.match(source, /sourceUpdatedAt/,
+assert.match(runtimeSource, /sourceUpdatedAt/,
   'Mapped records preserve a safe source update timestamp');
-assert.match(source, /feishuText/,
+assert.match(runtimeSource, /feishuText/,
   'Complex Feishu field values are normalized before entering the client contract');
-assert.match(source, /roundMoney/,
+assert.match(runtimeSource, /roundMoney/,
   'Money summaries are rounded at the source boundary');
-assert.doesNotMatch(source, /updatedAt:\s*updatedAt\s*\|\|\s*new Date\(0\)/,
+assert.doesNotMatch(runtimeSource, /updatedAt:\s*updatedAt\s*\|\|\s*new Date\(0\)/,
   'Missing Feishu update fields must not be converted into a fake 1970 timestamp and false stale risk');
-assert.match(source, /contractVersion:\s*'1\.3'/,
+assert.match(runtimeSource, /contractVersion:\s*'1\.3'/,
   'Read payloads expose the explicit v1.3 contract');
-assert.match(source, /const health = \(recordCount: number\) => \(\{\s*recordCount,\s*durationMs,\s*lastSuccessAt: completedAt,\s*safeCode: null\s*\}\)/,
+assert.match(runtimeSource, /const health = \(recordCount: number\) => \(\{\s*recordCount,\s*durationMs,\s*lastSuccessAt: completedAt,\s*safeCode: null\s*\}\)/,
   'Read payloads expose safe source health evidence');
-assert.doesNotMatch(source, /sourceRecordId:\s*`[^`]*\$\{idx\}/,
+assert.doesNotMatch(runtimeSource, /sourceRecordId:\s*`[^`]*\$\{idx\}/,
   'Array indexes must never become Feishu write identities');
 assert.match(source, /searchParams\.get\('source'\)/,
   'Function can limit a page refresh to its requested read-only source');
@@ -48,8 +49,8 @@ assert.match(runtimeSource, /1254302/,
   'Function classifies Feishu advanced-permission failures without exposing raw upstream responses');
 assert.match(runtimeSource, /1254045/,
   'Function classifies missing or inaccessible Feishu field names safely');
-assert.match(source, /wanjia/);
-assert.match(source, /huahuo/);
+assert.match(runtimeSource, /wanjia/);
+assert.match(runtimeSource, /huahuo/);
 assert.doesNotMatch(runtimeSource, /cli_aab7f0f691b8dcb3|yimbjqe4EDassDFqmUR9Lh0xdzBHyMvQ/,
   'No user-provided credential may be committed to the Edge Function');
 assert.match(migration, /create table if not exists public\.zos_business_cache/i);

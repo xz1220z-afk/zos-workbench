@@ -10,7 +10,7 @@ const [shellHtml, legacySource, appCss, serviceWorker, manifest] = await Promise
 ]);
 const indexHtml = `${shellHtml}\n${legacySource}\n${appCss}`;
 
-assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.4\.3';/,
+assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.5\.0';/,
   'A command-center UI release must receive a new Service Worker cache revision');
 for (const asset of [
   'assets/app.css', 'src/app.mjs', 'src/legacy-app.mjs', 'src/app/operating-loop.mjs',
