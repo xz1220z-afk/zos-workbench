@@ -1521,6 +1521,28 @@ body { overflow-x: hidden; }
 .zos-command #page-dashboard > #dashboardStats,
 .zos-command #commandCenterGrid { display: none; }
 .v14-dashboard { display: grid; gap: 16px; }
+.v15-sync-rail {
+  display: grid; grid-template-columns: minmax(220px, 1fr) auto auto; gap: 14px; align-items: center;
+  padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px;
+  background: linear-gradient(110deg, rgba(33, 46, 65, .94), rgba(15, 24, 38, .98));
+}
+.v15-sync-rail > div:first-child { display: grid; grid-template-columns: auto auto; justify-content: start; align-items: center; gap: 4px 8px; }
+.v15-sync-rail small { grid-column: 2; color: var(--muted); }
+.v15-sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #53d69b; box-shadow: 0 0 14px rgba(83, 214, 155, .7); }
+.v15-sync-rail[data-sync-phase="partial"] .v15-sync-dot,
+.v15-sync-rail[data-sync-phase="stale"] .v15-sync-dot { background: #f0b75e; box-shadow: 0 0 14px rgba(240, 183, 94, .6); }
+.v15-sync-rail[data-sync-phase="offline"] .v15-sync-dot,
+.v15-sync-rail[data-sync-phase="authentication_required"] .v15-sync-dot { background: #8492a6; box-shadow: none; }
+.v15-sync-sources { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.v15-sync-source { padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 12px; }
+.v15-sync-source.is-synced { color: #8ce4bd; border-color: rgba(83, 214, 155, .34); }
+.v15-sync-source.is-failed { color: #f1c478; border-color: rgba(240, 183, 94, .34); }
+.v15-health-summary { margin-bottom: 16px; }
+@media (max-width: 760px) {
+  .v15-sync-rail { grid-template-columns: 1fr auto; }
+  .v15-sync-sources { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; }
+  .v15-sync-source { white-space: nowrap; }
+}
 .v14-hero { min-height: 205px; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding: 30px; border: 1px solid var(--cc-border); border-radius: 20px; background: radial-gradient(circle at 70% 20%, rgba(71, 94, 125, .58), transparent 36%), linear-gradient(118deg, rgba(13,23,39,.98), rgba(53,45,43,.86)), #111a2b; overflow: hidden; position: relative; }
 .v14-hero::after { content: ''; position: absolute; right: 8%; top: 16%; width: 210px; height: 100px; border-radius: 50%; background: rgba(216,180,106,.15); filter: blur(45px); }
 .v14-hero h2 { margin: 10px 0 8px; font-size: clamp(26px, 3vw, 42px); color: #fff; }

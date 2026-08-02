@@ -46,7 +46,7 @@ test('renders cached content before remote startup settles', async () => {
   const calls = [];
   const syncGate = deferred();
   const intelligenceGate = deferred();
-  const sourceGates = { wanjia: deferred(), huahuo: deferred() };
+  const sourceGates = { wanjia: deferred(), huahuo: deferred(), projects: deferred() };
   const document = renderDocument();
   const operatingLoop = {
     async refresh(source) { calls.push(source); await sourceGates[source].promise; },
@@ -76,11 +76,12 @@ test('renders cached content before remote startup settles', async () => {
   intelligenceGate.resolve();
   sourceGates.wanjia.resolve();
   sourceGates.huahuo.resolve();
+  sourceGates.projects.resolve();
   await startPromise;
   await app.whenIdle();
 
   assert.equal(startedBeforeRemote, true);
-  assert.deepEqual(calls, ['sync', 'intelligence', 'wanjia', 'huahuo']);
+  assert.deepEqual(calls, ['sync', 'wanjia', 'huahuo', 'projects', 'intelligence']);
   assert.ok(document.nodes.get('ceoDashboardRoot').innerHTML.length > 0);
 });
 
@@ -108,7 +109,7 @@ test('production application drives the authenticated operating loop on startup'
   await app.whenIdle();
 
   assert.deepEqual(calls, [
-    ['sync'], ['refresh', 'wanjia'], ['refresh', 'huahuo'], ['targets', ['target-1']], ['brief'],
+    ['sync'], ['refresh', 'wanjia'], ['refresh', 'huahuo'], ['refresh', 'projects'], ['targets', ['target-1']], ['brief'],
   ]);
   assert.equal(app.viewModel().decisions[0].id, 'decision-1');
   assert.equal(app.viewModel().gaps[0].gap, 2000);
@@ -158,6 +159,7 @@ test('service worker caches the complete transitive browser module graph', async
   for (const asset of [
     'src/app/browser-runtime.mjs', 'src/business-data-client.mjs', 'src/supabase-auth.mjs',
     'src/supabase-transport.mjs', 'src/sync-engine.mjs', 'src/data-model.mjs',
+    'src/app/auto-refresh-controller.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
 });
 

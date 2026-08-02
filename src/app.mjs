@@ -18,8 +18,9 @@ import { buildRelations } from './app/relation-center.mjs';
 import { createReviewDraft } from './app/review-center.mjs';
 import { render as renderRelations } from './app/views/relation-view.mjs';
 import { render as renderReviews } from './app/views/review-view.mjs';
+import { createAutoRefreshController } from './app/auto-refresh-controller.mjs';
 
-export const APP_VERSION = '1.4.3';
+export const APP_VERSION = '1.5.0';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
@@ -36,8 +37,13 @@ export function createCeoOsApplication(config = {}) {
     businessExceptions: [], intelligence: [], intelligenceState: 'loading', intelligenceCompany: 'all',
     calendarView: 'week', searchQuery: '', searchResults: [],
     syncStatus: '等待首次同步', loopConnected: false,
+    autoRefresh: {
+      phase: 'idle', reason: null, lastAttemptAt: null, lastSuccessAt: null,
+      succeeded: [], failed: [],
+    },
   };
   let operatingRuntime = config.operatingRuntime || null;
+  let autoRefreshController = null;
   let actionsBound = false;
   let started = false;
   let startupWork = Promise.resolve();
@@ -129,6 +135,54 @@ export function createCeoOsApplication(config = {}) {
     return viewModel();
   }
 
+  function safeRefreshCode(error) {
+    const message = String(error?.message || error || '').toLowerCase();
+    if (/authentication|登录|jwt|401/.test(message)) return 'authentication_required';
+    if (/permission|权限|403/.test(message)) return 'feishu_permission_denied';
+    if (/not found|不存在|404/.test(message)) return 'feishu_resource_not_found';
+    if (/field|字段/.test(message)) return 'feishu_field_mismatch';
+    if (/timeout|超时/.test(message)) return 'source_timeout';
+    return 'source_refresh_failed';
+  }
+
+  async function refreshAllSources(reason = 'manual') {
+    if (!operatingRuntime) {
+      return { succeeded: [], failed: [{ source: 'all', safeCode: 'authentication_required' }] };
+    }
+    const syncController = operatingRuntime.syncController || config.syncController;
+    const jobs = [
+      ['sync', () => syncController?.sync ? syncController.sync(reason) : Promise.resolve()],
+      ['wanjia', () => operatingRuntime.operatingLoop?.refresh('wanjia')],
+      ['huahuo', () => operatingRuntime.operatingLoop?.refresh('huahuo')],
+      ['projects', () => operatingRuntime.operatingLoop?.refresh('projects')],
+      ['intelligence', async () => applyIntelligenceResult(await operatingRuntime.loadIntelligence?.({ refresh: true }))],
+    ];
+    const results = await Promise.all(jobs.map(async ([source, run]) => {
+      try {
+        await run();
+        if (['wanjia', 'huahuo', 'projects'].includes(source)) updateFromOperatingLoop();
+        renderAll();
+        return { source, ok: true };
+      } catch (error) {
+        return { source, ok: false, safeCode: safeRefreshCode(error) };
+      }
+    }));
+    if (operatingRuntime.operatingLoop) {
+      const targets = store.load().collections.targets || [];
+      if (targets.length) operatingRuntime.operatingLoop.confirmTargets(targets);
+      const brief = operatingRuntime.operatingLoop.ensureDailyBrief();
+      updateFromOperatingLoop(brief);
+      if (brief && !(store.load().collections.inbox || []).some((item) => item.id === brief.id)) {
+        store.saveEntity('inbox', { ...brief, title: `CEO 每日简报｜${brief.date}`, status: 'pending_review' });
+      }
+    }
+    renderAll();
+    return {
+      succeeded: results.filter((item) => item.ok).map((item) => item.source),
+      failed: results.filter((item) => !item.ok).map(({ source, safeCode }) => ({ source, safeCode })),
+    };
+  }
+
   function confirmTarget(input = {}) {
     if (!operatingRuntime?.operatingLoop) throw new Error('请先登录 Supabase');
     const metricKey = String(input.metricKey || '').trim();
@@ -208,6 +262,7 @@ export function createCeoOsApplication(config = {}) {
       const previewButton = event.target?.closest?.('[data-preview-decision]');
       const executeButton = event.target?.closest?.('[data-execute-approval]');
       const refreshButton = event.target?.closest?.('[data-refresh-source]');
+      const refreshAllButton = event.target?.closest?.('[data-refresh-all]');
       const captureButton = event.target?.closest?.('[data-quick-capture]');
       const pageButton = event.target?.closest?.('[data-page]');
       const intelligenceButton = event.target?.closest?.('[data-intelligence-status]');
@@ -220,6 +275,7 @@ export function createCeoOsApplication(config = {}) {
       try {
         if (previewButton) await previewDecision(previewButton.dataset.previewDecision);
         else if (executeButton) await executeApproval(executeButton.dataset.executeApproval);
+        else if (refreshAllButton) await autoRefreshController?.refresh('manual');
         else if (refreshButton) await refreshSource(refreshButton.dataset.refreshSource);
         else if (captureButton) quickCapture((config.prompt || globalThis.prompt)?.('记录一条想法或任务'));
         else if (intelligenceButton) {
@@ -320,43 +376,32 @@ export function createCeoOsApplication(config = {}) {
     }
     if (!operatingRuntime) {
       runtime.intelligenceState = 'authentication_required';
+      runtime.autoRefresh = { ...runtime.autoRefresh, phase: 'authentication_required' };
       renderAll();
       return viewModel();
     }
     const syncController = operatingRuntime?.syncController || config.syncController;
     syncController?.start?.();
-    const backgroundJobs = [];
-    if (syncController?.sync) backgroundJobs.push((async () => {
-      try { await syncController.sync('startup'); runtime.syncStatus = '跨端同步完成'; }
-      catch { runtime.syncStatus = '跨端同步失败，可稍后重试'; }
-      renderAll();
-    })());
-    if (operatingRuntime.loadIntelligence) backgroundJobs.push((async () => {
-      try { applyIntelligenceResult(await operatingRuntime.loadIntelligence()); }
-      catch { runtime.intelligenceState = 'failed'; }
-      renderAll();
-    })());
-    if (operatingRuntime.operatingLoop) {
-      for (const source of ['wanjia', 'huahuo']) backgroundJobs.push((async () => {
-        try {
-          await operatingRuntime.operatingLoop.refresh(source);
-          updateFromOperatingLoop();
-        } catch {
-          runtime.health.push({ source, state: 'failed', safeCode: 'source_refresh_failed' });
-        }
+    const factory = config.autoRefreshFactory || createAutoRefreshController;
+    autoRefreshController = factory({
+      refreshAll: refreshAllSources,
+      eventTarget: config.eventTarget || globalThis,
+      visibility: document,
+      ...config.autoRefreshOptions,
+      onStatus: (status) => {
+        runtime.autoRefresh = status;
+        runtime.syncStatus = status.phase === 'refreshing'
+          ? '后台自动更新中，当前数据可继续使用'
+          : status.phase === 'partial'
+            ? '部分来源未更新，已保留上次成功数据'
+            : status.phase === 'offline'
+              ? '当前离线，显示上次缓存数据'
+              : '自动更新已开启';
         renderAll();
-      })());
-    }
-    await Promise.allSettled(backgroundJobs);
-    if (operatingRuntime.operatingLoop) {
-      const targets = store.load().collections.targets || [];
-      if (targets.length) operatingRuntime.operatingLoop.confirmTargets(targets);
-      const brief = operatingRuntime.operatingLoop.ensureDailyBrief();
-      updateFromOperatingLoop(brief);
-      if (brief && !(store.load().collections.inbox || []).some((item) => item.id === brief.id)) {
-        store.saveEntity('inbox', { ...brief, title: `CEO 每日简报｜${brief.date}`, status: 'pending_review' });
-      }
-    }
+      },
+    });
+    if (config.autoRefreshFactory || document?.visibilityState != null) autoRefreshController.start();
+    await autoRefreshController.refresh('startup');
     config.ensureDailyBrief && Object.assign(runtime, { briefs: await config.ensureDailyBrief(viewModel()) });
     renderAll();
     return viewModel();
@@ -378,7 +423,7 @@ export function createCeoOsApplication(config = {}) {
 
   return {
     start, whenIdle: () => startupWork, render: renderAll, store, runtime, viewModel,
-    refreshSource, confirmTarget, previewDecision, executeApproval, quickCapture, captureCalendar, generateReview,
+    refreshSource, refreshAllSources, confirmTarget, previewDecision, executeApproval, quickCapture, captureCalendar, generateReview,
     get operatingRuntime() { return operatingRuntime; },
   };
 }
