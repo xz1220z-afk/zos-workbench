@@ -1050,6 +1050,48 @@
     border-top-color: var(--cc-border);
   }
   .zos-command .command-grid { display: grid; gap: 16px; }
+  .command-center-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 28px;
+    margin-bottom: 16px;
+    border: 1px solid var(--cc-border);
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, rgba(216, 180, 106, .14), rgba(17, 26, 43, .98) 56%);
+  }
+  .command-center-kicker { color: var(--cc-accent-gold); font-size: 12px; font-weight: 700; letter-spacing: .12em; }
+  .command-center-title { margin: 8px 0 6px; color: var(--cc-text); font-size: 28px; }
+  .command-center-subtitle { color: var(--cc-text-muted); font-size: 14px; line-height: 1.6; }
+  .command-center-actions, .command-card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .command-center-actions { justify-content: flex-end; }
+  .command-card {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--cc-border);
+    border-radius: var(--radius-sm);
+    background: var(--cc-panel);
+  }
+  .command-card.wide { grid-column: span 2; }
+  .command-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .command-card-title { color: var(--cc-text); font-size: 16px; font-weight: 700; }
+  .command-card-source, .command-card-note { color: var(--cc-text-muted); font-size: 12px; line-height: 1.5; }
+  .command-card-note { margin-top: 10px; }
+  .command-metric { color: var(--cc-text); font-size: 26px; font-weight: 750; line-height: 1.1; margin: 8px 0 2px; }
+  .command-metric-label { color: var(--cc-text-muted); font-size: 12px; }
+  .command-metric-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .command-status { display: inline-flex; align-items: center; white-space: nowrap; border-radius: 999px; padding: 3px 9px; font-size: 11px; font-weight: 700; }
+  .command-status.synced { color: var(--cc-success); background: rgba(66, 199, 165, .12); }
+  .command-status.pending { color: var(--cc-warning); background: rgba(229, 168, 84, .13); }
+  .command-status.confirm { color: var(--cc-accent-gold); background: rgba(216, 180, 106, .13); }
+  .command-status.failed { color: var(--cc-risk); background: rgba(224, 108, 117, .13); }
+  .command-list { display: flex; flex-direction: column; gap: 8px; }
+  .command-list-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--cc-border); }
+  .command-list-item:last-child { border-bottom: 0; padding-bottom: 0; }
+  .command-list-main { min-width: 0; color: var(--cc-text); font-size: 13px; }
+  .command-list-meta { color: var(--cc-text-muted); font-size: 11px; margin-top: 3px; }
+  .command-empty { color: var(--cc-text-muted); font-size: 13px; line-height: 1.6; padding: 8px 0; }
 
   @media (min-width: 1200px) {
     .zos-command .command-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1095,6 +1137,9 @@
     .zos-command .sidebar { display: none; }
     .zos-command .topbar-hamburger { display: none; }
     .zos-command .command-grid { grid-template-columns: 1fr; }
+    .command-center-hero { flex-direction: column; padding: 20px; }
+    .command-center-actions { justify-content: flex-start; }
+    .command-card.wide { grid-column: span 1; }
     .bottom-nav { display: flex; }
     .content { padding: 16px 16px 80px; }
     .module-grid { grid-template-columns: 1fr; }
@@ -1453,71 +1498,29 @@
 
     <!-- ===== 仪表盘 ===== -->
     <section class="page active" id="page-dashboard">
-      <div class="welcome-card">
-        <div class="welcome-greeting" id="greeting"></div>
-        <div class="welcome-date" id="welcomeDate"></div>
-        <div class="welcome-sub">ZOS 跨端 AI 工作台 · 一切就绪</div>
-      </div>
-
-      <div class="onboarding-banner" id="onboardingBanner" style="display:none;">
-        <div class="onboarding-banner-text">
-          <h4>👋 欢迎使用 ZOS 工作台</h4>
-          <p>看起来你还没有任何数据。要不要一键创建示例内容，快速体验各模块功能？</p>
+      <div class="command-center-hero">
+        <div>
+          <div class="command-center-kicker" id="greeting"></div>
+          <h1 class="command-center-title">CEO 指挥中心</h1>
+          <p class="command-center-subtitle"><span id="welcomeDate"></span> · 飞书为业务事实源；企业大脑只显示 Obsidian 元数据。</p>
         </div>
-        <div class="onboarding-banner-actions">
-          <button class="btn btn-primary btn-sm" onclick="createSampleData()">📋 创建示例数据</button>
-          <button class="btn btn-sm" onclick="dismissOnboarding()">以后再说</button>
+        <div class="command-center-actions">
+          <button class="btn btn-sm" onclick="refreshCommandCenter()">↻ 刷新只读状态</button>
+          <button class="btn btn-sm" onclick="openInboxAdd()">＋ 快速收集</button>
+          <button class="btn btn-sm" onclick="openTaskAdd()">＋ 新建任务</button>
+          <button class="btn btn-sm" onclick="openProjectAdd()">＋ 新建项目</button>
         </div>
       </div>
-
-      <div class="section-title">🚦 今日驾驶舱</div>
-      <div class="cockpit-grid">
+      <div class="cockpit-grid" aria-label="今日驾驶舱">
         <div class="cockpit-card" style="--c:var(--blue);"><div class="cockpit-label">当前项目数量</div><div class="cockpit-value" id="cockpitProjects">—</div></div>
         <div class="cockpit-card" style="--c:var(--orange);"><div class="cockpit-label">今日风险数量</div><div class="cockpit-value" id="cockpitRisk">—</div></div>
         <div class="cockpit-card" style="--c:var(--green);"><div class="cockpit-label">待跟进事项</div><div class="cockpit-value" id="cockpitFollow">—</div></div>
-        <div class="cockpit-card" style="--c:var(--red);"><div class="cockpit-label">待审核AI内容</div><div class="cockpit-value" id="cockpitReview">—</div></div>
+        <div class="cockpit-card" style="--c:var(--red);"><div class="cockpit-label">待审核 AI 内容</div><div class="cockpit-value" id="cockpitReview">—</div></div>
         <div class="cockpit-card" style="--c:var(--purple);"><div class="cockpit-label">AI 建议</div><div class="cockpit-value" id="cockpitAdvice">—</div></div>
       </div>
-
-      <div class="section-title">工作区概览</div>
-      <div class="stat-row" id="dashboardStats"></div>
-
-      <div class="section-title">快捷操作</div>
-      <div class="quick-actions">
-        <button class="quick-btn" onclick="openInboxAdd()">📥 快速收集</button>
-        <button class="quick-btn" onclick="openTaskAdd()">✅ 新建任务</button>
-        <button class="quick-btn" onclick="openProjectAdd()">📌 新建项目</button>
-        <button class="quick-btn" onclick="navigateTo(&#39;zos-brain&#39;)">🧠 AI 指令队列</button>
-        <button class="quick-btn" onclick="generateDailyReport()">📊 生成今日经营日报</button>
-      </div>
-
-      <div class="section-title">业务概览</div>
-      <div class="module-grid">
-        <div class="module-card" onclick="navigateTo(&#39;local-life&#39;)">
-          <div class="module-card-icon" style="background: var(--green-light);">🏪</div>
-          <div class="module-card-title">万嘉网络</div>
-          <div class="module-card-desc">活动管理、门店运营、用户增长</div>
-          <span class="module-card-status" style="background: var(--green-light); color: var(--green);">● 只读汇总已部署</span>
-        </div>
-        <div class="module-card" onclick="navigateTo(&#39;spark-media&#39;)">
-          <div class="module-card-icon" style="background: var(--orange-light);">🎬</div>
-          <div class="module-card-title">花火影像</div>
-          <div class="module-card-desc">项目策划、拍摄排期、后期制作</div>
-          <span class="module-card-status" style="background: var(--orange-light); color: var(--orange);">● 只读汇总已部署</span>
-        </div>
-        <div class="module-card" onclick="navigateTo(&#39;enterprise&#39;)">
-          <div class="module-card-icon" style="background: var(--blue-light);">📋</div>
-          <div class="module-card-title">企业项目</div>
-          <div class="module-card-desc">项目看板、里程碑、资源调度</div>
-          <span class="module-card-status" style="background: var(--blue-light); color: var(--blue);" id="projectOverview">● 待确认</span>
-        </div>
-        <div class="module-card" onclick="navigateTo(&#39;zos-brain&#39;)">
-          <div class="module-card-icon" style="background: var(--purple-light);">🧠</div>
-          <div class="module-card-title">ZOS 企业大脑</div>
-          <div class="module-card-desc">Obsidian 知识库、AI 问答、知识图谱</div>
-          <span class="module-card-status" style="background: var(--purple-light); color: var(--purple);">● 本地桥接待启用</span>
-        </div>
-      </div>
+      <div class="command-grid" id="commandCenterGrid" aria-live="polite"></div>
+      <div class="stat-row" id="dashboardStats" hidden></div>
+      <div id="onboardingBanner" hidden></div>
     </section>
 
     <!-- ===== 今日视图 ===== -->
@@ -2783,6 +2786,102 @@
   window.navigateToBrain = function() { navigateTo('zos-brain'); };
 
   // ==================== DASHBOARD STATS ====================
+  var commandCenterReadErrors = {};
+  function commandCenterSetReadError(source, error) {
+    if (error) commandCenterReadErrors[source] = error.message || String(error);
+    else delete commandCenterReadErrors[source];
+  }
+  function commandSourceState(source, payload) {
+    if (commandCenterReadErrors[source] || (payload && payload.error)) return 'failed';
+    if (payload) return 'synced';
+    var session = syncSession();
+    return session.userId && session.accessToken ? 'pending' : 'confirm';
+  }
+  function renderStatusCard(state, config) {
+    var labels = { synced: '已同步', pending: '待同步', confirm: '待确认', failed: '读取失败' };
+    var notes = {
+      synced: config.syncedNote || '只读数据已缓存。',
+      pending: config.pendingNote || '已登录，等待手动刷新只读数据。',
+      confirm: config.confirmNote || '请确认登录、权限或数据源配置。',
+      failed: commandCenterReadErrors[config.source] || '最近一次读取失败，请核对权限和数据源。'
+    };
+    var metrics = (config.metrics || []).map(function(metric) {
+      return '<div><div class="command-metric">' + escapeHtml(String(metric.value)) + '</div><div class="command-metric-label">' + escapeHtml(metric.label) + '</div></div>';
+    }).join('');
+    return '<article class="command-card">' +
+      '<div class="command-card-head"><div><div class="command-card-title">' + escapeHtml(config.title) + '</div><div class="command-card-source">' + escapeHtml(config.sourceLabel) + '</div></div>' +
+      '<span class="command-status ' + state + '">' + labels[state] + '</span></div>' +
+      (metrics ? '<div class="command-metric-row">' + metrics + '</div>' : '') +
+      '<p class="command-card-note">' + escapeHtml(notes[state]) + '</p>' +
+      (config.action ? '<div class="command-card-actions"><button class="btn btn-xs" onclick="' + config.action + '">' + escapeHtml(config.actionLabel || '查看') + '</button></div>' : '') +
+      '</article>';
+  }
+  function renderCommandList(items, emptyText, meta) {
+    if (!items.length) return '<div class="command-empty">' + escapeHtml(emptyText) + '</div>';
+    return '<div class="command-list">' + items.map(function(item) {
+      return '<div class="command-list-item"><div class="command-list-main">' + escapeHtml(item.title) +
+        (item.meta ? '<div class="command-list-meta">' + escapeHtml(item.meta) + '</div>' : '') +
+        '</div>' + (meta ? meta(item) : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  function renderCommandCenter() {
+    var container = document.getElementById('commandCenterGrid');
+    if (!container) return;
+    var cache = businessDataCache();
+    var projectIndex = projectIndexState || loadProjectIndex();
+    var projectRows = (projectIndex && Array.isArray(projectIndex.projects)) ? projectIndex.projects : [];
+    var brainIndex = cache.brain && cache.brain.payload;
+    var wanjia = cache.wanjia && cache.wanjia.summary;
+    var huahuo = cache.huahuo && cache.huahuo.summary;
+    var pendingTasks = tasks.filter(function(t) { return t.status !== 'done'; });
+    var todayTasks = pendingTasks.filter(function(t) { return isToday(t.dueDate); });
+    var pendingInbox = inbox.filter(function(i) { return !i.convertedTo; });
+    var aiDrafts = pendingInbox.filter(function(i) { return i.kind === 'brief' || i.kind === 'report'; });
+    var pendingCommands = commands.filter(function(c) { return c.status === 'pending'; });
+    var activeProjects = projectRows.filter(function(p) { return p.status === '进行中'; }).length;
+    var riskyProjects = projectRows.filter(function(p) { return p.riskLevel === '高' || p.status === '风险' || p.status === '已延期'; }).length;
+    var recentNotes = brainIndex && Array.isArray(brainIndex.notes) ? brainIndex.notes.slice().sort(function(a, b) { return String(b.mtime || '').localeCompare(String(a.mtime || '')); }).slice(0, 3) : [];
+
+    var overview = [
+      renderStatusCard(commandSourceState('wanjia', wanjia), {
+        title: '万嘉网络', source: 'wanjia', sourceLabel: '飞书 ERP · 只读汇总',
+        metrics: wanjia ? [{ value: wanjia.totalMerchants || 0, label: '商家总数' }, { value: wanjia.activeMerchants || 0, label: '活跃商家' }] : [],
+        action: "navigateTo('local-life')", actionLabel: '查看业务', pendingNote: '等待从飞书 ERP 手动刷新万嘉只读汇总。'
+      }),
+      renderStatusCard(commandSourceState('huahuo', huahuo), {
+        title: '花火影像', source: 'huahuo', sourceLabel: '飞书 ERP · 只读汇总',
+        metrics: huahuo ? [{ value: huahuo.activeProjects || 0, label: '活跃项目' }, { value: huahuo.pendingDeliveries || 0, label: '待交付' }] : [],
+        action: "navigateTo('spark-media')", actionLabel: '查看业务', pendingNote: '等待从飞书 ERP 手动刷新花火只读汇总。'
+      }),
+      renderStatusCard(commandSourceState('projects', projectRows.length ? projectIndex : null), {
+        title: '企业项目', source: 'projects', sourceLabel: '飞书项目索引 · 仅元数据',
+        metrics: projectRows.length ? [{ value: activeProjects, label: '进行中' }, { value: riskyProjects, label: '风险或延期' }] : [],
+        action: "navigateTo('enterprise')", actionLabel: '查看项目', confirmNote: '尚无可用项目索引；请确认飞书权限或导入经过确认的本地索引。'
+      })
+    ].join('');
+    var schedule = renderCommandList(todayTasks.slice(0, 4).map(function(t) { return { title: t.title || '未命名任务', meta: t.dueDate ? '截止 ' + t.dueDate : '未设截止日' }; }), '今天没有已安排的本地任务。可新建任务或安排复盘。');
+    var knowledge = renderCommandList(recentNotes.map(function(note) { return { title: note.title || note.path || '未命名笔记', meta: (note.folder || '未分类') + ' · ' + (note.mtime || '时间未知') }; }), '尚未读取企业大脑元数据索引；不会读取 Markdown 正文。');
+    var aiQueue = renderCommandList(
+      pendingCommands.slice(0, 2).map(function(c) { return { title: c.instruction || '未命名 AI 指令', meta: 'AI 指令队列 · 待人工确认' }; })
+        .concat(aiDrafts.slice(0, 2).map(function(i) { return { title: i.content || 'AI 草稿', meta: '草稿收集箱 · 待人工审核' }; })),
+      'AI 队列为空。AI 仅生成待确认项目，绝不自动执行或外发。'
+    );
+    var health = renderStatusCard(commandSourceState('brain', brainIndex), {
+      title: '系统健康与知识索引', source: 'brain', sourceLabel: 'Obsidian · 只读元数据',
+      metrics: brainIndex ? [{ value: recentNotes.length, label: '最近可见笔记' }, { value: pendingInbox.length, label: '待处理收集' }] : [{ value: pendingInbox.length, label: '待处理收集' }],
+      action: "navigateTo('zos-brain')", actionLabel: '查看队列与索引',
+      confirmNote: '请确认 Obsidian 元数据索引已生成并同步；工作台不读取 Markdown 正文。'
+    });
+    container.innerHTML = overview +
+      '<article class="command-card wide"><div class="command-card-head"><div><div class="command-card-title">今日行动</div><div class="command-card-source">本地任务 · 需要人工推进</div></div><button class="btn btn-xs" onclick="navigateTo(\'today\')">打开今日视图</button></div>' + schedule + '</article>' +
+      '<article class="command-card"><div class="command-card-head"><div><div class="command-card-title">AI 队列</div><div class="command-card-source">仅待确认与审核，不自动执行或外发</div></div><span class="command-status confirm">待确认</span></div>' + aiQueue + '<div class="command-card-actions"><button class="btn btn-xs" onclick="navigateTo(\'zos-brain\')">人工审核队列</button><button class="btn btn-xs" onclick="generateDailyReport()">生成日报草稿</button></div></article>' +
+      '<article class="command-card wide"><div class="command-card-head"><div><div class="command-card-title">最近知识</div><div class="command-card-source">Obsidian 只读元数据 · 不含 Markdown 正文</div></div><button class="btn btn-xs" onclick="refreshBusinessData(\'brain\')">刷新索引</button></div>' + knowledge + '</article>' + health;
+  }
+  window.renderCommandCenter = renderCommandCenter;
+  window.refreshCommandCenter = async function() {
+    await Promise.all(['wanjia', 'huahuo', 'projects', 'brain'].map(function(source) { return refreshBusinessData(source); }));
+    renderCommandCenter();
+  };
   function renderDashboardStats() {
     const container = document.getElementById('dashboardStats');
     const todoCount = tasks.filter(t => t.status === 'todo').length;
@@ -2804,6 +2903,7 @@
     if (po) {
       po.textContent = projectCount ? '● ' + activeProjects + ' 个项目进行中' : '● 待确认';
     }
+    renderCommandCenter();
   }
 
   function updateBadges() {
@@ -3133,6 +3233,7 @@
       setBusinessValue('huahuoPendingDeliveries', '—');
       setBusinessValue('huahuoReceivedAmount', '—');
     }
+    renderCommandCenter();
   }
   async function refreshBusinessData(source) {
     var labels = { wanjia: '万嘉网络', huahuo: '花火影像', brain: 'ZOS 企业大脑' };
@@ -3155,9 +3256,11 @@
         var bcache = businessDataCache();
         bcache.brain = { payload: brainPayload, fetchedAt: brainPayload.scannedAt || new Date().toISOString() };
         localStorage.setItem(BUSINESS_DATA_CACHE_KEY, JSON.stringify(bcache));
+        commandCenterSetReadError('brain');
         renderBusinessDataStates(); renderBrainIndex();
         toast('企业大脑只读索引已刷新（仅元数据，不取正文）');
       } catch (error) {
+        commandCenterSetReadError('brain', error);
         renderBusinessDataStates(); renderBrainIndex();
         toast('知识库读取失败：' + error.message);
       }
@@ -3190,7 +3293,7 @@
         }
         if (!projPayload) {
           var localProj2 = loadProjectIndex();
-          if (localProj2) { projectIndexState = localProj2; renderProjectCenter(); renderCockpit(); toast('云端暂无项目索引，已回退本地缓存'); return; }
+          if (localProj2) { projectIndexState = localProj2; commandCenterSetReadError('projects'); renderProjectCenter(); renderCockpit(); toast('云端暂无项目索引，已回退本地缓存'); return; }
           var stp = document.getElementById('projectDataStatus');
           if (stp) stp.textContent = '云端暂无项目索引；请确认 Edge Function 已返回 projects 或导入本地索引';
           renderProjectCenter(); renderCockpit();
@@ -3199,9 +3302,11 @@
         }
         projectIndexState = projPayload;
         saveProjectIndex(projPayload);
+        commandCenterSetReadError('projects');
         renderProjectCenter(); renderCockpit();
         toast('项目只读索引已刷新（仅元数据）');
       } catch (error) {
+        commandCenterSetReadError('projects', error);
         renderProjectCenter(); renderCockpit();
         toast('项目读取失败：' + error.message);
       }
@@ -3221,9 +3326,11 @@
       cache.wanjia = { summary: data.wanjia?.summary || {}, records: data.wanjia?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
       cache.huahuo = { summary: data.huahuo?.summary || {}, records: data.huahuo?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
       localStorage.setItem(BUSINESS_DATA_CACHE_KEY, JSON.stringify(cache));
+      commandCenterSetReadError(source);
       renderBusinessDataStates();
       toast((labels[source] || '业务') + '汇总已刷新（只读）');
     } catch (error) {
+      commandCenterSetReadError(source, error);
       renderBusinessDataStates();
       toast((labels[source] || '业务') + '数据读取失败：' + error.message);
     }
