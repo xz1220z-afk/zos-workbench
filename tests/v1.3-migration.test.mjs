@@ -38,3 +38,14 @@ test('audit events contain only the documented safe operational columns', () => 
   }
   assert.doesNotMatch(audit, /token|secret|raw_response|body|content|contract_text/i);
 });
+
+test('approvals and audit events are mutated only by trusted Edge Functions', () => {
+  for (const table of ['zos_feishu_approvals', 'zos_audit_events']) {
+    assert.doesNotMatch(
+      sql,
+      new RegExp(`create policy[^;]+on public\\.${table} for (insert|update|delete)`, 'i'),
+      `${table} must not expose client mutation policies`,
+    );
+  }
+  assert.match(sql, /trusted Edge Functions using the service role/i);
+});

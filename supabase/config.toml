@@ -9,3 +9,7 @@ verify_jwt = true
 [functions.zos-feishu-approval-preview]
 # Generates a short-lived preview only; it never mutates Feishu.
 verify_jwt = true
+
+[functions.zos-feishu-approval-execute]
+# Executes exactly one previously previewed approval and verifies readback.
+verify_jwt = true

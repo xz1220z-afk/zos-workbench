@@ -121,6 +121,17 @@ export async function readRecord(token: string, target: FeishuTarget, recordId: 
   return record as FeishuRecord;
 }
 
+export async function updateRecord(token: string, target: FeishuTarget, recordId: string, fieldName: string, value: unknown) {
+  const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${target.appToken}/tables/${target.tableId}/records/${encodeURIComponent(recordId)}`;
+  const response = await feishuFetch(url, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify({ fields: { [fieldName]: value } }),
+  });
+  const payload = await payloadOf(response);
+  if (!response.ok || payload?.code !== 0) throw new FeishuRequestError('feishu_write_failed');
+}
+
 function stableValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stableValue);
   if (value && typeof value === 'object') {

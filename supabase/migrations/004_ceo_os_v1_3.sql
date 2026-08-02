@@ -117,20 +117,8 @@ create policy "zos owner reads feishu approvals"
   using ((select auth.uid()) = user_id);
 
 drop policy if exists "zos owner inserts feishu approvals" on public.zos_feishu_approvals;
-create policy "zos owner inserts feishu approvals"
-  on public.zos_feishu_approvals for insert to authenticated
-  with check ((select auth.uid()) = user_id);
-
 drop policy if exists "zos owner updates feishu approvals" on public.zos_feishu_approvals;
-create policy "zos owner updates feishu approvals"
-  on public.zos_feishu_approvals for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
-
 drop policy if exists "zos owner deletes feishu approvals" on public.zos_feishu_approvals;
-create policy "zos owner deletes feishu approvals"
-  on public.zos_feishu_approvals for delete to authenticated
-  using ((select auth.uid()) = user_id);
 
 create table if not exists public.zos_audit_events (
   id uuid primary key default gen_random_uuid(),
@@ -157,16 +145,9 @@ create policy "zos owner reads audit events"
   using ((select auth.uid()) = user_id);
 
 drop policy if exists "zos owner inserts audit events" on public.zos_audit_events;
-create policy "zos owner inserts audit events"
-  on public.zos_audit_events for insert to authenticated
-  with check ((select auth.uid()) = user_id);
-
 drop policy if exists "zos owner deletes old audit events" on public.zos_audit_events;
-create policy "zos owner deletes old audit events"
-  on public.zos_audit_events for delete to authenticated
-  using ((select auth.uid()) = user_id and created_at < now() - interval '90 days');
 
 comment on table public.zos_business_snapshots is 'Private daily aggregate metrics for confirmed CEO targets.';
 comment on table public.zos_source_health is 'Private safe source health without upstream response data.';
-comment on table public.zos_feishu_approvals is 'Single-use, owner-approved Feishu field changes with readback evidence.';
-comment on table public.zos_audit_events is 'Sanitized operational events retained for at most 90 days.';
+comment on table public.zos_feishu_approvals is 'Single-use, owner-approved Feishu field changes with readback evidence. Mutations are limited to trusted Edge Functions using the service role.';
+comment on table public.zos_audit_events is 'Sanitized operational events retained for at most 90 days. Mutations are limited to trusted Edge Functions using the service role.';
