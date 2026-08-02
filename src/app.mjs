@@ -19,7 +19,7 @@ import { createReviewDraft } from './app/review-center.mjs';
 import { render as renderRelations } from './app/views/relation-view.mjs';
 import { render as renderReviews } from './app/views/review-view.mjs';
 
-export const APP_VERSION = '1.4.0';
+export const APP_VERSION = '1.4.1';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;

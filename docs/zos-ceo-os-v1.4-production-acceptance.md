@@ -1,8 +1,8 @@
 # ZOS CEO OS v1.4 上线验收记录
 
-**版本**：v1.4.0  
+**版本**：v1.4.1
 **日期**：2026-08-02  
-**状态**：第一、二轮通过；第三轮随生产发布回填
+**状态**：第一、二轮通过；第三轮生产验收中
 
 ## 第一轮：功能、真值与安全
 
@@ -46,6 +46,6 @@
 
 - Supabase 005 迁移；
 - `zos-intelligence-data` Edge Function；
-- GitHub Pages v1.4.0；
+- GitHub Pages v1.4.1；
 - 线上主页 / manifest / Service Worker 回读；
 - 鉴权、业务只读、情报私有缓存、跨端同步与回滚点。
