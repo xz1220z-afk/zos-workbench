@@ -226,9 +226,13 @@ export function createCeoOsApplication(config = {}) {
           store.saveEntity('intelligence', { ...next, id: `intelligence:${next.externalId}` });
           if (next.status === 'actioned') quickCapture(`跟进情报：${next.title}`);
         } else if (intelligenceRefresh) {
-          runtime.intelligenceState = 'loading'; renderAll();
-          runtime.intelligence = ((await operatingRuntime?.loadIntelligence?.({ refresh: true })) || []).map(normalizeIntelligenceItem);
-          runtime.intelligenceState = runtime.intelligence.length ? null : 'empty'; renderAll();
+          if (!operatingRuntime?.loadIntelligence) {
+            runtime.intelligenceState = 'authentication_required'; renderAll();
+          } else {
+            runtime.intelligenceState = 'loading'; renderAll();
+            applyIntelligenceResult(await operatingRuntime.loadIntelligence({ refresh: true }));
+            renderAll();
+          }
         } else if (intelligenceCompany) {
           runtime.intelligenceCompany = intelligenceCompany.dataset.intelligenceCompany || 'all';
           renderAll();
@@ -287,6 +291,15 @@ export function createCeoOsApplication(config = {}) {
     }
   }
 
+  function applyIntelligenceResult(result) {
+    const items = Array.isArray(result) ? result : (result?.items || []);
+    runtime.intelligence = items.map(normalizeIntelligenceItem);
+    const sourceState = Array.isArray(result) ? null : result?.state;
+    runtime.intelligenceState = runtime.intelligence.length
+      ? null
+      : (sourceState === 'pending_configuration' ? 'pending_configuration' : 'empty');
+  }
+
   async function start() {
     config.hydrateHealth && Object.assign(runtime, { health: await config.hydrateHealth() });
     const session = config.readSession?.();
@@ -299,6 +312,7 @@ export function createCeoOsApplication(config = {}) {
         document,
       });
     }
+    if (!operatingRuntime) runtime.intelligenceState = 'authentication_required';
     const syncController = operatingRuntime?.syncController || config.syncController;
     syncController?.start?.();
     if (syncController?.sync) {
@@ -307,8 +321,7 @@ export function createCeoOsApplication(config = {}) {
     }
     if (operatingRuntime?.operatingLoop) {
       try {
-        runtime.intelligence = (await operatingRuntime.loadIntelligence?.() || []).map(normalizeIntelligenceItem);
-        runtime.intelligenceState = runtime.intelligence.length ? null : 'empty';
+        applyIntelligenceResult(await operatingRuntime.loadIntelligence?.());
       } catch { runtime.intelligenceState = 'failed'; }
       for (const source of ['wanjia', 'huahuo']) {
         try { await operatingRuntime.operatingLoop.refresh(source); }

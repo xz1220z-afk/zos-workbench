@@ -47,3 +47,12 @@ test('calendar, intelligence and review controls expose executable application a
   assert.match(app, /data-intelligence-company/);
   assert.match(app, /data-review-draft/);
 });
+
+test('intelligence view has explicit signed-out and source-configuration states', async () => {
+  const viewUtils = await readFile(new URL('src/app/views/view-utils.mjs', root), 'utf8');
+  const { stateMessage } = await import('../src/app/views/view-utils.mjs');
+  assert.match(viewUtils, /authentication_required/);
+  assert.match(viewUtils, /pending_configuration/);
+  assert.equal(stateMessage('authentication_required', '每日行业情报'), '登录 Supabase 后读取每日行业情报');
+  assert.match(stateMessage('pending_configuration', '每日行业情报'), /情报来源尚未配置/);
+});

@@ -36,7 +36,7 @@ async function loadIntelligenceRows(fetchImpl, config, token, { refresh = false 
   if (!response.ok) throw new Error('intelligence_read_failed');
   const payload = await response.json();
   if (!Array.isArray(payload.items)) throw new Error('intelligence_contract_invalid');
-  return payload.items;
+  return { items: payload.items, state: payload.state || 'cached' };
 }
 
 export async function createBrowserOperatingRuntime({

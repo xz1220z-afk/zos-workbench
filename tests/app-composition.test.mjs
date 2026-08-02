@@ -113,3 +113,33 @@ test('calendar creation and review generation stay in private synchronized colle
   assert.equal(review.status, 'pending_review');
   assert.equal(store.load().collections.inbox.at(-1).kind, 'review_draft');
 });
+
+test('signed-out startup reports intelligence authentication instead of loading forever', async () => {
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} },
+    storage: { getItem: () => 'device-1', setItem() {} }, store: fakeStore(),
+  });
+
+  await app.start();
+
+  assert.equal(app.viewModel().intelligenceState, 'authentication_required');
+});
+
+test('intelligence source configuration state is preserved from the protected endpoint', async () => {
+  const operatingLoop = {
+    async refresh() {}, confirmTargets() {}, ensureDailyBrief() { return null; },
+    getState() { return { decisions: [], targets: [], gaps: [], briefs: [], health: [], conflicts: [], approvals: [], sources: {} }; },
+  };
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} },
+    storage: { getItem: () => 'device-1', setItem() {} }, store: fakeStore(),
+    operatingRuntime: {
+      operatingLoop, syncController: { start() {} },
+      async loadIntelligence() { return { items: [], state: 'pending_configuration' }; },
+    },
+  });
+
+  await app.start();
+
+  assert.equal(app.viewModel().intelligenceState, 'pending_configuration');
+});

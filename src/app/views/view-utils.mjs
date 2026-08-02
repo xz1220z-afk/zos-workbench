@@ -1,4 +1,7 @@
-export const VIEW_STATES = Object.freeze(['loading', 'empty', 'stale', 'failed', 'conflict']);
+export const VIEW_STATES = Object.freeze([
+  'loading', 'empty', 'stale', 'failed', 'conflict',
+  'authentication_required', 'pending_configuration',
+]);
 
 export function escapeHtml(value) {
   return String(value ?? '')
@@ -13,6 +16,8 @@ export function stateMessage(state, label = '数据') {
     stale: `${label}已过期，请刷新来源`,
     failed: `${label}读取失败，请查看数据健康页`,
     conflict: `${label}存在跨端冲突，等待你选择版本`,
+    authentication_required: `登录 Supabase 后读取${label}`,
+    pending_configuration: '情报来源尚未配置；工作台已上线，等待确认候选池目标表',
   }[state] || '';
 }
 
