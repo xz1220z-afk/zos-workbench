@@ -2,11 +2,11 @@
 
 **版本**：v1.4.1
 **日期**：2026-08-02  
-**状态**：第一、二轮通过；第三轮生产验收中
+**状态**：三轮通过，v1.4.1 已上线
 
 ## 第一轮：功能、真值与安全
 
-- 完整回归：`220/220` 通过。
+- 完整回归：`223/223` 通过。
 - 静态检查：`git diff --check`、manifest JSON 解析、`src/legacy-app.mjs` 与 `src/app.mjs` 语法检查通过。
 - 数据真值：万嘉、花火继续读取真实只读来源；玲丽未接入时只显示 `—`，无示例业务数字。
 - 隐私：情报缓存仅存摘要；生活、日历、情报按用户 RLS 隔离；工作端生活事件脱敏为“个人安排”。
@@ -42,10 +42,13 @@
 
 ## 第三轮：生产端到端
 
-待回填：
+- Supabase `005_ceo_os_v1_4.sql` 已执行；`zos_intelligence_items` 存在且 RLS 已开启，`zos_records_entity_type_check` 约束存在。
+- `zos-intelligence-data` 已部署为 ACTIVE v1，`verify_jwt=true`；无登录凭证访问返回 `401 UNAUTHORIZED_NO_AUTH_HEADER`。
+- `zos-business-data` ACTIVE v12、`zos-brain-index` ACTIVE v4，均保持 `verify_jwt=true`。
+- GitHub CI 与 Pages 对提交 `961e434` 均成功；线上主页、manifest、Service Worker、应用模块与样式全部 HTTP 200。
+- 线上回读 `APP_VERSION='1.4.1'`、缓存 `zos-workbench-v1.4.1`，并包含 `authentication_required` / `pending_configuration` 真实状态。
+- 线上 1280×900、768×1024、390×844 再验均无横向溢出；手机五入口均为 57px，“更多”包含三家公司、情报、生活、搜索、关系与复盘等入口。
+- 未登录生产访问情报中心明确显示“登录 Supabase 后读取每日行业情报”，不再无限加载；本轮未伪造用户登录会话。
+- 飞书每日情报候选池尚缺准确 Base app token / table 配置，线上按事实显示“待配置”；不将万嘉或花火业务表冒充行业情报源。
 
-- Supabase 005 迁移；
-- `zos-intelligence-data` Edge Function；
-- GitHub Pages v1.4.1；
-- 线上主页 / manifest / Service Worker 回读；
-- 鉴权、业务只读、情报私有缓存、跨端同步与回滚点。
+**判定**：生产应用、私有数据结构、鉴权边界、跨端缓存与响应式交互通过。每日情报的飞书事实源激活为已知配置待办，不阻断 v1.4.1 上线，也不会产生假情报。
