@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const [indexHtml, serviceWorker] = await Promise.all([
+const [shellHtml, legacySource, appCss, serviceWorker] = await Promise.all([
   readFile(new URL('../index.html', import.meta.url), 'utf8'),
+  readFile(new URL('../src/legacy-app.mjs', import.meta.url), 'utf8'),
+  readFile(new URL('../assets/app.css', import.meta.url), 'utf8'),
   readFile(new URL('../sw.js', import.meta.url), 'utf8'),
 ]);
+const indexHtml = `${shellHtml}\n${legacySource}\n${appCss}`;
 
 assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.2\.3';/,
   'A command-center UI release must receive a new Service Worker cache revision');

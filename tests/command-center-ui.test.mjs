@@ -3,7 +3,12 @@ import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
-const indexHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+const [shellHtml, legacySource, appCss] = await Promise.all([
+  readFile(new URL('../index.html', import.meta.url), 'utf8'),
+  readFile(new URL('../src/legacy-app.mjs', import.meta.url), 'utf8'),
+  readFile(new URL('../assets/app.css', import.meta.url), 'utf8'),
+]);
+const indexHtml = `${shellHtml}\n${legacySource}\n${appCss}`;
 
 test('CEO command center renders source-aware sections and all data states without sample business KPIs', () => {
   assert.match(indexHtml, /function renderCommandCenter\s*\(/,
@@ -99,10 +104,10 @@ test('mobile navigation has five primary destinations and routes secondary pages
   const mobileLabels = [...bottomNav.matchAll(/<button class="bottom-nav-item[^>]*>[\s\S]*?<span class="bn-icon">[\s\S]*?<\/span>\s*([^<\s][^<]*?)\s*<\/button>/g)]
     .map(([, label]) => label.trim());
 
-  assert.deepEqual(mobileLabels, ['首页', '行动', '业务', '项目', '更多'],
+  assert.deepEqual(mobileLabels, ['首页', '决策', '行动', '业务', '更多'],
     'mobile navigation must expose the agreed five destinations');
-  assert.match(indexHtml, /id="mobileMoreMenu"[\s\S]*?data-page="zos-brain"[\s\S]*?data-page="risk"[\s\S]*?data-page="settings"/,
-    'More must keep knowledge, risk, and settings routes reachable');
+  assert.match(indexHtml, /id="mobileMoreMenu"[\s\S]*?data-page="enterprise"[\s\S]*?data-page="targets"[\s\S]*?data-page="health"[\s\S]*?data-page="zos-brain"[\s\S]*?data-page="risk"[\s\S]*?data-page="settings"/,
+    'More must keep projects, targets, health, knowledge, risk, and settings routes reachable');
   assert.match(indexHtml, /\.bottom-nav-item:focus-visible[\s\S]{0,180}outline:/,
     'mobile navigation must expose a visible keyboard focus indicator');
   assert.match(indexHtml, /\.bottom-nav-item[\s\S]{0,180}min-height:\s*44px/,
