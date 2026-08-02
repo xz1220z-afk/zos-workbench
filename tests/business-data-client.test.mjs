@@ -35,3 +35,16 @@ test('rejects a response that is not explicitly read-only', async () => {
     /read-only/i,
   );
 });
+
+test('reports a safe Feishu authentication diagnosis for a protected 502 response', async () => {
+  await assert.rejects(
+    fetchBusinessData({
+      url: 'https://project.supabase.co', anonKey: 'public-key', accessToken: 'user-token',
+      fetchImpl: async () => new Response(JSON.stringify({
+        error: 'source_read_failed',
+        reason: 'feishu_auth_failed',
+      }), { status: 502 }),
+    }),
+    /Feishu application authentication failed/i,
+  );
+});

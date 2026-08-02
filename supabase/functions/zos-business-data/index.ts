@@ -1,6 +1,14 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 type FeishuRecord = { fields?: Record<string, unknown> };
+type FeishuPayload = { code?: number; tenant_access_token?: unknown; data?: { items?: unknown } };
+type FeishuFailureReason = 'feishu_auth_failed' | 'feishu_read_failed' | 'feishu_request_failed';
+
+class FeishuRequestError extends Error {
+  constructor(readonly reason: FeishuFailureReason) {
+    super(reason);
+  }
+}
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -200,11 +208,12 @@ async function getTenantAccessToken(appId: string, appSecret: string) {
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify({ app_id: appId, app_secret: appSecret }),
   });
-  const payload = await result.json();
-  if (!result.ok || payload.code !== 0 || !payload.tenant_access_token) {
-    throw new Error('feishu_auth_failed');
+  let payload: FeishuPayload | null = null;
+  try { payload = await result.json() as FeishuPayload; } catch { /* Safely classify the failed auth response below. */ }
+  if (!result.ok || payload?.code !== 0 || !payload.tenant_access_token) {
+    throw new FeishuRequestError('feishu_auth_failed');
   }
-  return payload.tenant_access_token as string;
+  return payload?.tenant_access_token as string;
 }
 
 async function searchRecords(token: string, appToken: string, tableId: string, fieldNames: string[]) {
@@ -217,11 +226,12 @@ async function searchRecords(token: string, appToken: string, tableId: string, f
     },
     body: JSON.stringify({ field_names: fieldNames }),
   });
-  const payload = await result.json();
-  if (!result.ok || payload.code !== 0 || !Array.isArray(payload.data?.items)) {
-    throw new Error('feishu_read_failed');
+  let payload: FeishuPayload | null = null;
+  try { payload = await result.json() as FeishuPayload; } catch { /* Safely classify the failed table-read response below. */ }
+  if (!result.ok || payload?.code !== 0 || !Array.isArray(payload?.data?.items)) {
+    throw new FeishuRequestError('feishu_read_failed');
   }
-  return payload.data.items as FeishuRecord[];
+  return payload?.data?.items as FeishuRecord[];
 }
 
 Deno.serve(async (req) => {
@@ -269,6 +279,10 @@ Deno.serve(async (req) => {
       meta: { fetchedAt: new Date().toISOString(), mode: 'read_only' },
     });
   } catch (error) {
-    return response({ error: 'source_read_failed' }, 502);
+    const reason: FeishuFailureReason = error instanceof FeishuRequestError
+      ? error.reason
+      : 'feishu_request_failed';
+    console.error(JSON.stringify({ event: 'zos_business_data_failed', reason }));
+    return response({ error: 'source_read_failed', reason }, 502);
   }
 });

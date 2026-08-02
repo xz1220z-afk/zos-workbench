@@ -14,6 +14,10 @@ assert.match(source, /SUPABASE_ANON_KEY/,
   'Function remains compatible with legacy Supabase anon-key environments');
 assert.match(source, /tenant_access_token\/internal/);
 assert.match(source, /records\/search/);
+assert.match(source, /feishu_auth_failed/,
+  'Function reports the safe application-auth failure reason to signed-in clients');
+assert.match(source, /feishu_read_failed/,
+  'Function reports the safe table-read failure reason to signed-in clients');
 assert.match(source, /wanjia/);
 assert.match(source, /huahuo/);
 assert.doesNotMatch(source, /cli_aab7f0f691b8dcb3|yimbjqe4EDassDFqmUR9Lh0xdzBHyMvQ/,
