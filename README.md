@@ -9,7 +9,7 @@ ZOS 是朱帅个人使用的 CEO OS，当前以深色 PWA 形式发布。它把�
 
 注意：`https://xz1220z-afk.github.io/` 是用户主页根域名，目前没有配置 Pages，因此会显示 404。日常只使用上面的 `/zos-workbench/` 地址。
 
-## 当前能力（v1.4.3）
+## 当前能力（v1.5.0）
 
 - CEO 指挥中心与独立 Life OS；工作端只显示私人日程的忙碌占位
 - 今日行动、待我决策、经营目标、数据健康和每日 CEO 简报
@@ -21,6 +21,8 @@ ZOS 是朱帅个人使用的 CEO OS，当前以深色 PWA 形式发布。它把�
 - JSON 数据导出、校验、覆盖导入和清除
 - PWA 安装：Mac/Windows Edge 或 Chrome、iPhone Safari、Android Chrome
 - Supabase 私有云同步：邮箱或密码登录，记录按用户隔离；联网、回到前台和本地改动后自动同步
+- 自动更新：登录后一次刷新万嘉、花火、企业项目和情报；工作台在前台且联网时每 15 分钟检查，回到前台或恢复网络会自动补刷新
+- 云端企业缓存：Supabase 每 15 分钟以只读方式刷新已配置的飞书来源，即使不逐页打开公司页面也能获得新缓存
 - 飞书受控写入：先生成精确预览，逐条人工确认，再执行一次并回读验证；不允许批量静默写入
 - 脱敏运行监控：只记录安全错误码、耗时、条数和版本，不保存业务正文、客户信息或凭证
 - GitHub Pages 自动发布；Service Worker 缓存版本随发布递增
@@ -31,7 +33,8 @@ ZOS 是朱帅个人使用的 CEO OS，当前以深色 PWA 形式发布。它把�
 2. 新设备完成 Supabase 登录后等待前台同步；首次使用仍建议先保留最近的 JSON 备份。
 3. 重要改动前先导出备份；导入会覆盖当前设备本地数据。
 4. 只填写 Supabase Project URL 和 Publishable/anon key。绝不填写数据库密码、OTP、service_role key 或其他管理令牌。
-5. 自动同步只在工作台打开且网络可用时运行；它不是系统级后台常驻服务。
+5. 私人任务、日历与生活数据的设备同步只在工作台打开且网络可用时运行；万嘉、花火与企业项目的只读缓存由云端每 15 分钟更新。
+6. 情报中心只有在准确配置飞书情报候选池后才会自动更新；未配置时明确显示“待配置”，不会用公司业务表冒充行业情报。
 
 ## 发布与回归验证
 
@@ -60,7 +63,7 @@ curl -fsSI https://xz1220z-afk.github.io/zos-workbench/sw.js
 
 ## Supabase 配置
 
-数据库迁移文件位于 `supabase/migrations/`；v1.4 在 v1.3 决策闭环上增加私有情报缓存及 intelligence/calendar/life 跨端实体。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，发布步骤见 [`docs/superpowers/plans/2026-08-02-zos-ceo-os-v1.4.md`](docs/superpowers/plans/2026-08-02-zos-ceo-os-v1.4.md)。
+数据库迁移文件位于 `supabase/migrations/`；v1.5 在 v1.4 双首页与情报系统上增加前台统一刷新和云端只读定时缓存。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，实现与回滚步骤见 [`docs/superpowers/plans/2026-08-02-automatic-sync-implementation.md`](docs/superpowers/plans/2026-08-02-automatic-sync-implementation.md)。
 
 邮箱登录链接必须回调到：
 
