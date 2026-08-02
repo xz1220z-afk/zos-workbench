@@ -6,6 +6,7 @@
 
 ## 已验证（本地）
 
+- 全量自动化：`201/201` 通过；全部 ES Modules、Service Worker、Web App Manifest 语法与 `git diff --check` 通过。
 - 深色 CEO OS 模块化壳：桌面、平板、手机断点和 44px 触控区已纳入自动测试。
 - 经营闭环：事实刷新 → 健康 → 风险决策 → 目标差距 → 每日简报 → 同步冲突 → 飞书预览/回读验证已通过集成测试。
 - 隐私：用户数据按 Supabase Auth owner 隔离；浏览器不能插入审批或审计；Obsidian 不上传正文。
@@ -15,9 +16,9 @@
 
 | 验收项 | 结果 | 证据 |
 | --- | --- | --- |
-| 004 迁移 | 待执行 | 远端 migration list |
-| 五个 Edge Functions | 待执行 | ACTIVE 版本/更新时间 |
-| 匿名访问保护 | 待执行 | 五个 401 响应 |
+| 004 迁移 | 已执行并回读 | 2026-08-02 通过 Supabase 官方 Management API 执行；`zos_business_snapshots`、`zos_source_health`、`zos_feishu_approvals`、`zos_audit_events` 均存在且 RLS=true |
+| 五个 Edge Functions | 已部署 | `zos-brain-index` v4、`zos-business-data` v12、审批 preview/execute v1、`zos-monitor` v1；全部 ACTIVE、`verify_jwt=true` |
+| 匿名访问保护 | 已验证 | 五个端点匿名 POST 均返回 HTTP 401 |
 | GitHub Pages v1.3.0 | 待执行 | 线上 URL 与回读时间 |
 | 万嘉真实读取 | 待登录验收 | 条数、更新时间、安全状态 |
 | 花火真实读取 | 待登录验收 | 条数、更新时间、安全状态 |
@@ -30,4 +31,3 @@
 ## 发布判定
 
 本地候选通过不等于生产完成。只有迁移、函数、Pages 和当前真实数据回读均通过，且不存在 P0/P1，才标记 v1.3.0 已发布。单条飞书执行是独立授权项，不阻塞工作台只读发布。
-
