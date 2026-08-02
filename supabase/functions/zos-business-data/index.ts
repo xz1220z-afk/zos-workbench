@@ -59,8 +59,10 @@ function configuredPublishableKey() {
   }
 }
 
-function fieldsOf(record: FeishuRecord) {
-  return record.fields || {};
+function fieldsOf(record: FeishuRecord | Record<string, unknown>) {
+  return 'fields' in record && record.fields && typeof record.fields === 'object'
+    ? record.fields
+    : record;
 }
 
 // Try multiple candidate column names for a field, returning the first
@@ -79,8 +81,8 @@ function numberOf(value: unknown) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function sum(records: FeishuRecord[], field: string) {
-  return records.reduce((total, record) => total + numberOf(fieldsOf(record)[field]), 0);
+function sum(records: FeishuRecord[], ...fieldNames: string[]) {
+  return records.reduce((total, record) => total + numberOf(pick(record, ...fieldNames)), 0);
 }
 
 function summarizeWanjia(records: FeishuRecord[]) {
@@ -99,12 +101,12 @@ function summarizeWanjia(records: FeishuRecord[]) {
 }
 
 function summarizeHuahuo(projects: FeishuRecord[], deliveries: FeishuRecord[], receipts: FeishuRecord[]) {
-  const contractAmount = sum(projects, '合同金额');
+  const contractAmount = sum(projects, '合同金额', '【预算】合同金额');
   const receivedAmount = receipts
-    .filter((record) => fieldsOf(record)['收款状态'] === '已收款')
-    .reduce((total, record) => total + numberOf(fieldsOf(record)['收款金额']), 0);
+    .filter((record) => ['已收款', '已到账', '已完成'].includes(String(pick(record, '收款状态', '回款状态', '状态') || '')))
+    .reduce((total, record) => total + numberOf(pick(record, '收款金额', '到账金额', '实收金额')), 0);
   return {
-    activeProjects: projects.filter((record) => fieldsOf(record)['项目状态'] === '进行中').length,
+    activeProjects: projects.filter((record) => ['进行中', '执行中'].includes(String(pick(record, '项目状态', '当前阶段') || ''))).length,
     pendingDeliveries: deliveries.filter((record) => fieldsOf(record)['交付状态'] === '待交付').length,
     contractAmount,
     receivedAmount,
@@ -155,10 +157,10 @@ function buildHuahuoRecords(records: FeishuRecord[]): unknown {
       // Prefer the Feishu project update-time field; fall back to shootingDate.
       const updatedAt = String(pick(f, '最近更新时间', '更新时间') || shootingDate);
       return {
-        id: String(pick(f, '项目ID', 'RecordId') || `huahuo-${idx}`),
+        id: String(pick(f, '项目编号', '项目ID', 'RecordId') || `huahuo-${idx}`),
         clientName: String(pick(f, '客户名称', '客户') || '未指定'),
         projectName: String(f['项目名称'] || '花火项目'),
-        projectType: String(pick(f, '项目类型') || '其他'),
+        projectType: String(pick(f, '项目类型', '项目来源') || '其他'),
         shootingDate,
         updatedAt,
         stage: String(pick(f, '项目状态', '当前阶段', '阶段') || '筹备中'),
@@ -184,8 +186,8 @@ function buildProjectsSource(huahuoProjects: FeishuRecord[], merchants: FeishuRe
       name: String(f['项目名称'] || '花火项目'),
       type: '花火拍摄',
       status,
-      owner: f['负责人'] ? String(f['负责人']) : '花火团队',
-      updatedAt: f['拍摄日期'] ? String(f['拍摄日期']) : new Date().toISOString(),
+      owner: pick(f, '项目负责人', '负责人') ? String(pick(f, '项目负责人', '负责人')) : '花火团队',
+      updatedAt: pick(f, '拍摄日期', '实际交付日期', '更新时间') ? String(pick(f, '拍摄日期', '实际交付日期', '更新时间')) : new Date().toISOString(),
       riskLevel: riskFromStatus,
       source: 'huahuo',
     };
@@ -249,12 +251,13 @@ async function getTableFieldNames(token: string, appToken: string, tableId: stri
 }
 
 async function searchRecords(token: string, appToken: string, tableId: string, fieldNames: string[]) {
-  // Confirm the schema before querying records so a signed-in owner gets the
-  // exact missing column names without exposing any record data.
+  // Read the live table directory first, then request only the known-safe
+  // intersection. Feishu schemas evolve; one retired optional column must not
+  // make the entire read-only business page fail.
   const actualFieldNames = await getTableFieldNames(token, appToken, tableId);
-  const missingFields = fieldNames.filter((fieldName) => !actualFieldNames.includes(fieldName));
-  if (missingFields.length > 0) {
-    throw new FeishuRequestError('feishu_field_mismatch', missingFields);
+  const selectedFieldNames = fieldNames.filter((fieldName) => actualFieldNames.includes(fieldName));
+  if (selectedFieldNames.length === 0) {
+    throw new FeishuRequestError('feishu_field_mismatch', fieldNames);
   }
 
   const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/records/search?page_size=500`;
@@ -264,7 +267,7 @@ async function searchRecords(token: string, appToken: string, tableId: string, f
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json; charset=utf-8',
     },
-    body: JSON.stringify({ field_names: fieldNames }),
+    body: JSON.stringify({ field_names: selectedFieldNames }),
   });
   let payload: FeishuPayload | null = null;
   try { payload = await result.json() as FeishuPayload; } catch { /* Safely classify the failed table-read response below. */ }
@@ -317,12 +320,16 @@ Deno.serve(async (req) => {
       : [];
     const [projects, deliveries, receipts] = needsHuahuo ? await Promise.all([
       searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.projectTable,
-        ['项目名称', '项目状态', '拍摄日期', '合同金额', '已收金额', '负责人',
-         '项目类型', '回款状态', '利润状态', '最近更新时间', '更新时间']),
+        // Current 04.01 项目管理 fields, plus legacy aliases retained for a
+        // read-only, backwards-compatible index.
+        ['项目编号', '项目名称', '订单', '项目来源', '项目负责人', '项目成员', '拍摄地点', '项目状态',
+         '【预算】合同金额', '【预算】已收金额', '合同金额', '已收金额', '负责人', '项目类型',
+         '回款状态', '利润状态', '最近更新时间', '更新时间', '拍摄日期']),
       searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.deliveryTable,
-        ['项目', '计划交付日期', '交付状态', '客户确认状态']),
+        ['交付编号', '项目', '订单', '交付类型', '计划交付日期', '实际交付日期', '交付状态',
+         '接收人', '交付负责人', '客户确认状态']),
       searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.receiptTable,
-        ['项目', '收款金额', '收款日期', '收款状态']),
+        ['项目', '订单', '收款金额', '到账金额', '实收金额', '收款日期', '到账日期', '收款状态', '回款状态', '状态']),
     ]) : [[], [], []];
 
     return response({
