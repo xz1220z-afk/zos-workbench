@@ -122,7 +122,7 @@
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.4.2';
+  const APP_VERSION = '1.4.3';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
   const APP_RELEASE_DATE = '2026-08-02';
 
@@ -2381,10 +2381,6 @@
             });
           });
 
-          // 监听 controllerchange，当新 SW 接管时刷新页面
-          navigator.serviceWorker.addEventListener('controllerchange', function() {
-            window.location.reload();
-          });
         })
         .catch(function(err) { console.error('Service Worker 注册失败:', err); });
 

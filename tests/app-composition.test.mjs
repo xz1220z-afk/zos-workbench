@@ -24,6 +24,66 @@ function fakeStore(targets = []) {
   };
 }
 
+function deferred() {
+  let resolve;
+  const promise = new Promise((done) => { resolve = done; });
+  return { promise, resolve };
+}
+
+function renderDocument() {
+  const nodes = new Map();
+  return {
+    nodes,
+    getElementById(id) {
+      if (!nodes.has(id)) nodes.set(id, { innerHTML: '', textContent: '', style: {} });
+      return nodes.get(id);
+    },
+    addEventListener() {},
+  };
+}
+
+test('renders cached content before remote startup settles', async () => {
+  const calls = [];
+  const syncGate = deferred();
+  const intelligenceGate = deferred();
+  const sourceGates = { wanjia: deferred(), huahuo: deferred() };
+  const document = renderDocument();
+  const operatingLoop = {
+    async refresh(source) { calls.push(source); await sourceGates[source].promise; },
+    confirmTargets() {},
+    ensureDailyBrief() { return null; },
+    getState() {
+      return { decisions: [], targets: [], gaps: [], briefs: [], health: [], conflicts: [], approvals: [], sources: {} };
+    },
+  };
+  const app = createCeoOsApplication({
+    document,
+    storage: { getItem: () => 'device-1', setItem() {} },
+    store: fakeStore(),
+    operatingRuntime: {
+      operatingLoop,
+      syncController: { start() {}, async sync() { calls.push('sync'); await syncGate.promise; } },
+      async loadIntelligence() { calls.push('intelligence'); await intelligenceGate.promise; return { items: [] }; },
+    },
+  });
+
+  const startPromise = app.start();
+  const startedBeforeRemote = await Promise.race([
+    startPromise.then(() => true),
+    new Promise((resolve) => setTimeout(() => resolve(false), 20)),
+  ]);
+  syncGate.resolve();
+  intelligenceGate.resolve();
+  sourceGates.wanjia.resolve();
+  sourceGates.huahuo.resolve();
+  await startPromise;
+  await app.whenIdle();
+
+  assert.equal(startedBeforeRemote, true);
+  assert.deepEqual(calls, ['sync', 'intelligence', 'wanjia', 'huahuo']);
+  assert.ok(document.nodes.get('ceoDashboardRoot').innerHTML.length > 0);
+});
+
 test('production application drives the authenticated operating loop on startup', async () => {
   const calls = [];
   const target = { id: 'target-1', metricKey: 'wanjia.paymentGmv', value: 10000, confirmation: 'confirmed' };
@@ -45,6 +105,7 @@ test('production application drives the authenticated operating loop on startup'
   });
 
   await app.start();
+  await app.whenIdle();
 
   assert.deepEqual(calls, [
     ['sync'], ['refresh', 'wanjia'], ['refresh', 'huahuo'], ['targets', ['target-1']], ['brief'],
@@ -77,6 +138,7 @@ test('application actions keep targets local and require preview before an indiv
     store, operatingRuntime: { operatingLoop, syncController: { start() {} } }, now: () => '2026-08-02T08:00:00.000Z',
   });
   await app.start();
+  await app.whenIdle();
 
   app.confirmTarget({ metricKey: 'wanjia.paymentGmv', value: 12000, period: '2026-08' });
   assert.equal(store.load().collections.targets[0].confirmation, 'confirmed');
@@ -121,6 +183,7 @@ test('signed-out startup reports intelligence authentication instead of loading 
   });
 
   await app.start();
+  await app.whenIdle();
 
   assert.equal(app.viewModel().intelligenceState, 'authentication_required');
 });
@@ -140,6 +203,7 @@ test('intelligence source configuration state is preserved from the protected en
   });
 
   await app.start();
+  await app.whenIdle();
 
   assert.equal(app.viewModel().intelligenceState, 'pending_configuration');
 });

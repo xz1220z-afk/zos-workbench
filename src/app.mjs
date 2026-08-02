@@ -19,7 +19,7 @@ import { createReviewDraft } from './app/review-center.mjs';
 import { render as renderRelations } from './app/views/relation-view.mjs';
 import { render as renderReviews } from './app/views/review-view.mjs';
 
-export const APP_VERSION = '1.4.2';
+export const APP_VERSION = '1.4.3';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
@@ -39,6 +39,8 @@ export function createCeoOsApplication(config = {}) {
   };
   let operatingRuntime = config.operatingRuntime || null;
   let actionsBound = false;
+  let started = false;
+  let startupWork = Promise.resolve();
 
   function signalLocalChange() {
     try { (config.eventTarget || globalThis).dispatchEvent(new Event('zos:local-change')); } catch { /* Optional outside browsers. */ }
@@ -300,8 +302,12 @@ export function createCeoOsApplication(config = {}) {
       : (sourceState === 'pending_configuration' ? 'pending_configuration' : 'empty');
   }
 
-  async function start() {
-    config.hydrateHealth && Object.assign(runtime, { health: await config.hydrateHealth() });
+  async function initializeRemote() {
+    if (config.hydrateHealth) {
+      try { Object.assign(runtime, { health: await config.hydrateHealth() }); }
+      catch { runtime.health = []; }
+      renderAll();
+    }
     const session = config.readSession?.();
     if (session?.refreshToken && config.refreshSession) await config.refreshSession(session.refreshToken);
     if (!operatingRuntime && config.createOperatingRuntime !== false) {
@@ -312,21 +318,37 @@ export function createCeoOsApplication(config = {}) {
         document,
       });
     }
-    if (!operatingRuntime) runtime.intelligenceState = 'authentication_required';
+    if (!operatingRuntime) {
+      runtime.intelligenceState = 'authentication_required';
+      renderAll();
+      return viewModel();
+    }
     const syncController = operatingRuntime?.syncController || config.syncController;
     syncController?.start?.();
-    if (syncController?.sync) {
+    const backgroundJobs = [];
+    if (syncController?.sync) backgroundJobs.push((async () => {
       try { await syncController.sync('startup'); runtime.syncStatus = '跨端同步完成'; }
       catch { runtime.syncStatus = '跨端同步失败，可稍后重试'; }
+      renderAll();
+    })());
+    if (operatingRuntime.loadIntelligence) backgroundJobs.push((async () => {
+      try { applyIntelligenceResult(await operatingRuntime.loadIntelligence()); }
+      catch { runtime.intelligenceState = 'failed'; }
+      renderAll();
+    })());
+    if (operatingRuntime.operatingLoop) {
+      for (const source of ['wanjia', 'huahuo']) backgroundJobs.push((async () => {
+        try {
+          await operatingRuntime.operatingLoop.refresh(source);
+          updateFromOperatingLoop();
+        } catch {
+          runtime.health.push({ source, state: 'failed', safeCode: 'source_refresh_failed' });
+        }
+        renderAll();
+      })());
     }
-    if (operatingRuntime?.operatingLoop) {
-      try {
-        applyIntelligenceResult(await operatingRuntime.loadIntelligence?.());
-      } catch { runtime.intelligenceState = 'failed'; }
-      for (const source of ['wanjia', 'huahuo']) {
-        try { await operatingRuntime.operatingLoop.refresh(source); }
-        catch { runtime.health.push({ source, state: 'failed', safeCode: 'source_refresh_failed' }); }
-      }
+    await Promise.allSettled(backgroundJobs);
+    if (operatingRuntime.operatingLoop) {
       const targets = store.load().collections.targets || [];
       if (targets.length) operatingRuntime.operatingLoop.confirmTargets(targets);
       const brief = operatingRuntime.operatingLoop.ensureDailyBrief();
@@ -336,14 +358,26 @@ export function createCeoOsApplication(config = {}) {
       }
     }
     config.ensureDailyBrief && Object.assign(runtime, { briefs: await config.ensureDailyBrief(viewModel()) });
-    store.subscribe(renderAll);
-    bindActions();
     renderAll();
     return viewModel();
   }
 
+  async function start() {
+    if (started) return viewModel();
+    started = true;
+    store.subscribe(renderAll);
+    bindActions();
+    renderAll();
+    startupWork = initializeRemote().catch(() => {
+      runtime.syncStatus = '初始化失败，请稍后重试';
+      renderAll();
+      return viewModel();
+    });
+    return viewModel();
+  }
+
   return {
-    start, render: renderAll, store, runtime, viewModel,
+    start, whenIdle: () => startupWork, render: renderAll, store, runtime, viewModel,
     refreshSource, confirmTarget, previewDecision, executeApproval, quickCapture, captureCalendar, generateReview,
     get operatingRuntime() { return operatingRuntime; },
   };

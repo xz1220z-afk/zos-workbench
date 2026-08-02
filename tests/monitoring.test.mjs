@@ -19,7 +19,7 @@ test('audit sanitizer removes nested credentials and business bodies', () => {
     durationMs: 120,
     recordCount: null,
     approvalId: null,
-    clientVersion: '1.4.2',
+    clientVersion: '1.4.3',
   });
 });
 
@@ -56,7 +56,7 @@ test('monitoring client sends only the safe owner-scoped audit row', async () =>
     durationMs: null,
     recordCount: 3,
     approvalId: null,
-    clientVersion: '1.4.2',
+    clientVersion: '1.4.3',
   });
   assert.equal(requests[0].init.body.includes('must-not-leak'), false);
   assert.equal(requests[0].init.body.includes('business body'), false);
