@@ -126,9 +126,9 @@ function buildWanjiaRecords(records: FeishuRecord[]): unknown {
       return {
         id: String(pick(f, '商家ID', '记录ID', 'RecordId') || `wanjia-${idx}`),
         merchantName: String(f['商家名称'] || '未知商家'),
-        cooperationType: String(pick(f, '合作类型', '业务类型') || '其他'),
+        cooperationType: String(pick(f, '合作模式', '合作类型', '业务类型') || '其他'),
         stage: String(pick(f, '当前阶段', '阶段', '合作阶段') || '执行中'),
-        owner: String(pick(f, '项目负责人', '负责人', '对接人') || '未指定'),
+        owner: String(pick(f, '跟进人', '项目负责人', '负责人', '对接人') || '未指定'),
         updatedAt: String(pick(f, '最近更新时间', '更新时间', '修改时间') || new Date().toISOString()),
         nextAction: String(pick(f, '下一步动作', '待办事项', '后续动作') || ''),
         riskLevel: String(pick(f, '风险等级', '风险') || '低'),
@@ -308,8 +308,12 @@ Deno.serve(async (req) => {
     const needsHuahuo = requestedSource === 'all' || requestedSource === 'huahuo' || requestedSource === 'projects';
     const merchants = needsWanjia
       ? await searchRecords(accessToken, FEISHU.wanjia.appToken, FEISHU.wanjia.merchantTable,
-        ['商家名称', '是否动销', '支付GMV', '核销GMV', '视频投稿数', '直播场次数', '总预估佣金',
-         '合作类型', '当前阶段', '项目负责人', '最近更新时间', '下一步动作', '风险等级', '收入状态'])
+        // Verified against the current WanJia merchant-main table on 2026-08-02.
+        // Content, live-stream, commission and follow-up data belong to other
+        // operational tables and must not be fabricated from this source.
+        ['商家名称', '商家ID', '行业', '类目', '经营单元', '商家分层', '合作模式', '跟进人',
+         '是否上团', '是否动销', '商家经营分', '支付GMV', '核销GMV', '退款GMV',
+         '支付券数', '核销券数', '退款券数'])
       : [];
     const [projects, deliveries, receipts] = needsHuahuo ? await Promise.all([
       searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.projectTable,
