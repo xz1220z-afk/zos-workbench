@@ -1,6 +1,6 @@
 # 朱帅工作台（ZOS Workbench）
 
-ZOS 是朱帅个人使用的跨端工作台，当前以静态 PWA 形式发布，数据默认保存在当前设备；完成 Supabase 邮箱登录并点击同步后，才会同步到个人 Supabase 项目。
+ZOS 是朱帅个人使用的 CEO OS，当前以深色静态 PWA 形式发布。它把今日行动、待我决策、经营目标、万嘉网络、花火影像、项目和企业大脑放在同一个四端工作台中。
 
 ## 正式入口
 
@@ -9,22 +9,25 @@ ZOS 是朱帅个人使用的跨端工作台，当前以静态 PWA 形式发布�
 
 注意：`https://xz1220z-afk.github.io/` 是用户主页根域名，目前没有配置 Pages，因此会显示 404。日常只使用上面的 `/zos-workbench/` 地址。
 
-## 当前能力（v1.0.10）
+## 当前能力（v1.3.0）
 
-- 仪表盘、今日视图、收集箱、任务、项目和 AI 指令队列
-- localStorage 本地持久化
+- CEO 指挥中心、今日行动、待我决策、经营目标、数据健康和每日 CEO 简报
+- 万嘉 / 花火真实飞书事实只读聚合；企业大脑仅同步 Obsidian 元数据，不上传正文
+- localStorage 本地持久化与自动四端同步；关键决策和目标并发修改必须人工解冲突
 - JSON 数据导出、校验、覆盖导入和清除
 - PWA 安装：Mac/Windows Edge 或 Chrome、iPhone Safari、Android Chrome
-- Supabase 私有云同步：邮箱魔术链接登录，记录按用户隔离，手动同步
+- Supabase 私有云同步：邮箱或密码登录，记录按用户隔离；联网、回到前台和本地改动后自动同步
+- 飞书受控写入：先生成精确预览，逐条人工确认，再执行一次并回读验证；不允许批量静默写入
+- 脱敏运行监控：只记录安全错误码、耗时、条数和版本，不保存业务正文、客户信息或凭证
 - GitHub Pages 自动发布；Service Worker 缓存版本随发布递增
 
 ## 日常使用规则
 
 1. 打开正式入口，不要打开根域名。
-2. 新设备先导入最近的 JSON 备份，或完成 Supabase 登录后点击“立即同步”。
+2. 新设备完成 Supabase 登录后等待前台同步；首次使用仍建议先保留最近的 JSON 备份。
 3. 重要改动前先导出备份；导入会覆盖当前设备本地数据。
 4. 只填写 Supabase Project URL 和 Publishable/anon key。绝不填写数据库密码、OTP、service_role key 或其他管理令牌。
-5. 云端同步不是自动后台同步，只有点击“立即同步”才会上传或拉取。
+5. 自动同步只在工作台打开且网络可用时运行；它不是系统级后台常驻服务。
 
 ## 发布与回归验证
 
@@ -53,7 +56,7 @@ curl -fsSI https://xz1220z-afk.github.io/zos-workbench/sw.js
 
 ## Supabase 配置
 
-数据库迁移文件位于 [`supabase/migrations/001_zos_sync.sql`](supabase/migrations/001_zos_sync.sql)，配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)。
+数据库迁移文件位于 `supabase/migrations/`；v1.3 新增决策、目标、指标快照、来源健康、审批和脱敏审计。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，发布步骤见 [`docs/zos-ceo-os-v1.3-deploy-checklist.md`](docs/zos-ceo-os-v1.3-deploy-checklist.md)。
 
 邮箱登录链接必须回调到：
 

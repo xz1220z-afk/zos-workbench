@@ -1,13 +1,13 @@
 {
-  "name": "ZOS 跨端 AI 工作台",
-  "short_name": "ZOS",
-  "description": "ZOS 跨端 AI 工作台 · 万嘉网络 · 花火影像 · 企业项目 · ZOS 企业大脑",
+  "name": "ZOS CEO OS",
+  "short_name": "CEO OS",
+  "description": "ZOS CEO OS · 决策、行动、经营目标、万嘉网络、花火影像与企业大脑",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#f0f2f5",
-  "theme_color": "#4f46e5",
+  "orientation": "any",
+  "background_color": "#07101d",
+  "theme_color": "#0b1626",
   "lang": "zh-CN",
   "icons": [
     {
@@ -27,5 +27,10 @@
       "purpose": "maskable"
     }
   ],
-  "categories": ["business", "productivity"]
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    { "name": "待我决策", "short_name": "决策", "url": "./#decisions", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] },
+    { "name": "今日行动", "short_name": "行动", "url": "./#today", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] },
+    { "name": "数据健康", "short_name": "健康", "url": "./#health", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] }
+  ]
 }

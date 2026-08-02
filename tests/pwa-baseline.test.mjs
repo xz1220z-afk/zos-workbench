@@ -1,16 +1,26 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const [shellHtml, legacySource, appCss, serviceWorker] = await Promise.all([
+const [shellHtml, legacySource, appCss, serviceWorker, manifest] = await Promise.all([
   readFile(new URL('../index.html', import.meta.url), 'utf8'),
   readFile(new URL('../src/legacy-app.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../assets/app.css', import.meta.url), 'utf8'),
   readFile(new URL('../sw.js', import.meta.url), 'utf8'),
+  readFile(new URL('../manifest.webmanifest', import.meta.url), 'utf8').then(JSON.parse),
 ]);
 const indexHtml = `${shellHtml}\n${legacySource}\n${appCss}`;
 
-assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.2\.3';/,
+assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.3\.0';/,
   'A command-center UI release must receive a new Service Worker cache revision');
+for (const asset of [
+  'assets/app.css', 'src/app.mjs', 'src/legacy-app.mjs', 'src/app/operating-loop.mjs',
+  'src/app/decision-center.mjs', 'src/app/targets.mjs', 'src/app/source-health.mjs',
+  'src/app/daily-brief.mjs', 'src/app/sync-controller.mjs', 'src/app/feishu-approvals.mjs',
+  'src/app/monitoring.mjs', 'src/app/router.mjs', 'src/app/views/dashboard-view.mjs',
+]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.') ), `${asset} must be available offline`);
+assert.equal(manifest.background_color, '#07101d');
+assert.equal(manifest.theme_color, '#0b1626');
+assert.match(manifest.description, /CEO OS/);
 assert.doesNotMatch(indexHtml, /本地生活运营/,
   'Current UI must use the 万嘉网络 brand name');
 assert.match(indexHtml, /万嘉网络/,
@@ -19,9 +29,9 @@ assert.match(indexHtml, /refreshSession\(session\.refreshToken\)/,
   'Sync must refresh an existing Supabase session before pulling data');
 assert.match(indexHtml, /const PUBLIC_APP_URL = 'https:\/\/xz1220z-afk\.github\.io\/zos-workbench\/'/,
   'The public app URL must be explicit so auth callbacks stay on the GitHub Pages subpath');
-assert.match(indexHtml, /const APP_VERSION = '1\.2\.3'/,
+assert.match(indexHtml, /const APP_VERSION = '1\.3\.0'/,
   'The inline application version must match the current release');
-assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v1\.2\.3/,
+assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v1\.3\.0/,
   'The settings page version label must match the current release');
 assert.match(indexHtml, /requestOtp\(email, PUBLIC_APP_URL\)/,
   'Magic-link requests must redirect to the public app subpath');
