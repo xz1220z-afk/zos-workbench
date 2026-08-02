@@ -9,11 +9,11 @@
 
 ## Supabase
 
-- [ ] 关联生产项目 `dtwvyramgbwtlyhmkhkd`。
-- [ ] 推送迁移 `005_ceo_os_v1_4.sql`。
-- [ ] 部署 `zos-intelligence-data`，保持 `verify_jwt = true`。
-- [ ] 核对情报目标 Secret 名是否齐全；只核对名称，不输出值。
-- [ ] 回读迁移版本、函数 ACTIVE 状态和未登录 401。
+- [x] 关联生产项目 `dtwvyramgbwtlyhmkhkd`。
+- [x] 推送迁移 `005_ceo_os_v1_4.sql`。
+- [x] 部署 `zos-intelligence-data`，保持 `verify_jwt = true`。
+- [x] 核对情报目标 Secret 名是否齐全；只核对名称，不输出值。
+- [x] 回读迁移版本、函数 ACTIVE 状态和未登录 401。
 
 ## GitHub Pages
 

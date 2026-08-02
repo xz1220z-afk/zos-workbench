@@ -1,5 +1,5 @@
 function scalar(value) {
-  if (Array.isArray(value)) return value[0] ?? null;
+  if (Array.isArray(value)) return scalar(value[0] ?? null);
   if (value && typeof value === 'object') {
     return value.text ?? value.link ?? value.url ?? value.name ?? null;
   }
@@ -48,8 +48,8 @@ export function mapIntelligenceRecord(record, now = () => new Date().toISOString
     title,
     source_name: text(fields, '来源名称', '来源平台') || '飞书情报候选池',
     source_url: text(fields, '来源链接'),
-    published_at: text(fields, '发布时间') || null,
-    captured_at: text(fields, '抓取时间') || now(),
+    published_at: timestamp(text(fields, '发布时间')),
+    captured_at: timestamp(text(fields, '抓取时间')) || now(),
     credibility: normalizeCredibility(text(fields, '可信度')),
     score: Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : null,
     relevant_companies: relevantCompanies(`${suggestion} ${type} ${title}`),

@@ -35,3 +35,37 @@ test('incomplete intelligence records are ignored instead of fabricating content
   assert.equal(mapIntelligenceRecord({ record_id: 'rec_002', fields: { 标题: '只有标题' } }), null);
   assert.equal(mapIntelligenceRecord({ fields: { 标题: '无真实记录标识', 摘要: '摘要' } }), null);
 });
+
+test('Feishu date fields are normalized before writing timestamptz cache columns', () => {
+  const row = mapIntelligenceRecord({
+    record_id: 'rec_dates',
+    last_modified_time: '1704067200000',
+    fields: {
+      标题: '平台行业动态',
+      摘要: '真实摘要。',
+      发布时间: 1704067200000,
+      抓取时间: 1704153600000,
+    },
+  });
+
+  assert.equal(row.published_at, '2024-01-01T00:00:00.000Z');
+  assert.equal(row.captured_at, '2024-01-02T00:00:00.000Z');
+  assert.equal(row.source_updated_at, '2024-01-01T00:00:00.000Z');
+});
+
+test('Feishu rich text arrays become readable intelligence text', () => {
+  const row = mapIntelligenceRecord({
+    record_id: 'rec_rich_text',
+    fields: {
+      标题: [{ type: 'text', text: 'AI 搜索改变本地生活获客' }],
+      摘要: [{ type: 'text', text: '平台正在扩大 AI 搜索入口。' }],
+      影响分析: [{ type: 'text', text: '万嘉需要补充商家结构化资料。' }],
+      来源链接: [{ type: 'url', link: 'https://example.com/evidence' }],
+    },
+  });
+
+  assert.equal(row.title, 'AI 搜索改变本地生活获客');
+  assert.equal(row.fact_summary, '平台正在扩大 AI 搜索入口。');
+  assert.equal(row.impact_analysis, '万嘉需要补充商家结构化资料。');
+  assert.equal(row.source_url, 'https://example.com/evidence');
+});
