@@ -143,4 +143,16 @@ assert.match(indexHtml, /@media \(max-width: 767px\)[\s\S]{0,1800}\.zos-command 
 assert.match(indexHtml, /<nav class="bottom-nav" id="bottomNav">/,
   '既有底部导航必须保留');
 
+const pageIds = new Set([...indexHtml.matchAll(/<section class="page(?: active)?" id="page-([^"]+)"/g)].map(([, id]) => id));
+const navigationTargets = [...indexHtml.matchAll(/<(?:div|button)\b[^>]*\bclass="(?:nav-item|bottom-nav-item|mobile-more-item)[^"]*"[^>]*\bdata-page="([^"]+)"/g)]
+  .map(([, pageId]) => pageId);
+assert.deepEqual(navigationTargets.filter((pageId) => !pageIds.has(pageId)), [],
+  '每个侧栏或移动导航目标都必须指向现有页面');
+assert.match(indexHtml, /@media \(min-width: 1200px\)/,
+  '桌面断点必须存在');
+assert.match(indexHtml, /@media \(min-width: 768px\) and \(max-width: 1199px\)/,
+  '平板断点必须存在');
+assert.match(indexHtml, /@media \(max-width: 767px\)/,
+  '移动端断点必须存在');
+
 console.log('PWA baseline privacy and cache version checks passed');

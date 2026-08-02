@@ -191,6 +191,11 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    text-align: left;
     padding: 10px 12px;
     border-radius: var(--radius-sm);
     color: var(--sidebar-text);
@@ -204,6 +209,13 @@
   }
   .nav-item:hover { background: var(--sidebar-hover); color: #d0d0e0; }
   .nav-item.active { background: var(--sidebar-active); color: var(--sidebar-text-active); }
+  .nav-item:focus-visible,
+  .bottom-nav-item:focus-visible,
+  .mobile-more-item:focus-visible,
+  .mobile-more-close:focus-visible {
+    outline: 3px solid var(--cc-accent-gold, var(--primary));
+    outline-offset: 2px;
+  }
   .nav-item.active::before {
     content: '';
     position: absolute;
@@ -1018,6 +1030,33 @@
   .bottom-nav-item.active { color: var(--primary); }
   .bottom-nav-item .bn-icon { font-size: 20px; }
 
+  .mobile-more-menu {
+    position: fixed;
+    z-index: 110;
+    left: 12px;
+    right: 12px;
+    bottom: calc(68px + env(safe-area-inset-bottom));
+    padding: 12px;
+    background: var(--cc-panel, #fff);
+    border: 1px solid var(--cc-border, var(--border));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+  }
+  .mobile-more-menu[hidden] { display: none; }
+  .mobile-more-menu-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 4px 8px; }
+  .mobile-more-menu-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .mobile-more-close, .mobile-more-item {
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+  }
+  .mobile-more-close { min-width: 44px; min-height: 44px; border-radius: var(--radius-sm); }
+  .mobile-more-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .mobile-more-item { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 12px; border-radius: var(--radius-sm); text-align: left; }
+  .mobile-more-item:hover { background: var(--primary-light); }
+
   /* ===== CEO command center shell ===== */
   .zos-command {
     --bg: var(--cc-background);
@@ -1140,6 +1179,10 @@
     .welcome-date { font-size: 20px; }
     .list-item-actions { margin-top: 8px; }
     .list-item { flex-wrap: wrap; }
+  }
+
+  @media (min-width: 768px) {
+    .mobile-more-menu { display: none !important; }
   }
 
   @media (max-width: 767px) {
@@ -1431,60 +1474,60 @@
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section">工作区</div>
-    <div class="nav-item active" data-page="dashboard">
+    <button type="button" class="nav-item active" data-page="dashboard">
       <span class="nav-icon">📊</span>
       <span class="nav-label">仪表盘</span>
-    </div>
-    <div class="nav-item" data-page="today">
+    </button>
+    <button type="button" class="nav-item" data-page="today">
       <span class="nav-icon">📅</span>
       <span class="nav-label">今日视图</span>
-    </div>
-    <div class="nav-item" data-page="inbox">
+    </button>
+    <button type="button" class="nav-item" data-page="inbox">
       <span class="nav-icon">📥</span>
       <span class="nav-label">收集箱</span>
       <span class="nav-badge" id="inboxBadge" style="display:none">0</span>
-    </div>
-    <div class="nav-item" data-page="tasks">
+    </button>
+    <button type="button" class="nav-item" data-page="tasks">
       <span class="nav-icon">✅</span>
       <span class="nav-label">任务</span>
       <span class="nav-badge" id="taskBadge" style="display:none">0</span>
-    </div>
+    </button>
     <div class="nav-section">业务模块</div>
-    <div class="nav-item" data-page="local-life">
+    <button type="button" class="nav-item" data-page="local-life">
       <span class="nav-icon">🏪</span>
       <span class="nav-label">万嘉网络</span>
       <span class="nav-dot dot-green"></span>
-    </div>
-    <div class="nav-item" data-page="spark-media">
+    </button>
+    <button type="button" class="nav-item" data-page="spark-media">
       <span class="nav-icon">🎬</span>
       <span class="nav-label">花火影像</span>
       <span class="nav-dot dot-orange"></span>
-    </div>
-    <div class="nav-item" data-page="enterprise">
+    </button>
+    <button type="button" class="nav-item" data-page="enterprise">
       <span class="nav-icon">📋</span>
       <span class="nav-label">企业项目</span>
       <span class="nav-dot dot-blue"></span>
-    </div>
-    <div class="nav-item" data-page="zos-brain">
+    </button>
+    <button type="button" class="nav-item" data-page="zos-brain">
       <span class="nav-icon">🧠</span>
       <span class="nav-label">ZOS 企业大脑</span>
       <span class="nav-dot dot-purple"></span>
-    </div>
-    <div class="nav-item" data-page="risk">
+    </button>
+    <button type="button" class="nav-item" data-page="risk">
       <span class="nav-icon">🚦</span>
       <span class="nav-label">风险中心</span>
       <span class="nav-badge" id="riskBadge" style="display:none">0</span>
-    </div>
+    </button>
   </nav>
   <div class="sidebar-footer">
-    <div class="nav-item" data-page="privacy">
+    <button type="button" class="nav-item" data-page="privacy">
       <span class="nav-icon">🔒</span>
       <span class="nav-label">隐私与数据</span>
-    </div>
-    <div class="nav-item" data-page="settings">
+    </button>
+    <button type="button" class="nav-item" data-page="settings">
       <span class="nav-icon">⚙️</span>
       <span class="nav-label">设置</span>
-    </div>
+    </button>
   </div>
   <button class="sidebar-toggle" id="sidebarToggle" title="折叠侧边栏">◀</button>
 </aside>
@@ -2144,24 +2187,37 @@
 <!-- ===== Bottom Mobile Nav ===== -->
 <nav class="bottom-nav" id="bottomNav">
   <button class="bottom-nav-item active" data-page="dashboard">
-    <span class="bn-icon">📊</span>仪表盘
+    <span class="bn-icon">📊</span>首页
   </button>
   <button class="bottom-nav-item" data-page="today">
-    <span class="bn-icon">📅</span>今日
+    <span class="bn-icon">📅</span>行动
   </button>
-  <button class="bottom-nav-item" data-page="inbox">
-    <span class="bn-icon">📥</span>收集箱
-  </button>
-  <button class="bottom-nav-item" data-page="tasks">
-    <span class="bn-icon">✅</span>任务
+  <button class="bottom-nav-item" data-page="local-life">
+    <span class="bn-icon">🏪</span>业务
   </button>
   <button class="bottom-nav-item" data-page="enterprise">
     <span class="bn-icon">📋</span>项目
   </button>
-  <button class="bottom-nav-item" data-page="zos-brain">
-    <span class="bn-icon">🧠</span>大脑
+  <button class="bottom-nav-item" type="button" id="mobileMoreToggle" aria-controls="mobileMoreMenu" aria-expanded="false">
+    <span class="bn-icon">☰</span>更多
   </button>
 </nav>
+
+<section class="mobile-more-menu" id="mobileMoreMenu" aria-label="更多功能" hidden>
+  <div class="mobile-more-menu-header">
+    <span class="mobile-more-menu-title">更多功能</span>
+    <button type="button" class="mobile-more-close" aria-label="关闭更多功能">×</button>
+  </div>
+  <div class="mobile-more-grid">
+    <button type="button" class="mobile-more-item" data-page="inbox">📥 收集箱</button>
+    <button type="button" class="mobile-more-item" data-page="tasks">✅ 任务</button>
+    <button type="button" class="mobile-more-item" data-page="spark-media">🎬 花火影像</button>
+    <button type="button" class="mobile-more-item" data-page="zos-brain">🧠 知识库</button>
+    <button type="button" class="mobile-more-item" data-page="risk">🚦 风险中心</button>
+    <button type="button" class="mobile-more-item" data-page="privacy">🔒 隐私与数据</button>
+    <button type="button" class="mobile-more-item" data-page="settings">⚙️ 设置</button>
+  </div>
+</section>
 
 <!-- ===== Modals ===== -->
 <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
@@ -4294,8 +4350,34 @@
 
   let currentPage = 'dashboard';
   let sidebarCollapsed = false;
+  const mobileMorePageIds = ['inbox', 'tasks', 'spark-media', 'zos-brain', 'risk', 'privacy', 'settings'];
+
+  function closeMobileMoreMenu(returnFocus) {
+    const menu = document.getElementById('mobileMoreMenu');
+    const toggle = document.getElementById('mobileMoreToggle');
+    if (!menu || !toggle || menu.hidden) return;
+    menu.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+    if (returnFocus) toggle.focus();
+  }
+
+  function toggleMobileMoreMenu() {
+    const menu = document.getElementById('mobileMoreMenu');
+    const toggle = document.getElementById('mobileMoreToggle');
+    if (!menu || !toggle) return;
+    if (!menu.hidden) {
+      closeMobileMoreMenu(true);
+      return;
+    }
+    menu.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+    menu.querySelector('.mobile-more-item')?.focus();
+  }
 
   function navigateTo(pageId) {
+    const target = document.getElementById('page-' + pageId);
+    if (!target) return;
+    closeMobileMoreMenu(false);
     if (pageId === currentPage) return;
 
     document.querySelectorAll('.sidebar-nav .nav-item, .sidebar-footer .nav-item').forEach(el => {
@@ -4303,12 +4385,12 @@
     });
 
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const target = document.getElementById('page-' + pageId);
-    if (target) target.classList.add('active');
+    target.classList.add('active');
 
-    document.querySelectorAll('#bottomNav .bottom-nav-item').forEach(el => {
+    document.querySelectorAll('#bottomNav .bottom-nav-item[data-page]').forEach(el => {
       el.classList.toggle('active', el.dataset.page === pageId);
     });
+    document.getElementById('mobileMoreToggle')?.classList.toggle('active', mobileMorePageIds.includes(pageId));
 
     pageTitle.textContent = pageTitles[pageId] || pageId;
     currentPage = pageId;
@@ -4326,8 +4408,16 @@
     el.addEventListener('click', function() { navigateTo(this.dataset.page); });
   });
 
-  document.querySelectorAll('#bottomNav .bottom-nav-item').forEach(el => {
+  document.querySelectorAll('#bottomNav .bottom-nav-item[data-page]').forEach(el => {
     el.addEventListener('click', function() { navigateTo(this.dataset.page); });
+  });
+  document.getElementById('mobileMoreToggle')?.addEventListener('click', toggleMobileMoreMenu);
+  document.querySelector('.mobile-more-close')?.addEventListener('click', function() { closeMobileMoreMenu(true); });
+  document.querySelectorAll('.mobile-more-item[data-page]').forEach(el => {
+    el.addEventListener('click', function() { navigateTo(this.dataset.page); });
+  });
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') closeMobileMoreMenu(true);
   });
 
   // ==================== FILTER TABS ====================
