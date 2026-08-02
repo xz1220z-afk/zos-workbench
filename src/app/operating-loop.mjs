@@ -41,6 +41,7 @@ export function createOperatingLoop({
   approvalClient,
   saveSnapshots = async () => {},
   saveHealth = async () => {},
+  initialState = {},
 } = {}) {
   required(userId, 'userId');
   required(deviceId, 'deviceId');
@@ -48,7 +49,14 @@ export function createOperatingLoop({
   required(approvalClient, 'approvalClient');
 
   const state = {
-    sources: {}, decisions: [], targets: [], gaps: [], briefs: [], health: [], conflicts: [], approvals: [],
+    sources: clone(initialState.sources) || {},
+    decisions: clone(initialState.decisions) || [],
+    targets: clone(initialState.targets) || [],
+    gaps: clone(initialState.gaps) || [],
+    briefs: clone(initialState.briefs) || [],
+    health: clone(initialState.health) || [],
+    conflicts: clone(initialState.conflicts) || [],
+    approvals: clone(initialState.approvals) || [],
   };
 
   function briefInput() {

@@ -67,3 +67,22 @@ test('unverified Feishu execution never becomes successful local state', async (
   await assert.rejects(() => loop.executeFeishu('approval-2'), /readback verification required/);
   assert.equal(loop.getState().approvals[0].status, 'previewed');
 });
+
+test('operating loop hydrates synchronized decisions and briefs without duplicating the daily brief', () => {
+  const existingBrief = {
+    id: 'daily-brief:2026-08-02:existing', kind: 'daily_brief', date: '2026-08-02',
+    fingerprint: 'existing', reviewStatus: 'pending_review', sections: {},
+  };
+  const loop = createOperatingLoop({
+    userId: 'user-1', deviceId: 'device-1', now: () => now, date: () => '2026-08-02',
+    refreshBusiness: async () => business.wanjia,
+    approvalClient: { preview: async () => ({}), execute: async () => ({ verified: true }) },
+    initialState: {
+      decisions: [{ id: 'wanjia:rec-1:risk', source: 'wanjia', sourceRecordId: 'rec-1', category: 'risk', status: 'open' }],
+      briefs: [existingBrief],
+    },
+  });
+
+  assert.equal(loop.getState().decisions.length, 1);
+  assert.equal(loop.getState().briefs.length, 1);
+});
