@@ -154,5 +154,7 @@ assert.match(indexHtml, /@media \(min-width: 768px\) and \(max-width: 1199px\)/,
   '平板断点必须存在');
 assert.match(indexHtml, /@media \(max-width: 767px\)/,
   '移动端断点必须存在');
+assert.match(indexHtml, /@media \(max-height: 420px\) and \(max-width: 767px\)\s*\{[\s\S]{0,220}\.bottom-nav\s*\{\s*display:\s*flex;/,
+  '横屏或键盘展开时，移动端必须保留可达的底部导航');
 
 console.log('PWA baseline privacy and cache version checks passed');

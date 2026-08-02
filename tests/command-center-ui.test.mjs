@@ -37,3 +37,12 @@ test('mobile navigation has five primary destinations and routes secondary pages
   assert.match(indexHtml, /\.bottom-nav-item[\s\S]{0,180}min-height:\s*44px/,
     'mobile navigation touch targets must be at least 44px tall');
 });
+
+test('selecting a More route moves focus out of the menu before it becomes hidden', () => {
+  assert.match(indexHtml, /function focusPageContent\(target\)[\s\S]{0,360}focus\(/,
+    'a More route must have an explicit page-focus handoff');
+  assert.match(indexHtml, /function navigateTo\(pageId, options\)[\s\S]{0,980}options\.focusPage[\s\S]{0,120}focusPageContent\(target\)/,
+    'navigation must apply the requested page-focus handoff after changing pages');
+  assert.match(indexHtml, /\.mobile-more-item\[data-page\][\s\S]{0,240}navigateTo\(this\.dataset\.page, \{ focusPage: true \}\)/,
+    'More item selection must request the page-focus handoff');
+});

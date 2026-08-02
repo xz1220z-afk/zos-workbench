@@ -1232,10 +1232,10 @@
     body { padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
   }
 
-  /* ===== Landscape / keyboard open: hide bottom nav to free space ===== */
+  /* ===== Landscape / keyboard open: keep navigation reachable ===== */
   @media (max-height: 420px) and (max-width: 767px) {
-    .bottom-nav { display: none; }
-    .content { padding-bottom: 16px; }
+    .bottom-nav { display: flex; }
+    .content { padding-bottom: 80px; }
   }
 
   .nav-item, .bottom-nav-item, .quick-btn, .toggle, .topbar-user, .module-card {
@@ -4374,11 +4374,22 @@
     menu.querySelector('.mobile-more-item')?.focus();
   }
 
-  function navigateTo(pageId) {
+  function focusPageContent(target) {
+    const focusTarget = target.querySelector('h1, h2') || document.getElementById('content');
+    if (!focusTarget) return;
+    focusTarget.setAttribute('tabindex', '-1');
+    focusTarget.focus({ preventScroll: true });
+  }
+
+  function navigateTo(pageId, options) {
+    options = options || {};
     const target = document.getElementById('page-' + pageId);
     if (!target) return;
     closeMobileMoreMenu(false);
-    if (pageId === currentPage) return;
+    if (pageId === currentPage) {
+      if (options.focusPage) focusPageContent(target);
+      return;
+    }
 
     document.querySelectorAll('.sidebar-nav .nav-item, .sidebar-footer .nav-item').forEach(el => {
       el.classList.toggle('active', el.dataset.page === pageId);
@@ -4400,6 +4411,7 @@
 
     // Call page enter handler
     if (pageEnterHandlers[pageId]) pageEnterHandlers[pageId]();
+    if (options.focusPage) focusPageContent(target);
   }
 
   window.navigateTo = navigateTo;
@@ -4414,7 +4426,7 @@
   document.getElementById('mobileMoreToggle')?.addEventListener('click', toggleMobileMoreMenu);
   document.querySelector('.mobile-more-close')?.addEventListener('click', function() { closeMobileMoreMenu(true); });
   document.querySelectorAll('.mobile-more-item[data-page]').forEach(el => {
-    el.addEventListener('click', function() { navigateTo(this.dataset.page); });
+    el.addEventListener('click', function() { navigateTo(this.dataset.page, { focusPage: true }); });
   });
   document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') closeMobileMoreMenu(true);
