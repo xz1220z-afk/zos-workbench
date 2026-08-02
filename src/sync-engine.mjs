@@ -1,5 +1,7 @@
 import { selectLatestRecord } from './data-model.mjs';
 
+export const CRITICAL_ENTITY_TYPES = new Set(['decisions', 'targets']);
+
 function required(value, name) {
   if (!value) throw new Error(`${name} is required`);
   return value;
@@ -49,7 +51,34 @@ function indexRecords(records) {
   return new Map(records.map((record) => [record.id, record]));
 }
 
-export function applyRemoteSnapshot({ local, remoteRows, userId = 'sync-user' }) {
+function businessPayload(record) {
+  const { createdAt, updatedAt, deletedAt, revision, deviceId, ...payload } = record || {};
+  return payload;
+}
+
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (value && typeof value === 'object') {
+    return Object.keys(value).sort().reduce((result, key) => {
+      result[key] = stableValue(value[key]);
+      return result;
+    }, {});
+  }
+  return value;
+}
+
+function payloadsDiffer(left, right) {
+  return JSON.stringify(stableValue(businessPayload(left)))
+    !== JSON.stringify(stableValue(businessPayload(right)));
+}
+
+function authoritativeTombstone(left, right) {
+  if (!left?.deletedAt && !right?.deletedAt) return null;
+  if (left?.deletedAt && right?.deletedAt) return selectLatestRecord(left, right);
+  return left?.deletedAt ? left : right;
+}
+
+export function applyRemoteSnapshot({ local, remoteRows, userId = 'sync-user', baseRevisions = {} }) {
   const remoteByEntity = new Map();
   for (const row of remoteRows) {
     const records = remoteByEntity.get(row.entity_type) || [];
@@ -60,6 +89,8 @@ export function applyRemoteSnapshot({ local, remoteRows, userId = 'sync-user' })
   const collections = {};
   const tombstones = [];
   const uploads = [];
+  const conflicts = [];
+  const nextBaseRevisions = { ...baseRevisions };
   const entityTypes = new Set([...Object.keys(local), ...remoteByEntity.keys()]);
   for (const entityType of entityTypes) {
     const localRecords = local[entityType] || [];
@@ -71,15 +102,63 @@ export function applyRemoteSnapshot({ local, remoteRows, userId = 'sync-user' })
     for (const id of ids) {
       const localRecord = localById.get(id);
       const remoteRecord = remoteById.get(id);
+      const recordKey = `${entityType}:${id}`;
+      const tombstone = authoritativeTombstone(localRecord, remoteRecord);
+      if (tombstone) {
+        tombstones.push({ ...tombstone, entity: entityType });
+        nextBaseRevisions[recordKey] = Math.max(localRecord?.revision || 0, remoteRecord?.revision || 0);
+        if (tombstone === localRecord && !remoteRecord?.deletedAt) {
+          uploads.push(toCloudRow({ userId, entityType, record: tombstone }));
+        }
+        continue;
+      }
+
+      const baseRevision = baseRevisions[recordKey];
+      const isConcurrentCriticalEdit = CRITICAL_ENTITY_TYPES.has(entityType)
+        && localRecord
+        && remoteRecord
+        && Number.isInteger(baseRevision)
+        && localRecord.revision > baseRevision
+        && remoteRecord.revision > baseRevision
+        && payloadsDiffer(localRecord, remoteRecord);
+      if (isConcurrentCriticalEdit) {
+        conflicts.push({
+          id: recordKey,
+          entityType,
+          recordId: id,
+          baseRevision,
+          local: localRecord,
+          remote: remoteRecord,
+        });
+        live.push(localRecord);
+        continue;
+      }
+
       const winner = !remoteRecord ? localRecord : !localRecord ? remoteRecord : selectLatestRecord(localRecord, remoteRecord);
       if (winner === localRecord && (!remoteRecord || winner !== remoteRecord)) {
         uploads.push(toCloudRow({ userId, entityType, record: winner }));
       }
-      if (winner.deletedAt) tombstones.push({ ...winner, entity: entityType });
-      else live.push(winner);
+      live.push(winner);
+      nextBaseRevisions[recordKey] = Math.max(localRecord?.revision || 0, remoteRecord?.revision || 0);
     }
     collections[entityType] = live;
   }
 
-  return { collections, tombstones, uploads };
+  return { collections, tombstones, uploads, conflicts, baseRevisions: nextBaseRevisions };
+}
+
+export const mergeRemoteSnapshot = applyRemoteSnapshot;
+
+export function resolveConflict(conflict, choice, options = {}) {
+  if (!['local', 'remote'].includes(choice)) throw new Error('choice must be local or remote');
+  const now = required(options.now, 'now');
+  const deviceId = required(options.deviceId, 'deviceId');
+  const selected = conflict?.[choice];
+  if (!selected) throw new Error(`conflict.${choice} is required`);
+  return {
+    ...selected,
+    updatedAt: now,
+    revision: Math.max(conflict.local?.revision || 0, conflict.remote?.revision || 0) + 1,
+    deviceId,
+  };
 }

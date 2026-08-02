@@ -47,3 +47,18 @@ test('transport rejects a failed Supabase response with a safe message', async (
 
   await assert.rejects(() => transport.pull('user-1'), /Supabase request failed \(401\)/);
 });
+
+test('transport forwards cancellation signals for automatic four-device sync', async () => {
+  const calls = [];
+  const controller = new AbortController();
+  const transport = createSupabaseTransport({
+    url: 'https://project.supabase.co', anonKey: 'public-anon-key',
+    getAccessToken: async () => 'session-token',
+    fetchImpl: async (url, options) => { calls.push({ url, options }); return jsonResponse([]); },
+  });
+
+  await transport.pull('user-1', { signal: controller.signal });
+  await transport.upsert([{ user_id: 'user-1', entity_type: 'tasks', record_id: 'task-1' }], { signal: controller.signal });
+  assert.equal(calls[0].options.signal, controller.signal);
+  assert.equal(calls[1].options.signal, controller.signal);
+});

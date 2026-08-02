@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyRemoteSnapshot, fromCloudRow, toCloudRow } from '../src/sync-engine.mjs';
+import { applyRemoteSnapshot, CRITICAL_ENTITY_TYPES, fromCloudRow, resolveConflict, toCloudRow } from '../src/sync-engine.mjs';
 
 test('toCloudRow creates an owner-scoped sync row without credentials', () => {
   const row = toCloudRow({
@@ -53,4 +53,101 @@ test('applyRemoteSnapshot keeps a newer local record and marks it for upload', (
   assert.equal(result.collections.inbox[0].content, '确认客户需求');
   assert.equal(result.uploads[0].record_id, 'inbox-1');
   assert.equal(result.uploads[0].payload.content, '确认客户需求');
+});
+
+test('concurrent target edits become a conflict instead of last-write-wins', () => {
+  const local = {
+    id: 'target-1', metricKey: 'wanjia.paymentGmv', value: 100,
+    createdAt: '2026-08-01T08:00:00.000Z', updatedAt: '2026-08-02T08:00:00.000Z',
+    deletedAt: null, revision: 3, deviceId: 'mac-1',
+  };
+  const remoteRow = {
+    entity_type: 'targets', record_id: 'target-1',
+    payload: { id: 'target-1', metricKey: 'wanjia.paymentGmv', value: 120 },
+    created_at: '2026-08-01T08:00:00.000Z', updated_at: '2026-08-02T08:01:00.000Z',
+    deleted_at: null, revision: 3, device_id: 'phone-1',
+  };
+  const result = applyRemoteSnapshot({
+    local: { targets: [local] },
+    remoteRows: [remoteRow],
+    baseRevisions: { 'targets:target-1': 2 },
+  });
+
+  assert.equal(CRITICAL_ENTITY_TYPES.has('targets'), true);
+  assert.equal(result.conflicts.length, 1);
+  assert.equal(result.conflicts[0].id, 'targets:target-1');
+  assert.equal(result.uploads.length, 0);
+});
+
+test('missing critical base revision falls back to deterministic merge', () => {
+  const local = {
+    id: 'decision-1', factSummary: '旧事实', createdAt: '2026-08-01T08:00:00.000Z',
+    updatedAt: '2026-08-02T08:00:00.000Z', deletedAt: null, revision: 2, deviceId: 'mac-1',
+  };
+  const result = applyRemoteSnapshot({
+    local: { decisions: [local] },
+    remoteRows: [{
+      entity_type: 'decisions', record_id: 'decision-1', payload: { id: 'decision-1', factSummary: '新事实' },
+      created_at: local.createdAt, updated_at: '2026-08-02T09:00:00.000Z', deleted_at: null,
+      revision: 3, device_id: 'phone-1',
+    }],
+    baseRevisions: {},
+  });
+
+  assert.equal(result.conflicts.length, 0);
+  assert.equal(result.collections.decisions[0].factSummary, '新事实');
+  assert.equal(result.baseRevisions['decisions:decision-1'], 3);
+});
+
+test('remote tombstones remain authoritative for critical entities', () => {
+  const local = {
+    id: 'target-1', value: 100, createdAt: '2026-08-01T08:00:00.000Z',
+    updatedAt: '2026-08-02T08:00:00.000Z', deletedAt: null, revision: 3, deviceId: 'mac-1',
+  };
+  const result = applyRemoteSnapshot({
+    local: { targets: [local] },
+    remoteRows: [{
+      entity_type: 'targets', record_id: 'target-1', payload: { id: 'target-1', value: 90 },
+      created_at: local.createdAt, updated_at: '2026-08-02T09:00:00.000Z',
+      deleted_at: '2026-08-02T09:00:00.000Z', revision: 4, device_id: 'phone-1',
+    }],
+    baseRevisions: { 'targets:target-1': 2 },
+  });
+
+  assert.equal(result.conflicts.length, 0);
+  assert.equal(result.collections.targets.length, 0);
+  assert.equal(result.tombstones[0].id, 'target-1');
+});
+
+test('resolved critical conflict creates a fresh revision on the resolving device', () => {
+  const conflict = {
+    id: 'targets:target-1', entityType: 'targets', recordId: 'target-1',
+    local: { id: 'target-1', value: 100, createdAt: '2026-08-01T08:00:00.000Z', updatedAt: '2026-08-02T08:00:00.000Z', deletedAt: null, revision: 3, deviceId: 'mac-1' },
+    remote: { id: 'target-1', value: 120, createdAt: '2026-08-01T08:00:00.000Z', updatedAt: '2026-08-02T08:01:00.000Z', deletedAt: null, revision: 4, deviceId: 'phone-1' },
+  };
+  const resolved = resolveConflict(conflict, 'local', { now: '2026-08-02T10:00:00.000Z', deviceId: 'ipad-1' });
+
+  assert.equal(resolved.value, 100);
+  assert.equal(resolved.revision, 5);
+  assert.equal(resolved.deviceId, 'ipad-1');
+  assert.equal(resolved.updatedAt, '2026-08-02T10:00:00.000Z');
+  assert.throws(() => resolveConflict(conflict, 'merge', { now: 'x', deviceId: 'ipad-1' }), /choice must be local or remote/);
+});
+
+test('critical conflict comparison detects different nested evidence', () => {
+  const metadata = {
+    id: 'decision-2', createdAt: '2026-08-01T08:00:00.000Z',
+    updatedAt: '2026-08-02T08:00:00.000Z', deletedAt: null, revision: 3,
+  };
+  const result = applyRemoteSnapshot({
+    local: { decisions: [{ ...metadata, evidence: { amount: 100 }, deviceId: 'mac-1' }] },
+    remoteRows: [{
+      entity_type: 'decisions', record_id: 'decision-2',
+      payload: { id: 'decision-2', evidence: { amount: 120 } },
+      created_at: metadata.createdAt, updated_at: metadata.updatedAt,
+      deleted_at: null, revision: 3, device_id: 'phone-1',
+    }],
+    baseRevisions: { 'decisions:decision-2': 2 },
+  });
+  assert.equal(result.conflicts.length, 1);
 });

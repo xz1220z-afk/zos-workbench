@@ -24,16 +24,16 @@ export function createSupabaseTransport({ url, anonKey, getAccessToken = async (
   }
 
   return {
-    async pull(userId) {
+    async pull(userId, options = {}) {
       required(userId, 'userId');
       const requestUrl = new URL(endpoint(url, '/rest/v1/zos_records'));
       requestUrl.searchParams.set('user_id', `eq.${userId}`);
       requestUrl.searchParams.set('select', '*');
-      const response = await fetchImpl(requestUrl.toString(), { headers: await authHeaders() });
+      const response = await fetchImpl(requestUrl.toString(), { headers: await authHeaders(), signal: options.signal });
       return parseResponse(response);
     },
 
-    async upsert(rows) {
+    async upsert(rows, options = {}) {
       if (!Array.isArray(rows) || rows.length === 0) return [];
       const requestUrl = new URL(endpoint(url, '/rest/v1/zos_records'));
       requestUrl.searchParams.set('on_conflict', 'user_id,entity_type,record_id');
@@ -41,6 +41,7 @@ export function createSupabaseTransport({ url, anonKey, getAccessToken = async (
         method: 'POST',
         headers: { ...(await authHeaders()), 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' },
         body: JSON.stringify(rows),
+        signal: options.signal,
       });
       return parseResponse(response);
     },
