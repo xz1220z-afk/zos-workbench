@@ -134,10 +134,10 @@ assert.match(indexHtml, /@media \(max-width: 767px\)[\s\S]{0,600}\.sidebar\s*\{\
   '移动端必须隐藏桌面侧边导航');
 assert.match(indexHtml, /env\(safe-area-inset-bottom\)/,
   '移动端底部导航必须保留安全区内边距');
-assert.match(indexHtml, /\.zos-command \.command-grid\s*\{\s*display:\s*grid;[\s\S]{0,120}repeat\(3,/,
-  '桌面壳必须提供三列布局');
-assert.match(indexHtml, /@media \(max-width: 1024px\)[\s\S]{0,1800}\.zos-command \.command-grid\s*\{\s*grid-template-columns:\s*repeat\(2,/,
-  '平板壳必须提供两列布局');
+assert.match(indexHtml, /@media \(min-width: 1200px\)[\s\S]{0,240}\.zos-command \.command-grid\s*\{\s*grid-template-columns:\s*repeat\(3,/,
+  '1200px 及以上的桌面壳必须提供三列布局');
+assert.match(indexHtml, /@media \(min-width: 768px\) and \(max-width: 1199px\)[\s\S]{0,240}\.zos-command \.command-grid\s*\{\s*grid-template-columns:\s*repeat\(2,/,
+  '768–1199px 的平板壳必须提供两列布局');
 assert.match(indexHtml, /@media \(max-width: 767px\)[\s\S]{0,1800}\.zos-command \.command-grid\s*\{\s*grid-template-columns:\s*1fr;/,
   '移动端壳必须提供单列布局');
 assert.match(indexHtml, /<nav class="bottom-nav" id="bottomNav">/,
