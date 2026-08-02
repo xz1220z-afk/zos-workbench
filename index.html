@@ -3323,8 +3323,14 @@
       toast('正在读取' + (labels[source] || '业务') + '汇总…');
       var data = await fetchBusinessData({ url: config.url, anonKey: config.anonKey, accessToken: session.accessToken, source: source });
       var cache = businessDataCache();
-      cache.wanjia = { summary: data.wanjia?.summary || {}, records: data.wanjia?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
-      cache.huahuo = { summary: data.huahuo?.summary || {}, records: data.huahuo?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
+      if (source === 'wanjia') {
+        cache.wanjia = { summary: data.wanjia?.summary || {}, records: data.wanjia?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
+      } else if (source === 'huahuo') {
+        cache.huahuo = { summary: data.huahuo?.summary || {}, records: data.huahuo?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
+      } else {
+        cache.wanjia = { summary: data.wanjia?.summary || {}, records: data.wanjia?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
+        cache.huahuo = { summary: data.huahuo?.summary || {}, records: data.huahuo?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
+      }
       localStorage.setItem(BUSINESS_DATA_CACHE_KEY, JSON.stringify(cache));
       commandCenterSetReadError(source);
       renderBusinessDataStates();

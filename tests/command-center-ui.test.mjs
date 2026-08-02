@@ -15,3 +15,10 @@ test('CEO command center renders source-aware sections and all data states witho
   assert.doesNotMatch(indexHtml, /(?:GMV|营业额|支付额|回款)[^<]{0,60}>\s*(?:\d{2,}|¥|￥)/,
     'business KPIs must come from the read-only business payload, never dashboard sample values');
 });
+
+test('selected business refresh preserves the other cached source', () => {
+  assert.match(indexHtml, /if \(source === 'wanjia'\) \{\s*cache\.wanjia =/,
+    'a 万嘉-only response must not replace the 花火 cache entry');
+  assert.match(indexHtml, /else if \(source === 'huahuo'\) \{\s*cache\.huahuo =/,
+    'a 花火-only response must not replace the 万嘉 cache entry');
+});
