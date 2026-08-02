@@ -1,20 +1,12 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
-
-type FeishuRecord = { fields?: Record<string, unknown> };
-type FeishuPayload = { code?: number; tenant_access_token?: unknown; data?: { items?: unknown } };
-type FeishuFailureReason =
-  | 'feishu_auth_failed'
-  | 'feishu_permission_denied'
-  | 'feishu_resource_not_found'
-  | 'feishu_field_mismatch'
-  | 'feishu_read_failed'
-  | 'feishu_request_failed';
-
-class FeishuRequestError extends Error {
-  constructor(readonly reason: FeishuFailureReason, readonly missingFields: string[] = []) {
-    super(reason);
-  }
-}
+import { AuthError, requireUser } from '../_shared/auth.ts';
+import {
+  FEISHU_TARGETS,
+  FeishuRecord,
+  FeishuRequestError,
+  getTenantAccessToken,
+  listRecords,
+  safeFeishuCode,
+} from '../_shared/feishu.ts';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -22,47 +14,23 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
 };
 
-function feishuFetch(url: string, init: RequestInit) {
-  return fetch(url, { ...init, signal: AbortSignal.timeout(12_000) });
-}
-
-const FEISHU = {
-  wanjia: {
-    appToken: 'AWFUwAbItiI4TjkPMErcpv5Onab',
-    merchantTable: 'tblrI2MjVtlOgpe7',
-  },
-  huahuo: {
-    appToken: 'EqzkwDOMEigNflkDoJdcw7FSn4d',
-    projectTable: 'tblZ2QIcA2ESJx4W',
-    deliveryTable: 'tbl3FeKyg3Tvrm0j',
-    receiptTable: 'tblllwWwvrEFgfJM',
-  },
-} as const;
-
 function response(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: CORS_HEADERS });
-}
-
-function configuredPublishableKey() {
-  const legacyKey = Deno.env.get('SUPABASE_ANON_KEY');
-  if (legacyKey) return legacyKey;
-
-  const rawKeys = Deno.env.get('SUPABASE_PUBLISHABLE_KEYS');
-  if (!rawKeys) return null;
-  try {
-    const keys = JSON.parse(rawKeys);
-    if (typeof keys?.default === 'string') return keys.default;
-    const firstKey = Object.values(keys || {}).find((value) => typeof value === 'string');
-    return typeof firstKey === 'string' ? firstKey : null;
-  } catch {
-    return null;
-  }
 }
 
 function fieldsOf(record: FeishuRecord | Record<string, unknown>) {
   return 'fields' in record && record.fields && typeof record.fields === 'object'
     ? record.fields
     : record;
+}
+
+function sourceUpdatedAt(record: FeishuRecord, fallback: unknown = null) {
+  const raw = record.last_modified_time || fallback;
+  if (!raw) return null;
+  const numeric = Number(raw);
+  if (Number.isFinite(numeric) && numeric > 0) return new Date(numeric).toISOString();
+  const parsed = new Date(String(raw));
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
 // Try multiple candidate column names for a field, returning the first
@@ -125,13 +93,18 @@ function buildWanjiaRecords(records: FeishuRecord[]): unknown {
     scannedAt: new Date().toISOString(),
     records: records.map((record, idx) => {
       const f = fieldsOf(record);
+      const updatedAt = sourceUpdatedAt(record, pick(f, '最近更新时间', '更新时间', '修改时间'));
       return {
-        id: String(pick(f, '商家ID', '记录ID', 'RecordId') || `wanjia-${idx}`),
+        id: String(pick(f, '商家ID', '记录ID', 'RecordId') || record.record_id || `wanjia-${idx}`),
+        sourceRecordId: record.record_id || null,
+        sourceUpdatedAt: updatedAt,
+        writeAvailable: Boolean(record.record_id),
+        contractVersion: '1.3',
         merchantName: String(f['商家名称'] || '未知商家'),
         cooperationType: String(pick(f, '合作模式', '合作类型', '业务类型') || '其他'),
         stage: String(pick(f, '当前阶段', '阶段', '合作阶段') || '执行中'),
         owner: String(pick(f, '跟进人', '项目负责人', '负责人', '对接人') || '未指定'),
-        updatedAt: String(pick(f, '最近更新时间', '更新时间', '修改时间') || new Date().toISOString()),
+        updatedAt: updatedAt || new Date(0).toISOString(),
         nextAction: String(pick(f, '下一步动作', '待办事项', '后续动作') || ''),
         riskLevel: String(pick(f, '风险等级', '风险') || '低'),
         revenueStatus: String(pick(f, '收入状态', '收款状态', '回款状态') || '待收款'),
@@ -155,9 +128,13 @@ function buildHuahuoRecords(records: FeishuRecord[]): unknown {
       // P1 hotfix (v1.2.1): huahuo records must carry updatedAt so the risk
       // detector can compute stale/stuck days without producing Infinity.
       // Prefer the Feishu project update-time field; fall back to shootingDate.
-      const updatedAt = String(pick(f, '最近更新时间', '更新时间') || shootingDate);
+      const updatedAt = sourceUpdatedAt(record, pick(f, '最近更新时间', '更新时间')) || shootingDate;
       return {
-        id: String(pick(f, '项目编号', '项目ID', 'RecordId') || `huahuo-${idx}`),
+        id: String(pick(f, '项目编号', '项目ID', 'RecordId') || record.record_id || `huahuo-${idx}`),
+        sourceRecordId: record.record_id || null,
+        sourceUpdatedAt: sourceUpdatedAt(record, updatedAt),
+        writeAvailable: Boolean(record.record_id),
+        contractVersion: '1.3',
         clientName: String(pick(f, '客户名称', '客户') || '未指定'),
         projectName: String(f['项目名称'] || '花火项目'),
         projectType: String(pick(f, '项目类型', '项目来源') || '其他'),
@@ -182,7 +159,11 @@ function buildProjectsSource(huahuoProjects: FeishuRecord[], merchants: FeishuRe
     const status = String(f['项目状态'] || '进行中');
     const riskFromStatus = status.includes('延期') || status.includes('风险') ? '高' : '中';
     return {
-      id: `huahuo-${idx}`,
+      id: record.record_id || `huahuo-${idx}`,
+      sourceRecordId: record.record_id || null,
+      sourceUpdatedAt: sourceUpdatedAt(record, pick(f, '拍摄日期', '实际交付日期', '更新时间')),
+      writeAvailable: Boolean(record.record_id),
+      contractVersion: '1.3',
       name: String(f['项目名称'] || '花火项目'),
       type: '花火拍摄',
       status,
@@ -205,6 +186,10 @@ function buildProjectsSource(huahuoProjects: FeishuRecord[], merchants: FeishuRe
     updatedAt: new Date().toISOString(),
     riskLevel: activeMerchants > 0 ? '低' : '中',
     source: 'wanjia',
+    sourceRecordId: null,
+    sourceUpdatedAt: null,
+    writeAvailable: false,
+    contractVersion: '1.3',
   });
   return {
     source: 'projects',
@@ -212,70 +197,6 @@ function buildProjectsSource(huahuoProjects: FeishuRecord[], merchants: FeishuRe
     scannedAt: new Date().toISOString(),
     projects,
   };
-}
-
-async function getTenantAccessToken(appId: string, appSecret: string) {
-  const result = await feishuFetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    body: JSON.stringify({ app_id: appId, app_secret: appSecret }),
-  });
-  let payload: FeishuPayload | null = null;
-  try { payload = await result.json() as FeishuPayload; } catch { /* Safely classify the failed auth response below. */ }
-  if (!result.ok || payload?.code !== 0 || !payload.tenant_access_token) {
-    throw new FeishuRequestError('feishu_auth_failed');
-  }
-  return payload?.tenant_access_token as string;
-}
-
-function classifyFeishuReadFailure(result: Response, payload: FeishuPayload | null): FeishuFailureReason {
-  const code = payload?.code;
-  if (code === 1254302 || result.status === 403) return 'feishu_permission_denied';
-  if (code === 1254040 || code === 1254041 || result.status === 404) return 'feishu_resource_not_found';
-  if (code === 1254024 || code === 1254044 || code === 1254045) return 'feishu_field_mismatch';
-  return 'feishu_read_failed';
-}
-
-async function getTableFieldNames(token: string, appToken: string, tableId: string) {
-  const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/fields?page_size=100`;
-  const result = await feishuFetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  let payload: FeishuPayload | null = null;
-  try { payload = await result.json() as FeishuPayload; } catch { /* Safely classify below. */ }
-  const items = payload?.data?.items;
-  if (!result.ok || payload?.code !== 0 || !Array.isArray(items)) {
-    throw new FeishuRequestError(classifyFeishuReadFailure(result, payload));
-  }
-  return items
-    .map((item) => (item && typeof item === 'object' ? (item as { field_name?: unknown }).field_name : undefined))
-    .filter((name): name is string => typeof name === 'string');
-}
-
-async function searchRecords(token: string, appToken: string, tableId: string, fieldNames: string[]) {
-  // Read the live table directory first, then request only the known-safe
-  // intersection. Feishu schemas evolve; one retired optional column must not
-  // make the entire read-only business page fail.
-  const actualFieldNames = await getTableFieldNames(token, appToken, tableId);
-  const selectedFieldNames = fieldNames.filter((fieldName) => actualFieldNames.includes(fieldName));
-  if (selectedFieldNames.length === 0) {
-    throw new FeishuRequestError('feishu_field_mismatch', fieldNames);
-  }
-
-  const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/records/search?page_size=500`;
-  const result = await feishuFetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json; charset=utf-8',
-    },
-    body: JSON.stringify({ field_names: selectedFieldNames }),
-  });
-  let payload: FeishuPayload | null = null;
-  try { payload = await result.json() as FeishuPayload; } catch { /* Safely classify the failed table-read response below. */ }
-  if (!result.ok || payload?.code !== 0 || !Array.isArray(payload?.data?.items)) {
-    // Return a safe diagnosis only; never expose Feishu's raw response or data.
-    throw new FeishuRequestError(classifyFeishuReadFailure(result, payload));
-  }
-  return payload?.data?.items as FeishuRecord[];
 }
 
 Deno.serve(async (req) => {
@@ -287,30 +208,20 @@ Deno.serve(async (req) => {
     return response({ error: 'invalid_source' }, 400);
   }
 
-  const authorization = req.headers.get('Authorization') || '';
-  const token = authorization.replace(/^Bearer\s+/i, '');
-  if (!token) return response({ error: 'authentication_required' }, 401);
-
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const publishableKey = configuredPublishableKey();
-  if (!supabaseUrl || !publishableKey) return response({ error: 'service_not_configured' }, 503);
-
-  const supabase = createClient(supabaseUrl, publishableKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-  const { data: authData, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !authData.user) return response({ error: 'authentication_invalid' }, 401);
-
-  const appId = Deno.env.get('FEISHU_APP_ID');
-  const appSecret = Deno.env.get('FEISHU_APP_SECRET');
-  if (!appId || !appSecret) return response({ error: 'source_not_configured' }, 503);
+  try {
+    await requireUser(req);
+  } catch (error) {
+    if (error instanceof AuthError) return response({ error: error.code }, error.status);
+    return response({ error: 'authentication_invalid' }, 401);
+  }
 
   try {
-    const accessToken = await getTenantAccessToken(appId, appSecret);
+    const startedAt = Date.now();
+    const accessToken = await getTenantAccessToken();
     const needsWanjia = requestedSource === 'all' || requestedSource === 'wanjia' || requestedSource === 'projects';
     const needsHuahuo = requestedSource === 'all' || requestedSource === 'huahuo' || requestedSource === 'projects';
     const merchants = needsWanjia
-      ? await searchRecords(accessToken, FEISHU.wanjia.appToken, FEISHU.wanjia.merchantTable,
+      ? await listRecords(accessToken, FEISHU_TARGETS.wanjia.merchant,
         // Verified against the current WanJia merchant-main table on 2026-08-02.
         // Content, live-stream, commission and follow-up data belong to other
         // operational tables and must not be fabricated from this source.
@@ -319,30 +230,41 @@ Deno.serve(async (req) => {
          '支付券数', '核销券数', '退款券数'])
       : [];
     const [projects, deliveries, receipts] = needsHuahuo ? await Promise.all([
-      searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.projectTable,
+      listRecords(accessToken, FEISHU_TARGETS.huahuo.project,
         // Current 04.01 项目管理 fields, plus legacy aliases retained for a
         // read-only, backwards-compatible index.
         ['项目编号', '项目名称', '订单', '项目来源', '项目负责人', '项目成员', '拍摄地点', '项目状态',
          '【预算】合同金额', '【预算】已收金额', '合同金额', '已收金额', '负责人', '项目类型',
          '回款状态', '利润状态', '最近更新时间', '更新时间', '拍摄日期']),
-      searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.deliveryTable,
+      listRecords(accessToken, FEISHU_TARGETS.huahuo.delivery,
         ['交付编号', '项目', '订单', '交付类型', '计划交付日期', '实际交付日期', '交付状态',
          '接收人', '交付负责人', '客户确认状态']),
-      searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.receiptTable,
+      listRecords(accessToken, FEISHU_TARGETS.huahuo.receipt,
         ['项目', '订单', '收款金额', '到账金额', '实收金额', '收款日期', '到账日期', '收款状态', '回款状态', '状态']),
     ]) : [[], [], []];
 
+    const completedAt = new Date().toISOString();
+    const durationMs = Date.now() - startedAt;
+    const health = (recordCount: number) => ({ recordCount, durationMs, lastSuccessAt: completedAt, safeCode: null });
     return response({
-      wanjia: { summary: summarizeWanjia(merchants), records: buildWanjiaRecords(merchants) },
-      huahuo: { summary: summarizeHuahuo(projects, deliveries, receipts), records: buildHuahuoRecords(projects) },
-      projects: buildProjectsSource(projects, merchants),
+      wanjia: {
+        summary: summarizeWanjia(merchants),
+        records: buildWanjiaRecords(merchants),
+        health: health(merchants.length),
+        contractVersion: '1.3',
+      },
+      huahuo: {
+        summary: summarizeHuahuo(projects, deliveries, receipts),
+        records: buildHuahuoRecords(projects),
+        health: health(projects.length + deliveries.length + receipts.length),
+        contractVersion: '1.3',
+      },
+      projects: { ...(buildProjectsSource(projects, merchants) as Record<string, unknown>), health: health(projects.length + 1), contractVersion: '1.3' },
       brain: { state: 'not_configured', note: 'Obsidian bridge not configured' },
-      meta: { fetchedAt: new Date().toISOString(), mode: 'read_only' },
+      meta: { fetchedAt: completedAt, mode: 'read_only', contractVersion: '1.3' },
     });
   } catch (error) {
-    const reason: FeishuFailureReason = error instanceof FeishuRequestError
-      ? error.reason
-      : 'feishu_request_failed';
+    const reason = safeFeishuCode(error);
     console.error(JSON.stringify({ event: 'zos_business_data_failed', reason }));
     const missingFields = error instanceof FeishuRequestError ? error.missingFields : [];
     return response({ error: 'source_read_failed', reason, missing_fields: missingFields }, 502);
