@@ -2899,13 +2899,13 @@
     else delete commandCenterReadErrors[source];
   }
   function hasBusinessSummary(source, summary) {
-    var fields = source === 'wanjia' ? ['totalMerchants', 'activeMerchants'] : ['activeProjects', 'pendingDeliveries'];
+    var fields = source === 'wanjia' ? ['totalMerchants', 'activeMerchants', 'paymentGmv'] : ['activeProjects', 'pendingDeliveries', 'receivedAmount'];
     return !!summary && typeof summary === 'object' && fields.every(function(field) {
       return Object.prototype.hasOwnProperty.call(summary, field) && typeof summary[field] === 'number' && Number.isFinite(summary[field]);
     });
   }
   function businessSummaryMissingFields(source, summary) {
-    var fields = source === 'wanjia' ? ['totalMerchants', 'activeMerchants'] : ['activeProjects', 'pendingDeliveries'];
+    var fields = source === 'wanjia' ? ['totalMerchants', 'activeMerchants', 'paymentGmv'] : ['activeProjects', 'pendingDeliveries', 'receivedAmount'];
     return fields.filter(function(field) {
       return !summary || typeof summary !== 'object' || !Object.prototype.hasOwnProperty.call(summary, field) || typeof summary[field] !== 'number' || !Number.isFinite(summary[field]);
     });
@@ -3358,35 +3358,45 @@
     });
 
     var wanjia = cache.wanjia && cache.wanjia.summary;
-    if (wanjia) {
-      setBusinessValue('wanjiaMerchantCount', String(wanjia.totalMerchants || 0));
-      setBusinessValue('wanjiaActiveMerchantCount', String(wanjia.activeMerchants || 0));
+    var wanjiaValid = hasBusinessSummary('wanjia', wanjia);
+    var wanjiaEmpty = document.getElementById('wanjiaDataEmpty');
+    var wanjiaStatus = document.getElementById('wanjiaDataStatus');
+    if (wanjiaValid) {
+      setBusinessValue('wanjiaMerchantCount', String(wanjia.totalMerchants));
+      setBusinessValue('wanjiaActiveMerchantCount', String(wanjia.activeMerchants));
       setBusinessValue('wanjiaPaymentGmv', displayCurrency(wanjia.paymentGmv));
-      var wanjiaEmpty = document.getElementById('wanjiaDataEmpty');
       if (wanjiaEmpty) wanjiaEmpty.style.display = 'none';
-      var wanjiaStatus = document.getElementById('wanjiaDataStatus');
       if (wanjiaStatus) wanjiaStatus.textContent = '已读取缓存 · 更新于 ' + (cache.wanjia.fetchedAt || '未知时间') + ' · 只读';
       renderRecordList('wanjiaRecordList', (cache.wanjia && cache.wanjia.records) || [], 'wanjia');
     } else {
       setBusinessValue('wanjiaMerchantCount', '—');
       setBusinessValue('wanjiaActiveMerchantCount', '—');
       setBusinessValue('wanjiaPaymentGmv', '—');
+      if (wanjia) {
+        if (wanjiaEmpty) wanjiaEmpty.style.display = '';
+        if (wanjiaStatus) wanjiaStatus.textContent = '待确认 · 只读汇总缺少字段：' + businessSummaryMissingFields('wanjia', wanjia).join('、') + '。';
+      }
     }
 
     var huahuo = cache.huahuo && cache.huahuo.summary;
-    if (huahuo) {
-      setBusinessValue('huahuoActiveProjects', String(huahuo.activeProjects || 0));
-      setBusinessValue('huahuoPendingDeliveries', String(huahuo.pendingDeliveries || 0));
+    var huahuoValid = hasBusinessSummary('huahuo', huahuo);
+    var huahuoEmpty = document.getElementById('huahuoDataEmpty');
+    var huahuoStatus = document.getElementById('huahuoDataStatus');
+    if (huahuoValid) {
+      setBusinessValue('huahuoActiveProjects', String(huahuo.activeProjects));
+      setBusinessValue('huahuoPendingDeliveries', String(huahuo.pendingDeliveries));
       setBusinessValue('huahuoReceivedAmount', displayCurrency(huahuo.receivedAmount));
-      var huahuoEmpty = document.getElementById('huahuoDataEmpty');
       if (huahuoEmpty) huahuoEmpty.style.display = 'none';
-      var huahuoStatus = document.getElementById('huahuoDataStatus');
       if (huahuoStatus) huahuoStatus.textContent = '已读取缓存 · 更新于 ' + (cache.huahuo.fetchedAt || '未知时间') + ' · 只读';
       renderRecordList('huahuoRecordList', (cache.huahuo && cache.huahuo.records) || [], 'huahuo');
     } else {
       setBusinessValue('huahuoActiveProjects', '—');
       setBusinessValue('huahuoPendingDeliveries', '—');
       setBusinessValue('huahuoReceivedAmount', '—');
+      if (huahuo) {
+        if (huahuoEmpty) huahuoEmpty.style.display = '';
+        if (huahuoStatus) huahuoStatus.textContent = '待确认 · 只读汇总缺少字段：' + businessSummaryMissingFields('huahuo', huahuo).join('、') + '。';
+      }
     }
     renderSourceRails();
     renderCommandCenter();

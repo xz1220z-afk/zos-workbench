@@ -37,9 +37,61 @@ test('business summary validation rejects metadata-only payloads but accepts dem
 
   assert.equal(hasBusinessSummary('wanjia', { mode: 'read_only' }), false);
   assert.equal(hasBusinessSummary('huahuo', {}), false);
-  assert.equal(hasBusinessSummary('wanjia', { totalMerchants: 0, activeMerchants: 0 }), true);
-  assert.equal(hasBusinessSummary('huahuo', { activeProjects: 0, pendingDeliveries: 0 }), true);
+  assert.equal(hasBusinessSummary('wanjia', { totalMerchants: 0, activeMerchants: 0, paymentGmv: 0 }), true);
+  assert.equal(hasBusinessSummary('huahuo', { activeProjects: 0, pendingDeliveries: 0, receivedAmount: 0 }), true);
   assert.equal(hasBusinessSummary('wanjia', { totalMerchants: 1, activeMerchants: undefined }), false);
+});
+
+function detailPageRenderer(cache) {
+  const start = indexHtml.indexOf('function hasBusinessSummary(');
+  const end = indexHtml.indexOf('async function refreshBusinessData(', start);
+  assert.notEqual(start, -1, 'detail-page validation helpers must be defined');
+  assert.notEqual(end, -1, 'detail-page renderer must be available');
+  const values = {};
+  const elements = Object.fromEntries([
+    'wanjiaDataStatus', 'huahuoDataStatus', 'brainDataStatus', 'wanjiaDataEmpty', 'huahuoDataEmpty',
+    'wanjiaMerchantCount', 'wanjiaActiveMerchantCount', 'wanjiaPaymentGmv',
+    'huahuoActiveProjects', 'huahuoPendingDeliveries', 'huahuoReceivedAmount',
+  ].map((id) => [id, { textContent: '', style: {} }]));
+  const renderBusinessDataStates = vm.runInNewContext(indexHtml.slice(start, end) + '; renderBusinessDataStates', {
+    businessDataCache: () => cache,
+    businessConnectionMessage: () => '待同步',
+    setBusinessValue: (id, value) => { values[id] = value; },
+    displayCurrency: (value) => '¥' + value,
+    renderRecordList: () => {}, renderSourceRails: () => {}, renderCommandCenter: () => {},
+    loadVal: (key) => key === 'zos_business_data_cache_v1' ? JSON.stringify(cache) : '{}',
+    KEYS: { SYNC_SESSION: 'sync-session' },
+    commandCenterReadErrors: {},
+    window: {},
+    document: { getElementById: (id) => elements[id] || null, querySelectorAll: () => [] },
+  });
+  return { renderBusinessDataStates, values, elements };
+}
+
+test('detail pages keep incomplete summaries pending with dashes while rendering proven zeroes', () => {
+  const incomplete = detailPageRenderer({
+    wanjia: { summary: { mode: 'read_only' }, fetchedAt: '2026-08-02T00:00:00.000Z' },
+    huahuo: { summary: {}, fetchedAt: '2026-08-02T00:00:00.000Z' },
+  });
+  incomplete.renderBusinessDataStates();
+  assert.deepEqual(
+    [incomplete.elements.wanjiaMerchantCount.textContent, incomplete.elements.wanjiaActiveMerchantCount.textContent, incomplete.elements.wanjiaPaymentGmv.textContent,
+      incomplete.elements.huahuoActiveProjects.textContent, incomplete.elements.huahuoPendingDeliveries.textContent, incomplete.elements.huahuoReceivedAmount.textContent],
+    ['—', '—', '—', '—', '—', '—'],
+  );
+  assert.match(incomplete.elements.wanjiaDataStatus.textContent, /待确认.*缺少字段/);
+  assert.match(incomplete.elements.huahuoDataStatus.textContent, /待确认.*缺少字段/);
+
+  const zeroes = detailPageRenderer({
+    wanjia: { summary: { totalMerchants: 0, activeMerchants: 0, paymentGmv: 0 }, fetchedAt: '2026-08-02T00:00:00.000Z' },
+    huahuo: { summary: { activeProjects: 0, pendingDeliveries: 0, receivedAmount: 0 }, fetchedAt: '2026-08-02T00:00:00.000Z' },
+  });
+  zeroes.renderBusinessDataStates();
+  assert.deepEqual(
+    [zeroes.elements.wanjiaMerchantCount.textContent, zeroes.elements.wanjiaActiveMerchantCount.textContent, zeroes.elements.wanjiaPaymentGmv.textContent,
+      zeroes.elements.huahuoActiveProjects.textContent, zeroes.elements.huahuoPendingDeliveries.textContent, zeroes.elements.huahuoReceivedAmount.textContent],
+    ['0', '0', '¥0', '0', '0', '¥0'],
+  );
 });
 
 test('mobile navigation has five primary destinations and routes secondary pages through More', () => {
