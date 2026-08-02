@@ -22,6 +22,10 @@ assert.match(source, /AbortSignal\.timeout\(12_000\)/,
   'Every Feishu request has a bounded timeout instead of leaving page refreshes pending indefinitely');
 assert.match(source, /searchParams\.get\('source'\)/,
   'Function can limit a page refresh to its requested read-only source');
+assert.match(source, /1254302/,
+  'Function classifies Feishu advanced-permission failures without exposing raw upstream responses');
+assert.match(source, /1254045/,
+  'Function classifies missing or inaccessible Feishu field names safely');
 assert.match(source, /wanjia/);
 assert.match(source, /huahuo/);
 assert.doesNotMatch(source, /cli_aab7f0f691b8dcb3|yimbjqe4EDassDFqmUR9Lh0xdzBHyMvQ/,

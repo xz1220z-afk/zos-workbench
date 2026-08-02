@@ -2138,6 +2138,9 @@
       try { payload = body ? JSON.parse(body) : {}; } catch (error) { /* Fall back to the HTTP status below. */ }
       var reasonMessages = {
         feishu_auth_failed: '飞书应用鉴权失败，请检查应用凭证',
+        feishu_permission_denied: '飞书应用没有该多维表的高级权限，请在目标 Base 添加实际应用',
+        feishu_resource_not_found: '飞书 Base 或数据表 ID 不存在，请核对当前表配置',
+        feishu_field_mismatch: '飞书字段名与当前数据表不匹配，请核对字段配置',
         feishu_read_failed: '飞书数据读取失败，请检查应用权限或数据表配置',
         feishu_request_failed: '飞书服务请求失败，请稍后重试',
       };

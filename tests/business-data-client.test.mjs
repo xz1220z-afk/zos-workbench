@@ -64,3 +64,15 @@ test('reports a safe Feishu authentication diagnosis for a protected 502 respons
     /Feishu application authentication failed/i,
   );
 });
+
+test('reports a safe Feishu field diagnosis when a configured field no longer exists', async () => {
+  await assert.rejects(
+    fetchBusinessData({
+      url: 'https://project.supabase.co', anonKey: 'public-key', accessToken: 'user-token',
+      fetchImpl: async () => new Response(JSON.stringify({
+        error: 'source_read_failed', reason: 'feishu_field_mismatch',
+      }), { status: 502 }),
+    }),
+    /Feishu table field configuration does not match/i,
+  );
+});

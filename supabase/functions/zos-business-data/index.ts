@@ -2,7 +2,13 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 type FeishuRecord = { fields?: Record<string, unknown> };
 type FeishuPayload = { code?: number; tenant_access_token?: unknown; data?: { items?: unknown } };
-type FeishuFailureReason = 'feishu_auth_failed' | 'feishu_read_failed' | 'feishu_request_failed';
+type FeishuFailureReason =
+  | 'feishu_auth_failed'
+  | 'feishu_permission_denied'
+  | 'feishu_resource_not_found'
+  | 'feishu_field_mismatch'
+  | 'feishu_read_failed'
+  | 'feishu_request_failed';
 
 class FeishuRequestError extends Error {
   constructor(readonly reason: FeishuFailureReason) {
@@ -233,6 +239,17 @@ async function searchRecords(token: string, appToken: string, tableId: string, f
   let payload: FeishuPayload | null = null;
   try { payload = await result.json() as FeishuPayload; } catch { /* Safely classify the failed table-read response below. */ }
   if (!result.ok || payload?.code !== 0 || !Array.isArray(payload?.data?.items)) {
+    // Return a safe diagnosis only; never expose Feishu's raw response or data.
+    const code = payload?.code;
+    if (code === 1254302 || result.status === 403) {
+      throw new FeishuRequestError('feishu_permission_denied');
+    }
+    if (code === 1254040 || code === 1254041 || result.status === 404) {
+      throw new FeishuRequestError('feishu_resource_not_found');
+    }
+    if (code === 1254024 || code === 1254044 || code === 1254045) {
+      throw new FeishuRequestError('feishu_field_mismatch');
+    }
     throw new FeishuRequestError('feishu_read_failed');
   }
   return payload?.data?.items as FeishuRecord[];

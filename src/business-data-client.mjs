@@ -14,6 +14,9 @@ function businessDataError(status, body) {
   try { payload = body ? JSON.parse(body) : {}; } catch { /* Keep the generic status message. */ }
   const reasons = {
     feishu_auth_failed: 'Feishu application authentication failed',
+    feishu_permission_denied: 'Feishu app has no permission for the configured Bitable',
+    feishu_resource_not_found: 'Feishu Base or table configuration was not found',
+    feishu_field_mismatch: 'Feishu table field configuration does not match',
     feishu_read_failed: 'Feishu data read failed',
     feishu_request_failed: 'Feishu request failed',
   };
