@@ -46,18 +46,17 @@ test('monitoring client sends only the safe owner-scoped audit row', async () =>
   });
 
   assert.equal(requests.length, 1);
-  assert.match(requests[0].url, /\/rest\/v1\/zos_audit_events$/);
+  assert.match(requests[0].url, /\/functions\/v1\/zos-monitor$/);
   assert.equal(requests[0].init.headers.Authorization, 'Bearer user-token');
   assert.deepEqual(JSON.parse(requests[0].init.body), {
-    user_id: 'user-1',
-    event_type: 'refresh',
+    eventType: 'refresh',
     source: 'wanjia',
     result: 'success',
-    safe_code: null,
-    duration_ms: null,
-    record_count: 3,
-    approval_id: null,
-    client_version: '1.3.0',
+    safeCode: null,
+    durationMs: null,
+    recordCount: 3,
+    approvalId: null,
+    clientVersion: '1.3.0',
   });
   assert.equal(requests[0].init.body.includes('must-not-leak'), false);
   assert.equal(requests[0].init.body.includes('business body'), false);

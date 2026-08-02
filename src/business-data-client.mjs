@@ -39,5 +39,25 @@ export async function fetchBusinessData({ url, anonKey, accessToken, source, fet
   if (!response.ok) throw businessDataError(response.status, body);
   const data = body ? JSON.parse(body) : {};
   if (data?.meta?.mode !== 'read_only') throw new Error('Business data response is not read-only');
+  if (source) {
+    const selected = data?.[source] || {};
+    const nestedRecords = selected?.records;
+    const records = Array.isArray(nestedRecords)
+      ? nestedRecords
+      : Array.isArray(nestedRecords?.records)
+        ? nestedRecords.records
+        : Array.isArray(selected?.projects)
+          ? selected.projects
+          : [];
+    return {
+      source,
+      mode: data.meta.mode,
+      summary: selected.summary || {},
+      records,
+      health: selected.health || null,
+      contractVersion: selected.contractVersion || data.meta.contractVersion || null,
+      fetchedAt: data.meta.fetchedAt || null,
+    };
+  }
   return data;
 }

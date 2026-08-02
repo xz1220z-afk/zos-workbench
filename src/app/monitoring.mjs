@@ -16,7 +16,7 @@ function required(value, name) {
 
 export function sanitizeAuditEvent(event = {}, options = {}) {
   const safeCode = safeText(event.safeCode);
-  const explicitResult = ['success', 'failed'].includes(event.result) ? event.result : null;
+  const explicitResult = ['success', 'failed', 'blocked', 'previewed'].includes(event.result) ? event.result : null;
   return {
     eventType: safeText(event.eventType) || 'unknown',
     source: safeText(event.source),
@@ -41,32 +41,20 @@ export function createMonitoringClient({
   required(anonKey, 'anonKey');
   required(userId, 'userId');
   required(fetchImpl, 'fetchImpl');
-  const endpoint = new URL('/rest/v1/zos_audit_events', `${String(url).replace(/\/$/, '')}/`).toString();
+  const endpoint = new URL('/functions/v1/zos-monitor', `${String(url).replace(/\/$/, '')}/`).toString();
 
   return {
     async record(event) {
       const token = required(await getAccessToken(), 'accessToken');
       const safe = sanitizeAuditEvent(event, { clientVersion });
-      const body = {
-        user_id: userId,
-        event_type: safe.eventType,
-        source: safe.source,
-        result: safe.result,
-        safe_code: safe.safeCode,
-        duration_ms: safe.durationMs,
-        record_count: safe.recordCount,
-        approval_id: safe.approvalId,
-        client_version: safe.clientVersion,
-      };
       const response = await fetchImpl(endpoint, {
         method: 'POST',
         headers: {
           apikey: anonKey,
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-          Prefer: 'return=minimal',
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(safe),
       });
       if (!response.ok) throw new Error(`monitoring request failed (${response.status})`);
       return safe;

@@ -42,6 +42,27 @@ test('requests only the selected business source when a page refreshes', async (
   assert.equal(request.url, 'https://project.supabase.co/functions/v1/zos-business-data?source=wanjia');
 });
 
+test('selected refresh returns the normalized v1.3 operating contract', async () => {
+  const data = await fetchBusinessData({
+    url: 'https://project.supabase.co', anonKey: 'public-key', accessToken: 'user-token', source: 'huahuo',
+    fetchImpl: async () => new Response(JSON.stringify({
+      huahuo: {
+        summary: { receivedAmount: 12000 },
+        records: { source: 'huahuo', mode: 'read_only', records: [{ id: 'project-1' }] },
+        health: { recordCount: 1, lastSuccessAt: '2026-08-02T01:00:00.000Z', durationMs: 20, safeCode: null },
+        contractVersion: '1.3',
+      },
+      meta: { mode: 'read_only', fetchedAt: '2026-08-02T01:00:00.000Z', contractVersion: '1.3' },
+    }), { status: 200 }),
+  });
+
+  assert.deepEqual(data, {
+    source: 'huahuo', mode: 'read_only', summary: { receivedAmount: 12000 }, records: [{ id: 'project-1' }],
+    health: { recordCount: 1, lastSuccessAt: '2026-08-02T01:00:00.000Z', durationMs: 20, safeCode: null },
+    contractVersion: '1.3', fetchedAt: '2026-08-02T01:00:00.000Z',
+  });
+});
+
 test('rejects a response that is not explicitly read-only', async () => {
   await assert.rejects(
     fetchBusinessData({
