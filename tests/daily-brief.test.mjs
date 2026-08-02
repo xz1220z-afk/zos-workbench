@@ -40,7 +40,7 @@ test('CEO brief has eight fixed sections and remains a review draft', () => {
   assert.equal(brief.reviewStatus, 'pending_review');
   assert.equal(brief.kind, 'daily_brief');
   assert.deepEqual(brief.sections.yesterday.map((task) => task.title), ['确认交付']);
-  assert.deepEqual(brief.sections.todayTop3.map((task) => task.title), ['核对回款', '推进商家活动']);
+  assert.deepEqual(brief.sections.todayTop3.map((task) => task.title), ['核对回款', '推进商家活动', '一个项目延期']);
 });
 
 test('same date and same data fingerprint generates once', () => {
@@ -69,4 +69,21 @@ test('brief keeps source facts and AI suggestions separate and exports all headi
     assert.match(markdown, new RegExp(`## ${heading}`));
   }
   assert.match(markdown, /待人工审核/);
+});
+
+test('open decisions fill empty Top 3 slots without leaking object strings', () => {
+  const brief = generateCeoBrief({
+    tasks: [{ id: 't1', title: '先处理今天到期任务', status: 'open', priority: 3, dueDate: '2026-08-02' }],
+    decisions: [
+      { id: 'd1', factSummary: '确认万嘉停滞商家的负责人和完成时间', status: 'open', severity: 'high' },
+      { id: 'd2', factSummary: '确认花火待回款项目的收款日期', status: 'open', severity: 'medium' },
+    ],
+  }, { date: '2026-08-02', now: '2026-08-02T07:30:00.000Z' });
+
+  assert.deepEqual(brief.sections.todayTop3.map((item) => item.title), [
+    '先处理今天到期任务',
+    '确认万嘉停滞商家的负责人和完成时间',
+    '确认花火待回款项目的收款日期',
+  ]);
+  assert.equal(brief.sections.todayTop3.every((item) => !item.title.includes('[object Object]')), true);
 });

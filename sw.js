@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zos-workbench-v1.4.1';
+const CACHE_NAME = 'zos-workbench-v1.4.2';
 // Resolve from the service worker scope so the PWA works both at a domain root
 // and from a GitHub Pages project path such as /zos-workbench/.
 const ASSETS_TO_CACHE = [
@@ -33,6 +33,7 @@ const ASSETS_TO_CACHE = [
   'src/app/life-os.mjs',
   'src/app/relation-center.mjs',
   'src/app/review-center.mjs',
+  'src/app/value-utils.mjs',
   'src/app/views/view-utils.mjs',
   'src/app/views/dashboard-view.mjs',
   'src/app/views/decision-view.mjs',

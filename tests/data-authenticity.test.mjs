@@ -72,10 +72,9 @@ test('异常状态：脏阶段 / 脏日期被归一化而非崩溃', () => {
   assert.equal(h.shootingDate, new Date(0).toISOString());
 });
 
-test('异常状态：无法解析的 updatedAt 仍触发停滞风险', () => {
+test('异常状态：无法解析的 updatedAt 不制造停滞风险', () => {
   const risks = detectRisks([{ id: 'x', merchantName: 'M', stage: '执行中', updatedAt: 'invalid' }], 'wanjia', { asOf: ASOF });
-  assert.equal(risks.length, 1);
-  assert.ok(risks[0].reasons.some((x) => x.code === 'stale'));
+  assert.deepEqual(risks, []);
 });
 
 test('异常状态：风险等级脏值被归一化', () => {

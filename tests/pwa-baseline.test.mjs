@@ -10,13 +10,14 @@ const [shellHtml, legacySource, appCss, serviceWorker, manifest] = await Promise
 ]);
 const indexHtml = `${shellHtml}\n${legacySource}\n${appCss}`;
 
-assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.4\.1';/,
+assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.4\.2';/,
   'A command-center UI release must receive a new Service Worker cache revision');
 for (const asset of [
   'assets/app.css', 'src/app.mjs', 'src/legacy-app.mjs', 'src/app/operating-loop.mjs',
   'src/app/decision-center.mjs', 'src/app/targets.mjs', 'src/app/source-health.mjs',
   'src/app/daily-brief.mjs', 'src/app/sync-controller.mjs', 'src/app/feishu-approvals.mjs',
   'src/app/monitoring.mjs', 'src/app/router.mjs', 'src/app/views/dashboard-view.mjs',
+  'src/app/value-utils.mjs',
 ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.') ), `${asset} must be available offline`);
 assert.equal(manifest.background_color, '#07101d');
 assert.equal(manifest.theme_color, '#0b1626');
@@ -29,9 +30,9 @@ assert.match(indexHtml, /refreshSession\(session\.refreshToken\)/,
   'Sync must refresh an existing Supabase session before pulling data');
 assert.match(indexHtml, /const PUBLIC_APP_URL = 'https:\/\/xz1220z-afk\.github\.io\/zos-workbench\/'/,
   'The public app URL must be explicit so auth callbacks stay on the GitHub Pages subpath');
-assert.match(indexHtml, /const APP_VERSION = '1\.4\.1'/,
+assert.match(indexHtml, /const APP_VERSION = '1\.4\.2'/,
   'The inline application version must match the current release');
-assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v1\.4\.1/,
+assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v1\.4\.2/,
   'The settings page version label must match the current release');
 assert.match(indexHtml, /requestOtp\(email, PUBLIC_APP_URL\)/,
   'Magic-link requests must redirect to the public app subpath');

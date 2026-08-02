@@ -1,3 +1,5 @@
+import { humanText } from './value-utils.mjs';
+
 export const CEO_BRIEF_SECTIONS = Object.freeze([
   'yesterday',
   'todayTop3',
@@ -130,12 +132,36 @@ function buildSections(input = {}, date) {
   const completedYesterday = tasks
     .filter((task) => task.status === 'done' && String(task.completedAt || '').slice(0, 10) === yesterday)
     .sort((left, right) => left.id.localeCompare(right.id, 'zh-CN'));
-  const todayTop3 = tasks
+  const dueTasks = tasks
     .filter((task) => task.status !== 'done' && (!task.dueDate || task.dueDate <= date))
     .sort((left, right) => (right.priority || 0) - (left.priority || 0)
       || String(left.dueDate || '').localeCompare(String(right.dueDate || ''))
       || left.id.localeCompare(right.id, 'zh-CN'))
     .slice(0, 3);
+  const decisionActions = (Array.isArray(input.decisions) ? input.decisions : [])
+    .filter((item) => item.status === 'open')
+    .sort((left, right) => ({ high: 0, medium: 1, low: 2 }[left.severity] ?? 3)
+      - ({ high: 0, medium: 1, low: 2 }[right.severity] ?? 3)
+      || String(left.id || '').localeCompare(String(right.id || ''), 'zh-CN'))
+    .map((item) => ({
+      id: `decision:${String(item.id || '')}`,
+      title: humanText(item.factSummary || item.title, '待核对经营事项'),
+      status: 'open',
+      priority: item.severity === 'high' ? 3 : 2,
+      dueDate: date,
+      sourceType: 'decision',
+      sourceId: String(item.id || ''),
+    }))
+    .filter((item) => item.sourceId && item.title !== '待核对经营事项');
+  const seen = new Set(dueTasks.map((item) => item.title));
+  const todayTop3 = [...dueTasks];
+  for (const action of decisionActions) {
+    if (todayTop3.length >= 3) break;
+    if (!seen.has(action.title)) {
+      todayTop3.push(action);
+      seen.add(action.title);
+    }
+  }
 
   return {
     yesterday: completedYesterday,

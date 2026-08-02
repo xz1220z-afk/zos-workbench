@@ -76,17 +76,20 @@ export function detectRisks(records = [], kind, options = {}) {
     .filter((r) => !isDone(r, kind))
     .map((r) => {
       const reasons = [];
-      const since = daysSince(r.updatedAt, asOf);
+      const hasUsableTimestamp = typeof r.updatedAt === 'string'
+        && r.updatedAt.trim() !== ''
+        && !Number.isNaN(new Date(r.updatedAt).getTime());
+      const since = hasUsableTimestamp ? daysSince(r.updatedAt, asOf) : null;
 
       // Rule 1 + 2: no update for > staleDays, and stage has stalled.
-      if (since > staleDays) {
+      if (since != null && since > staleDays) {
         reasons.push({
           code: 'stale',
           label: `超过 ${staleDays} 天未更新（已停滞 ${since} 天）`,
           severity: since > stuckDays ? 'high' : 'medium',
         });
       }
-      if (since > stuckDays) {
+      if (since != null && since > stuckDays) {
         reasons.push({
           code: 'stuck',
           label: `状态「${r.stage || r.status || '未知'}」停留超过 ${stuckDays} 天`,

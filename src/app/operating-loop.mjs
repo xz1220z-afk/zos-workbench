@@ -5,6 +5,7 @@ import {
 } from './targets.mjs';
 import { classifySourceHealth } from './source-health.mjs';
 import { generateCeoBrief, shouldGenerateBrief } from './daily-brief.mjs';
+import { humanText } from './value-utils.mjs';
 
 function required(value, name) {
   if (!value) throw new Error(`${name} is required`);
@@ -24,7 +25,7 @@ function decisionItems(source, records, risks) {
       source,
       sourceRecordId: record.sourceRecordId || risk.recordId,
       category: risk.reasons?.[0]?.code || 'risk',
-      factSummary: `${risk.name}：${risk.reasons.map((reason) => reason.label).join('；')}`,
+      factSummary: `${humanText(risk.name, humanText(record.merchantName || record.projectName || record.name, String(risk.recordId)))}：${risk.reasons.map((reason) => reason.label).join('；')}`,
       recommendedAction: '请核对负责人、下一步和完成时间',
       severity: risk.level === '高' ? 'high' : 'medium',
       sourceUpdatedAt: record.updatedAt || null,
@@ -41,6 +42,7 @@ export function createOperatingLoop({
   approvalClient,
   saveSnapshots = async () => {},
   saveHealth = async () => {},
+  getTasks = () => [],
   initialState = {},
 } = {}) {
   required(userId, 'userId');
@@ -67,6 +69,7 @@ export function createOperatingLoop({
       decisions: state.decisions,
       health: state.health,
       risks: state.decisions.filter((item) => item.status === 'open'),
+      tasks: clone(getTasks()) || [],
     };
   }
 
@@ -85,7 +88,9 @@ export function createOperatingLoop({
         userId, date: date(), contractVersion: '1.3',
       }));
 
-      const sourceRecords = Array.isArray(facts.records) ? facts.records : [];
+      const sourceRecords = Array.isArray(facts.records)
+        ? facts.records
+        : (Array.isArray(facts.records?.records) ? facts.records.records : []);
       const sourceRisks = ['wanjia', 'huahuo'].includes(source)
         ? detectRisks(sourceRecords, source, { asOf: new Date(now()) })
         : [];
@@ -118,7 +123,7 @@ export function createOperatingLoop({
       if (shouldGenerateBrief(state.briefs, input, { date: today })) {
         state.briefs.push(generateCeoBrief(input, { date: today, now: now() }));
       }
-      return clone(state.briefs.find((brief) => brief.date === today));
+      return clone([...state.briefs].reverse().find((brief) => brief.date === today));
     },
 
     setConflicts(conflicts = []) {

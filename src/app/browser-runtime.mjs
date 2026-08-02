@@ -71,6 +71,7 @@ export async function createBrowserOperatingRuntime({
       targets: snapshot.collections.targets || [],
       briefs: initialBriefs,
     },
+    getTasks: () => store.load().collections.tasks || [],
     saveSnapshots: (rows) => upsert(fetchImpl, config.url, config.anonKey, session.accessToken,
       'zos_business_snapshots', 'user_id,source,metric_key,captured_on', rows.map((row) => ({
         user_id: session.userId, source: row.source, metric_key: row.metricKey,

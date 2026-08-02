@@ -1,11 +1,12 @@
 import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs';
+import { formatCurrency, humanText } from '../value-utils.mjs';
 
 export { VIEW_STATES };
 
 function decisionRows(decisions = []) {
   if (!decisions.length) return renderState('empty', '待我决策');
   return `<div class="v13-list">${decisions.slice(0, 4).map((item) => `
-    <div class="v13-row"><div><strong>${escapeHtml(item.factSummary || item.title)}</strong><div class="v13-meta">${escapeHtml(item.recommendedAction || '等待人工判断')}</div></div><span class="v13-chip">${escapeHtml(item.severity || '关注')}</span></div>
+    <div class="v13-row"><div><strong>${escapeHtml(item.status === 'pending_resolution' ? humanText(item.decisionNote, '来源风险已消失，待确认解除') : humanText(item.factSummary || item.title, '待核对事项'))}</strong><div class="v13-meta">${escapeHtml(humanText(item.recommendedAction, '等待人工判断'))}</div></div><span class="v13-chip">${escapeHtml(humanText(item.severity, '关注'))}</span></div>
   `).join('')}</div>`;
 }
 
@@ -31,11 +32,11 @@ export function render(container, viewModel = {}) {
       <article><span>数据健康</span><strong>${synced}/${health.length || '—'}</strong><small>正常来源</small></article>
     </div>
     <div class="v14-main-grid">
-      <article class="v13-panel v14-span-2"><div class="v14-section-head"><h3>◎ 今日 Top 3</h3><button class="v13-action" data-page="today">查看行动</button></div>${(viewModel.todayTop3 || []).length ? `<div class="v13-list">${viewModel.todayTop3.slice(0, 3).map((item, index) => `<div class="v13-row"><span><b>0${index + 1}</b> ${escapeHtml(item.title || item.factSummary || item.id)}</span><span class="v13-chip">今日</span></div>`).join('')}</div>` : renderState('empty', '今日行动')}</article>
+      <article class="v13-panel v14-span-2"><div class="v14-section-head"><h3>◎ 今日 Top 3</h3><button class="v13-action" data-page="today">查看行动</button></div>${(viewModel.todayTop3 || []).length ? `<div class="v13-list">${viewModel.todayTop3.slice(0, 3).map((item, index) => `<div class="v13-row"><span><b>0${index + 1}</b> ${escapeHtml(humanText(item.title || item.factSummary || item.id, '待确认行动'))}</span><span class="v13-chip">今日</span></div>`).join('')}</div>` : renderState('empty', '今日行动')}</article>
       <article class="v13-panel"><div class="v14-section-head"><h3>◎ 待我决策</h3><button class="v13-action" data-page="decisions">全部</button></div>${decisionRows(activeDecisions)}</article>
       <article class="v13-panel v14-span-2"><div class="v14-section-head"><h3>◫ 三家公司经营全景</h3><span>真实来源</span></div><div class="company-overview">
-        <button data-page="local-life"><span>万嘉网络</span><strong>${displayValue(viewModel.sources?.wanjia?.summary?.paymentGmv)}</strong><small>支付 GMV</small></button>
-        <button data-page="spark-media"><span>花火影像</span><strong>${displayValue(viewModel.sources?.huahuo?.summary?.outstandingAmount)}</strong><small>待回款</small></button>
+        <button data-page="local-life"><span>万嘉网络</span><strong>${formatCurrency(viewModel.sources?.wanjia?.summary?.paymentGmv)}</strong><small>支付 GMV</small></button>
+        <button data-page="spark-media"><span>花火影像</span><strong>${formatCurrency(viewModel.sources?.huahuo?.summary?.outstandingAmount)}</strong><small>待回款</small></button>
         <button data-page="lingli"><span>玲丽教育</span><strong>—</strong><small>事实源待接入</small></button>
       </div></article>
       <article class="v13-panel"><div class="v14-section-head"><h3>◌ 今日行业情报</h3><button class="v13-action" data-page="intelligence">情报中心</button></div>${mustRead.length ? `<div class="v13-list">${mustRead.slice(0, 5).map((item) => `<div class="v13-row"><div><strong>${escapeHtml(item.title)}</strong><div class="v13-meta">${escapeHtml(item.sourceName)} · ${escapeHtml((item.relevantCompanies || []).join('/'))}</div></div><span class="v13-chip">${escapeHtml(item.score ?? '—')}</span></div>`).join('')}</div>` : renderState(viewModel.intelligenceState || 'empty', '每日行业情报')}</article>

@@ -122,7 +122,7 @@
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.4.1';
+  const APP_VERSION = '1.4.2';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
   const APP_RELEASE_DATE = '2026-08-02';
 

@@ -27,5 +27,7 @@ export function renderState(state, label) {
 }
 
 export function displayValue(value, fallback = '—') {
-  return value === 0 || (value != null && value !== '') ? escapeHtml(value) : fallback;
+  const text = humanText(value, '');
+  return text ? escapeHtml(text) : fallback;
 }
+import { humanText } from '../value-utils.mjs';

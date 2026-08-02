@@ -61,6 +61,19 @@ test('deriveDecisions deduplicates the same fact and keeps AI text in recommende
   assert.equal(result[0].id, 'huahuo:project-7:delivery_delay');
 });
 
+test('decision facts normalize rich values and never persist object placeholders', () => {
+  const [decision] = deriveDecisions({ risks: [{
+    ...risk,
+    sourceRecordId: 'project-rich-value',
+    factSummary: { text: '花火项目需要确认交付日' },
+    recommendedAction: { text: '联系负责人' },
+  }] }, { now: NOW, ...callbacks });
+
+  assert.equal(decision.factSummary, '花火项目需要确认交付日');
+  assert.equal(decision.recommendedAction, '联系负责人');
+  assert.doesNotMatch(JSON.stringify(decision), /\[object Object\]/);
+});
+
 test('deriveDecisions also accepts inbox and proposed Feishu actions without mixing fact and suggestion', () => {
   const result = deriveDecisions({
     risks: [],

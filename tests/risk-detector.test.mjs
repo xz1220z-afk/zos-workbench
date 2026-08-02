@@ -88,6 +88,20 @@ test('detectRisks respects staleDays threshold', () => {
   assert.ok(out[0].reasons.some((x) => x.code === 'stale'));
 });
 
+test('missing operational fields do not fabricate stale or receivable risks', () => {
+  const risks = detectRisks([{
+    id: 'merchant-with-summary-only',
+    merchantName: '仅有经营汇总的商家',
+    stage: '未提供',
+    updatedAt: null,
+    nextAction: '',
+    riskLevel: '低',
+    revenueStatus: '未提供',
+  }], 'wanjia', { asOf: AS_OF });
+
+  assert.deepEqual(risks, []);
+});
+
 test('bucketRisks splits into high / delayed / followUp', () => {
   const risks = detectRisks(
     [

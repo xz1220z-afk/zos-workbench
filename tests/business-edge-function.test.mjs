@@ -4,7 +4,8 @@ import { readFile } from 'node:fs/promises';
 const source = await readFile(new URL('../supabase/functions/zos-business-data/index.ts', import.meta.url), 'utf8');
 const sharedAuth = await readFile(new URL('../supabase/functions/_shared/auth.ts', import.meta.url), 'utf8');
 const sharedFeishu = await readFile(new URL('../supabase/functions/_shared/feishu.ts', import.meta.url), 'utf8');
-const runtimeSource = `${source}\n${sharedAuth}\n${sharedFeishu}`;
+const sharedValues = await readFile(new URL('../supabase/functions/_shared/feishu-values.mjs', import.meta.url), 'utf8');
+const runtimeSource = `${source}\n${sharedAuth}\n${sharedFeishu}\n${sharedValues}`;
 const migration = await readFile(new URL('../supabase/migrations/002_business_data_cache.sql', import.meta.url), 'utf8');
 const config = await readFile(new URL('../supabase/config.toml', import.meta.url), 'utf8');
 
@@ -29,6 +30,12 @@ assert.match(source, /writeAvailable:\s*Boolean\(record\.record_id\)/,
   'Records without a real Feishu identity remain readable but cannot be written');
 assert.match(source, /sourceUpdatedAt/,
   'Mapped records preserve a safe source update timestamp');
+assert.match(source, /feishuText/,
+  'Complex Feishu field values are normalized before entering the client contract');
+assert.match(source, /roundMoney/,
+  'Money summaries are rounded at the source boundary');
+assert.doesNotMatch(source, /updatedAt:\s*updatedAt\s*\|\|\s*new Date\(0\)/,
+  'Missing Feishu update fields must not be converted into a fake 1970 timestamp and false stale risk');
 assert.match(source, /contractVersion:\s*'1\.3'/,
   'Read payloads expose the explicit v1.3 contract');
 assert.match(source, /const health = \(recordCount: number\) => \(\{\s*recordCount,\s*durationMs,\s*lastSuccessAt: completedAt,\s*safeCode: null\s*\}\)/,

@@ -1,4 +1,5 @@
 import { createRecord as defaultCreateRecord, touchRecord as defaultTouchRecord } from '../data-model.mjs';
+import { humanText } from './value-utils.mjs';
 
 const TRANSITIONS = Object.freeze({
   open: new Set(['approved', 'rejected', 'deferred', 'pending_resolution']),
@@ -10,7 +11,7 @@ const TRANSITIONS = Object.freeze({
 });
 
 function requiredText(value, name) {
-  const text = String(value ?? '').trim();
+  const text = humanText(value, '');
   if (!text) throw new Error(`${name} is required`);
   return text;
 }
@@ -25,7 +26,7 @@ function normalizedIdentity(item) {
 function factText(item) {
   if (item.factSummary) return requiredText(item.factSummary, 'factSummary');
   const labels = Array.isArray(item.reasons)
-    ? item.reasons.map((reason) => String(reason?.label || '').trim()).filter(Boolean)
+    ? item.reasons.map((reason) => humanText(reason?.label, '')).filter(Boolean)
     : [];
   if (labels.length) return `${requiredText(item.name || item.recordId, 'fact name')}：${labels.join('；')}`;
   throw new Error('factSummary is required');
@@ -37,7 +38,7 @@ function toCandidate(item) {
     ...identity,
     id: decisionKey(identity),
     factSummary: factText(item),
-    recommendedAction: String(item.recommendedAction || '').trim(),
+    recommendedAction: humanText(item.recommendedAction, ''),
     sourceUpdatedAt: item.sourceUpdatedAt || null,
     severity: item.severity || item.level || null,
     status: 'open',

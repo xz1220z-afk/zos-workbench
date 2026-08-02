@@ -86,3 +86,27 @@ test('operating loop hydrates synchronized decisions and briefs without duplicat
   assert.equal(loop.getState().decisions.length, 1);
   assert.equal(loop.getState().briefs.length, 1);
 });
+
+test('operating loop expands nested source records and regenerates today brief with tasks and decisions', async () => {
+  const nested = structuredClone(business.wanjia);
+  nested.records = { source: 'wanjia', records: business.wanjia.records };
+  const loop = createOperatingLoop({
+    userId: 'user-1', deviceId: 'device-1', now: () => now, date: () => '2026-08-02',
+    refreshBusiness: async () => nested,
+    getTasks: () => [{ id: 'task-1', title: '今天必须处理', status: 'open', priority: 3, dueDate: '2026-08-02' }],
+    approvalClient: { preview: async () => ({}), execute: async () => ({ verified: true }) },
+    initialState: {
+      briefs: [{
+        id: 'daily-brief:2026-08-02:old', kind: 'daily_brief', date: '2026-08-02',
+        fingerprint: 'old', reviewStatus: 'pending_review', sections: { todayTop3: [] },
+      }],
+    },
+  });
+
+  await loop.refresh('wanjia');
+  const brief = loop.ensureDailyBrief();
+  assert.equal(loop.getState().decisions.length, 1, 'nested Feishu records must reach risk detection');
+  assert.equal(brief.sections.todayTop3[0].title, '今天必须处理');
+  assert.match(brief.sections.todayTop3[1].title, /^测试商家：超过 7 天未更新/);
+  assert.notEqual(brief.id, 'daily-brief:2026-08-02:old', 'the regenerated brief must be returned instead of the stale first brief');
+});
