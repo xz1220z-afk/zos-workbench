@@ -11,7 +11,7 @@ type FeishuFailureReason =
   | 'feishu_request_failed';
 
 class FeishuRequestError extends Error {
-  constructor(readonly reason: FeishuFailureReason) {
+  constructor(readonly reason: FeishuFailureReason, readonly missingFields: string[] = []) {
     super(reason);
   }
 }
@@ -226,7 +226,37 @@ async function getTenantAccessToken(appId: string, appSecret: string) {
   return payload?.tenant_access_token as string;
 }
 
+function classifyFeishuReadFailure(result: Response, payload: FeishuPayload | null): FeishuFailureReason {
+  const code = payload?.code;
+  if (code === 1254302 || result.status === 403) return 'feishu_permission_denied';
+  if (code === 1254040 || code === 1254041 || result.status === 404) return 'feishu_resource_not_found';
+  if (code === 1254024 || code === 1254044 || code === 1254045) return 'feishu_field_mismatch';
+  return 'feishu_read_failed';
+}
+
+async function getTableFieldNames(token: string, appToken: string, tableId: string) {
+  const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/fields?page_size=100`;
+  const result = await feishuFetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  let payload: FeishuPayload | null = null;
+  try { payload = await result.json() as FeishuPayload; } catch { /* Safely classify below. */ }
+  const items = payload?.data?.items;
+  if (!result.ok || payload?.code !== 0 || !Array.isArray(items)) {
+    throw new FeishuRequestError(classifyFeishuReadFailure(result, payload));
+  }
+  return items
+    .map((item) => (item && typeof item === 'object' ? (item as { field_name?: unknown }).field_name : undefined))
+    .filter((name): name is string => typeof name === 'string');
+}
+
 async function searchRecords(token: string, appToken: string, tableId: string, fieldNames: string[]) {
+  // Confirm the schema before querying records so a signed-in owner gets the
+  // exact missing column names without exposing any record data.
+  const actualFieldNames = await getTableFieldNames(token, appToken, tableId);
+  const missingFields = fieldNames.filter((fieldName) => !actualFieldNames.includes(fieldName));
+  if (missingFields.length > 0) {
+    throw new FeishuRequestError('feishu_field_mismatch', missingFields);
+  }
+
   const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/records/search?page_size=500`;
   const result = await feishuFetch(url, {
     method: 'POST',
@@ -240,17 +270,7 @@ async function searchRecords(token: string, appToken: string, tableId: string, f
   try { payload = await result.json() as FeishuPayload; } catch { /* Safely classify the failed table-read response below. */ }
   if (!result.ok || payload?.code !== 0 || !Array.isArray(payload?.data?.items)) {
     // Return a safe diagnosis only; never expose Feishu's raw response or data.
-    const code = payload?.code;
-    if (code === 1254302 || result.status === 403) {
-      throw new FeishuRequestError('feishu_permission_denied');
-    }
-    if (code === 1254040 || code === 1254041 || result.status === 404) {
-      throw new FeishuRequestError('feishu_resource_not_found');
-    }
-    if (code === 1254024 || code === 1254044 || code === 1254045) {
-      throw new FeishuRequestError('feishu_field_mismatch');
-    }
-    throw new FeishuRequestError('feishu_read_failed');
+    throw new FeishuRequestError(classifyFeishuReadFailure(result, payload));
   }
   return payload?.data?.items as FeishuRecord[];
 }
@@ -313,6 +333,7 @@ Deno.serve(async (req) => {
       ? error.reason
       : 'feishu_request_failed';
     console.error(JSON.stringify({ event: 'zos_business_data_failed', reason }));
-    return response({ error: 'source_read_failed', reason }, 502);
+    const missingFields = error instanceof FeishuRequestError ? error.missingFields : [];
+    return response({ error: 'source_read_failed', reason, missing_fields: missingFields }, 502);
   }
 });

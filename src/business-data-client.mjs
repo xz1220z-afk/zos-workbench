@@ -21,7 +21,10 @@ function businessDataError(status, body) {
     feishu_request_failed: 'Feishu request failed',
   };
   const reason = reasons[payload?.reason];
-  return new Error(reason ? `Business data request failed (${status}): ${reason}` : `Business data request failed (${status})`);
+  const missingFields = Array.isArray(payload?.missing_fields) && payload.missing_fields.length
+    ? `: ${payload.missing_fields.join(', ')}`
+    : '';
+  return new Error(reason ? `Business data request failed (${status}): ${reason}${missingFields}` : `Business data request failed (${status})`);
 }
 
 export async function fetchBusinessData({ url, anonKey, accessToken, source, fetchImpl = fetch }) {

@@ -2145,7 +2145,10 @@
         feishu_request_failed: '飞书服务请求失败，请稍后重试',
       };
       var reason = reasonMessages[payload && payload.reason];
-      throw new Error(reason ? `业务数据请求失败（${response.status}）：${reason}` : `业务数据请求失败（${response.status}）`);
+      var missingFields = payload && Array.isArray(payload.missing_fields) && payload.missing_fields.length
+        ? `：缺少字段 ${payload.missing_fields.join('、')}`
+        : '';
+      throw new Error(reason ? `业务数据请求失败（${response.status}）：${reason}${missingFields}` : `业务数据请求失败（${response.status}）`);
     }
     const data = body ? JSON.parse(body) : {};
     if (data?.meta?.mode !== 'read_only') throw new Error('接口未返回只读数据');

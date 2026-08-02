@@ -70,9 +70,9 @@ test('reports a safe Feishu field diagnosis when a configured field no longer ex
     fetchBusinessData({
       url: 'https://project.supabase.co', anonKey: 'public-key', accessToken: 'user-token',
       fetchImpl: async () => new Response(JSON.stringify({
-        error: 'source_read_failed', reason: 'feishu_field_mismatch',
+        error: 'source_read_failed', reason: 'feishu_field_mismatch', missing_fields: ['支付GMV'],
       }), { status: 502 }),
     }),
-    /Feishu table field configuration does not match/i,
+    /Feishu table field configuration does not match: 支付GMV/i,
   );
 });
