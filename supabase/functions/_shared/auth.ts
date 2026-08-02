@@ -34,5 +34,5 @@ export async function requireUser(req: Request) {
   });
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) throw new AuthError('authentication_invalid', 401);
-  return { user: data.user, token };
+  return { user: data.user, token, supabase };
 }
