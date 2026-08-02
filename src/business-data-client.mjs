@@ -3,8 +3,10 @@ function required(value, name) {
   return value;
 }
 
-function endpoint(baseUrl) {
-  return new URL('/functions/v1/zos-business-data', `${baseUrl.replace(/\/$/, '')}/`).toString();
+function endpoint(baseUrl, source) {
+  const url = new URL('/functions/v1/zos-business-data', `${baseUrl.replace(/\/$/, '')}/`);
+  if (source) url.searchParams.set('source', source);
+  return url.toString();
 }
 
 function businessDataError(status, body) {
@@ -19,12 +21,12 @@ function businessDataError(status, body) {
   return new Error(reason ? `Business data request failed (${status}): ${reason}` : `Business data request failed (${status})`);
 }
 
-export async function fetchBusinessData({ url, anonKey, accessToken, fetchImpl = fetch }) {
+export async function fetchBusinessData({ url, anonKey, accessToken, source, fetchImpl = fetch }) {
   required(url, 'url');
   required(anonKey, 'anonKey');
   required(accessToken, 'accessToken');
 
-  const response = await fetchImpl(endpoint(url), {
+  const response = await fetchImpl(endpoint(url, source), {
     headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` },
   });
   const body = await response.text();

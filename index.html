@@ -2125,9 +2125,11 @@
       async upsert(rows) { if (!Array.isArray(rows) || rows.length === 0) return []; const requestUrl = new URL(syncEndpoint(url, '/rest/v1/zos_records')); requestUrl.searchParams.set('on_conflict', 'user_id,entity_type,record_id'); return parseSupabaseResponse(await fetchImpl(requestUrl.toString(), { method: 'POST', headers: { ...(await authHeaders()), 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(rows) })); }
     };
   }
-  async function fetchBusinessData({ url, anonKey, accessToken, fetchImpl = fetch }) {
+  async function fetchBusinessData({ url, anonKey, accessToken, source, fetchImpl = fetch }) {
     syncRequired(url, 'url'); syncRequired(anonKey, 'anonKey'); syncRequired(accessToken, 'accessToken');
-    const response = await fetchImpl(syncEndpoint(url, '/functions/v1/zos-business-data'), {
+    var endpoint = new URL(syncEndpoint(url, '/functions/v1/zos-business-data'));
+    if (source) endpoint.searchParams.set('source', source);
+    const response = await fetchImpl(endpoint.toString(), {
       headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` }
     });
     const body = await response.text();
@@ -3146,7 +3148,7 @@
         localStorage.setItem(KEYS.SYNC_SESSION, JSON.stringify(session));
       }
       toast('正在读取' + (labels[source] || '业务') + '汇总…');
-      var data = await fetchBusinessData({ url: config.url, anonKey: config.anonKey, accessToken: session.accessToken });
+      var data = await fetchBusinessData({ url: config.url, anonKey: config.anonKey, accessToken: session.accessToken, source: source });
       var cache = businessDataCache();
       cache.wanjia = { summary: data.wanjia?.summary || {}, records: data.wanjia?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
       cache.huahuo = { summary: data.huahuo?.summary || {}, records: data.huahuo?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };

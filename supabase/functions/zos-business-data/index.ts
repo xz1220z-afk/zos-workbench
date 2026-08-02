@@ -16,6 +16,10 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
 };
 
+function feishuFetch(url: string, init: RequestInit) {
+  return fetch(url, { ...init, signal: AbortSignal.timeout(12_000) });
+}
+
 const FEISHU = {
   wanjia: {
     appToken: 'AWFUwAbItiI4TjkPMErcpv5Onab',
@@ -203,7 +207,7 @@ function buildProjectsSource(huahuoProjects: FeishuRecord[], merchants: FeishuRe
 }
 
 async function getTenantAccessToken(appId: string, appSecret: string) {
-  const result = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
+  const result = await feishuFetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify({ app_id: appId, app_secret: appSecret }),
@@ -218,7 +222,7 @@ async function getTenantAccessToken(appId: string, appSecret: string) {
 
 async function searchRecords(token: string, appToken: string, tableId: string, fieldNames: string[]) {
   const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/records/search?page_size=500`;
-  const result = await fetch(url, {
+  const result = await feishuFetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -237,6 +241,11 @@ async function searchRecords(token: string, appToken: string, tableId: string, f
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
   if (req.method !== 'GET') return response({ error: 'method_not_allowed' }, 405);
+
+  const requestedSource = new URL(req.url).searchParams.get('source') || 'all';
+  if (!['all', 'wanjia', 'huahuo', 'projects'].includes(requestedSource)) {
+    return response({ error: 'invalid_source' }, 400);
+  }
 
   const authorization = req.headers.get('Authorization') || '';
   const token = authorization.replace(/^Bearer\s+/i, '');
@@ -258,10 +267,14 @@ Deno.serve(async (req) => {
 
   try {
     const accessToken = await getTenantAccessToken(appId, appSecret);
-    const [merchants, projects, deliveries, receipts] = await Promise.all([
-      searchRecords(accessToken, FEISHU.wanjia.appToken, FEISHU.wanjia.merchantTable,
+    const needsWanjia = requestedSource === 'all' || requestedSource === 'wanjia' || requestedSource === 'projects';
+    const needsHuahuo = requestedSource === 'all' || requestedSource === 'huahuo' || requestedSource === 'projects';
+    const merchants = needsWanjia
+      ? await searchRecords(accessToken, FEISHU.wanjia.appToken, FEISHU.wanjia.merchantTable,
         ['商家名称', '是否动销', '支付GMV', '核销GMV', '视频投稿数', '直播场次数', '总预估佣金',
-         '合作类型', '当前阶段', '项目负责人', '最近更新时间', '下一步动作', '风险等级', '收入状态']),
+         '合作类型', '当前阶段', '项目负责人', '最近更新时间', '下一步动作', '风险等级', '收入状态'])
+      : [];
+    const [projects, deliveries, receipts] = needsHuahuo ? await Promise.all([
       searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.projectTable,
         ['项目名称', '项目状态', '拍摄日期', '合同金额', '已收金额', '负责人',
          '项目类型', '回款状态', '利润状态', '最近更新时间', '更新时间']),
@@ -269,7 +282,7 @@ Deno.serve(async (req) => {
         ['项目', '计划交付日期', '交付状态', '客户确认状态']),
       searchRecords(accessToken, FEISHU.huahuo.appToken, FEISHU.huahuo.receiptTable,
         ['项目', '收款金额', '收款日期', '收款状态']),
-    ]);
+    ]) : [[], [], []];
 
     return response({
       wanjia: { summary: summarizeWanjia(merchants), records: buildWanjiaRecords(merchants) },

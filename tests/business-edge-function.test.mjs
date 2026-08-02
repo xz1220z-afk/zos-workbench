@@ -18,6 +18,10 @@ assert.match(source, /feishu_auth_failed/,
   'Function reports the safe application-auth failure reason to signed-in clients');
 assert.match(source, /feishu_read_failed/,
   'Function reports the safe table-read failure reason to signed-in clients');
+assert.match(source, /AbortSignal\.timeout\(12_000\)/,
+  'Every Feishu request has a bounded timeout instead of leaving page refreshes pending indefinitely');
+assert.match(source, /searchParams\.get\('source'\)/,
+  'Function can limit a page refresh to its requested read-only source');
 assert.match(source, /wanjia/);
 assert.match(source, /huahuo/);
 assert.doesNotMatch(source, /cli_aab7f0f691b8dcb3|yimbjqe4EDassDFqmUR9Lh0xdzBHyMvQ/,

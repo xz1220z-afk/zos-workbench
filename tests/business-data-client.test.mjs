@@ -26,6 +26,22 @@ test('requests the protected read-only summary endpoint with the current user to
   assert.equal(data.wanjia.summary.totalMerchants, 4);
 });
 
+test('requests only the selected business source when a page refreshes', async () => {
+  let request;
+  await fetchBusinessData({
+    url: 'https://project.supabase.co',
+    anonKey: 'public-key',
+    accessToken: 'user-token',
+    source: 'wanjia',
+    fetchImpl: async (url, options) => {
+      request = { url, options };
+      return new Response(JSON.stringify({ meta: { mode: 'read_only' } }), { status: 200 });
+    },
+  });
+
+  assert.equal(request.url, 'https://project.supabase.co/functions/v1/zos-business-data?source=wanjia');
+});
+
 test('rejects a response that is not explicitly read-only', async () => {
   await assert.rejects(
     fetchBusinessData({
