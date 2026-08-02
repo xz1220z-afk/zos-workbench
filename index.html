@@ -2011,7 +2011,7 @@
         <div class="setting-row">
           <div>
             <div class="setting-label">工作台版本</div>
-            <div class="setting-desc">v1.2.2 · 2026-08-01</div>
+            <div class="setting-desc">v1.2.3 · 2026-08-02</div>
           </div>
         </div>
         <div class="setting-row">
@@ -2349,7 +2349,7 @@
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.2.2';
+  const APP_VERSION = '1.2.3';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
   const APP_RELEASE_DATE = '2026-08-01';
 
@@ -2898,8 +2898,21 @@
     if (error) commandCenterReadErrors[source] = error.message || String(error);
     else delete commandCenterReadErrors[source];
   }
-  function commandSourceState(source, payload) {
+  function hasBusinessSummary(source, summary) {
+    var fields = source === 'wanjia' ? ['totalMerchants', 'activeMerchants'] : ['activeProjects', 'pendingDeliveries'];
+    return !!summary && typeof summary === 'object' && fields.every(function(field) {
+      return Object.prototype.hasOwnProperty.call(summary, field) && typeof summary[field] === 'number' && Number.isFinite(summary[field]);
+    });
+  }
+  function businessSummaryMissingFields(source, summary) {
+    var fields = source === 'wanjia' ? ['totalMerchants', 'activeMerchants'] : ['activeProjects', 'pendingDeliveries'];
+    return fields.filter(function(field) {
+      return !summary || typeof summary !== 'object' || !Object.prototype.hasOwnProperty.call(summary, field) || typeof summary[field] !== 'number' || !Number.isFinite(summary[field]);
+    });
+  }
+  function commandSourceState(source, payload, isValid) {
     if (commandCenterReadErrors[source] || (payload && payload.error)) return 'failed';
+    if (payload && isValid === false) return 'confirm';
     if (payload) return 'synced';
     var session = syncSession();
     return session.userId && session.accessToken ? 'pending' : 'confirm';
@@ -2940,6 +2953,10 @@
     var brainIndex = cache.brain && cache.brain.payload;
     var wanjia = cache.wanjia && cache.wanjia.summary;
     var huahuo = cache.huahuo && cache.huahuo.summary;
+    var wanjiaSummaryValid = hasBusinessSummary('wanjia', wanjia);
+    var huahuoSummaryValid = hasBusinessSummary('huahuo', huahuo);
+    var wanjiaMissingFields = businessSummaryMissingFields('wanjia', wanjia);
+    var huahuoMissingFields = businessSummaryMissingFields('huahuo', huahuo);
     var pendingTasks = tasks.filter(function(t) { return t.status !== 'done'; });
     var todayTasks = pendingTasks.filter(function(t) { return isToday(t.dueDate); });
     var pendingInbox = inbox.filter(function(i) { return !i.convertedTo; });
@@ -2950,15 +2967,17 @@
     var recentNotes = brainIndex && Array.isArray(brainIndex.notes) ? brainIndex.notes.slice().sort(function(a, b) { return String(b.mtime || '').localeCompare(String(a.mtime || '')); }).slice(0, 3) : [];
 
     var overview = [
-      renderStatusCard(commandSourceState('wanjia', wanjia), {
+      renderStatusCard(commandSourceState('wanjia', wanjia, wanjiaSummaryValid), {
         title: '万嘉网络', source: 'wanjia', sourceLabel: '飞书 ERP · 只读汇总',
-        metrics: wanjia ? [{ value: wanjia.totalMerchants || 0, label: '商家总数' }, { value: wanjia.activeMerchants || 0, label: '活跃商家' }] : [],
-        action: "navigateTo('local-life')", actionLabel: '查看业务', pendingNote: '等待从飞书 ERP 手动刷新万嘉只读汇总。'
+        metrics: wanjiaSummaryValid ? [{ value: wanjia.totalMerchants, label: '商家总数' }, { value: wanjia.activeMerchants, label: '活跃商家' }] : (wanjia ? [{ value: '—', label: '商家总数' }, { value: '—', label: '活跃商家' }] : []),
+        action: "navigateTo('local-life')", actionLabel: '查看业务', pendingNote: '等待从飞书 ERP 手动刷新万嘉只读汇总。',
+        confirmNote: wanjia ? '只读汇总缺少字段：' + wanjiaMissingFields.join('、') + '；暂不显示 KPI。' : '请确认登录、权限或万嘉只读数据源配置。'
       }),
-      renderStatusCard(commandSourceState('huahuo', huahuo), {
+      renderStatusCard(commandSourceState('huahuo', huahuo, huahuoSummaryValid), {
         title: '花火影像', source: 'huahuo', sourceLabel: '飞书 ERP · 只读汇总',
-        metrics: huahuo ? [{ value: huahuo.activeProjects || 0, label: '活跃项目' }, { value: huahuo.pendingDeliveries || 0, label: '待交付' }] : [],
-        action: "navigateTo('spark-media')", actionLabel: '查看业务', pendingNote: '等待从飞书 ERP 手动刷新花火只读汇总。'
+        metrics: huahuoSummaryValid ? [{ value: huahuo.activeProjects, label: '活跃项目' }, { value: huahuo.pendingDeliveries, label: '待交付' }] : (huahuo ? [{ value: '—', label: '活跃项目' }, { value: '—', label: '待交付' }] : []),
+        action: "navigateTo('spark-media')", actionLabel: '查看业务', pendingNote: '等待从飞书 ERP 手动刷新花火只读汇总。',
+        confirmNote: huahuo ? '只读汇总缺少字段：' + huahuoMissingFields.join('、') + '；暂不显示 KPI。' : '请确认登录、权限或花火只读数据源配置。'
       }),
       renderStatusCard(commandSourceState('projects', projectRows.length ? projectIndex : null), {
         title: '企业项目', source: 'projects', sourceLabel: '飞书项目索引 · 仅元数据',

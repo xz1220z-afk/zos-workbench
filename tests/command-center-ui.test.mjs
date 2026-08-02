@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
+import vm from 'node:vm';
 
 const indexHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 
@@ -21,6 +22,24 @@ test('selected business refresh preserves the other cached source', () => {
     'a 万嘉-only response must not replace the 花火 cache entry');
   assert.match(indexHtml, /else if \(source === 'huahuo'\) \{\s*cache\.huahuo =/,
     'a 花火-only response must not replace the 万嘉 cache entry');
+});
+
+function runtimeFunction(name, nextName) {
+  const start = indexHtml.indexOf('function ' + name + '(');
+  const end = indexHtml.indexOf('function ' + nextName + '(', start);
+  assert.notEqual(start, -1, name + ' must be defined');
+  assert.notEqual(end, -1, name + ' must have a stable runtime boundary');
+  return vm.runInNewContext(indexHtml.slice(start, end) + '; ' + name);
+}
+
+test('business summary validation rejects metadata-only payloads but accepts demonstrable zeroes', () => {
+  const hasBusinessSummary = runtimeFunction('hasBusinessSummary', 'businessSummaryMissingFields');
+
+  assert.equal(hasBusinessSummary('wanjia', { mode: 'read_only' }), false);
+  assert.equal(hasBusinessSummary('huahuo', {}), false);
+  assert.equal(hasBusinessSummary('wanjia', { totalMerchants: 0, activeMerchants: 0 }), true);
+  assert.equal(hasBusinessSummary('huahuo', { activeProjects: 0, pendingDeliveries: 0 }), true);
+  assert.equal(hasBusinessSummary('wanjia', { totalMerchants: 1, activeMerchants: undefined }), false);
 });
 
 test('mobile navigation has five primary destinations and routes secondary pages through More', () => {
