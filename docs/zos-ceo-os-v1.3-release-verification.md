@@ -1,7 +1,7 @@
 # ZOS CEO OS v1.3.0 发布验收记录
 
 **发布日期**：2026-08-02  
-**发布分支**：`codex/zos-ceo-os-v1.3`  
+**发布分支**：`main`（功能分支 `codex/zos-ceo-os-v1.3` 已快进合并）
 **回滚基线**：`41cdc32`（v1.2.3 CEO 指挥中心）
 
 ## 已验证（本地）
@@ -19,7 +19,10 @@
 | 004 迁移 | 已执行并回读 | 2026-08-02 通过 Supabase 官方 Management API 执行；`zos_business_snapshots`、`zos_source_health`、`zos_feishu_approvals`、`zos_audit_events` 均存在且 RLS=true |
 | 五个 Edge Functions | 已部署 | `zos-brain-index` v4、`zos-business-data` v12、审批 preview/execute v1、`zos-monitor` v1；全部 ACTIVE、`verify_jwt=true` |
 | 匿名访问保护 | 已验证 | 五个端点匿名 POST 均返回 HTTP 401 |
-| GitHub Pages v1.3.0 | 待执行 | 线上 URL 与回读时间 |
+| GitHub Pages v1.3.0 | 已发布 | 2026-08-02 回读 `index.html`、`src/app.mjs`、`src/app/browser-runtime.mjs`、`assets/app.css`、`sw.js`、`manifest.webmanifest` 全部 HTTP 200；线上模块声明 `APP_VERSION = '1.3.0'` |
+| GitHub Pages CI | 已通过 | 主分支提交 `9963805` 的 `ZOS Workbench CI` 与 `pages build and deployment` 均为 success |
+| 桌面浏览器冒烟 | 已通过 | 线上页面标题正确，CEO 指挥中心及五个 v1.3 经营模块可见，浏览器控制台 0 error / 0 warning |
+| 手机布局冒烟 | 已通过 | 390×844 视口自动切换为“首页 / 决策 / 行动 / 业务 / 更多”五项底部导航 |
 | 万嘉真实读取 | 待登录验收 | 条数、更新时间、安全状态 |
 | 花火真实读取 | 待登录验收 | 条数、更新时间、安全状态 |
 | 企业大脑只读元数据 | 待登录验收 | 条数、更新时间、正文泄漏=0 |
@@ -30,4 +33,4 @@
 
 ## 发布判定
 
-本地候选通过不等于生产完成。只有迁移、函数、Pages 和当前真实数据回读均通过，且不存在 P0/P1，才标记 v1.3.0 已发布。单条飞书执行是独立授权项，不阻塞工作台只读发布。
+v1.3.0 前端、数据库迁移和 Edge Functions 已发布，匿名保护与未登录安全降级已通过。万嘉、花火、企业大脑的当前真实数据仍需在朱帅已登录会话中完成最终回读；Windows、Android、iPhone 实体设备验收仍保留为上线后验收项。单条飞书执行是独立授权项，不阻塞工作台只读发布。
