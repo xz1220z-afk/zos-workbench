@@ -78,7 +78,7 @@ export function createAutoRefreshController({
     active = Promise.resolve(operation)
       .then((raw) => {
         const result = normalizedResult(raw);
-        if (result.succeeded.length) {
+        if (result.succeeded.length && !result.failed.length) {
           lastSuccessMs = now();
         }
         publish({

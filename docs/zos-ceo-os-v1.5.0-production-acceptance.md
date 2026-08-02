@@ -18,7 +18,7 @@
 
 - `zos-business-refresh`、`zos-business-data`、`zos-intelligence-data` 已部署。
 - `zos-business-refresh-15m` 已按 `*/15 * * * *` 启用。
-- 定时入口使用服务端自定义密钥；一次生产触发返回 HTTP 200，未暴露密钥。
+- 2026-08-02 12:00 UTC 首轮真实计划任务执行状态为 `succeeded`；内部请求返回 HTTP 200、未超时且未暴露密钥。
 - 本人只读缓存已回读：万嘉 342 条、花火 1 条、企业项目 2 条；有效期 30 分钟。
 - `zos_business_cache` 与 `zos_intelligence_items` 继续按登录用户 RLS 隔离。
 - 情报候选池尚未配置准确的飞书 app token / table id，因此返回 `pending_configuration`，未写入假情报。

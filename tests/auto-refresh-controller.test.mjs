@@ -155,3 +155,27 @@ test('offline and hidden periodic checks never issue remote work', async () => {
   assert.deepEqual(calls, []);
   controller.stop();
 });
+
+test('partial refresh never advances the last complete success timestamp', async () => {
+  const clock = makeClock(1_000);
+  const responses = [
+    { succeeded: ['wanjia', 'huahuo'], failed: [] },
+    { succeeded: ['wanjia'], failed: [{ source: 'huahuo', safeCode: 'source_refresh_failed' }] },
+  ];
+  const controller = createAutoRefreshController({
+    refreshAll: async () => responses.shift(),
+    clock,
+    now: clock.now,
+    visibility: makeVisibility(),
+    eventTarget: new EventTarget(),
+    jitterMs: 0,
+  });
+
+  await controller.refresh('complete');
+  const completeAt = controller.getStatus().lastSuccessAt;
+  await clock.advance(60_000);
+  await controller.refresh('partial');
+
+  assert.equal(controller.getStatus().phase, 'partial');
+  assert.equal(controller.getStatus().lastSuccessAt, completeAt);
+});
