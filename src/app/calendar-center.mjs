@@ -4,9 +4,36 @@ function iso(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
+function dateOnlyIso(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) ? `${value}T00:00:00+08:00` : null;
+}
+
+function dateKey(value, timeZone = 'Asia/Shanghai') {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(date).map(({ type, value: part }) => [type, part]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function addDays(date, count) {
+  const [year, month, day] = date.split('-').map(Number);
+  const value = new Date(Date.UTC(year, month - 1, day + count));
+  return value.toISOString().slice(0, 10);
+}
+
+function mondayOfWeek(date) {
+  const [year, month, day] = date.split('-').map(Number);
+  const value = new Date(Date.UTC(year, month - 1, day));
+  const offset = (value.getUTCDay() + 6) % 7;
+  return addDays(date, -offset);
+}
+
 function normalizeEvent(input, fallback = {}) {
-  const startAt = iso(input.startAt || input.dueAt || input.dueDate || input.date);
+  const rawStart = input.startAt || input.dueAt || input.dueDate || input.date;
   const allDay = !String(input.startAt || input.dueAt || '').includes('T');
+  const startAt = dateOnlyIso(rawStart) || iso(rawStart);
   const endAt = iso(input.endAt) || (startAt && !allDay ? new Date(new Date(startAt).getTime() + 3_600_000).toISOString() : startAt);
   return {
     id: String(input.id), title: String(input.title || input.name || '未命名事项'),
@@ -16,15 +43,64 @@ function normalizeEvent(input, fallback = {}) {
   };
 }
 
-export function buildCalendar({ tasks = [], projects = [], life = [], intelligence = [], calendar = [] } = {}) {
+export function buildCalendar({
+  tasks = [], projects = [], life = [], intelligence = [], calendar = [],
+  countdowns = [], focusSessions = [],
+} = {}, options = {}) {
+  const showCountdowns = options.showCountdowns !== false;
+  const showFocus = options.showFocus === true;
   return [
     ...calendar.map((item) => normalizeEvent(item, { source: 'user_calendar' })),
     ...tasks.map((item) => normalizeEvent(item, { source: 'local_task' })),
     ...projects.map((item) => normalizeEvent(item, { source: 'business_project' })),
     ...life.map((item) => normalizeEvent(item, { source: 'life', company: 'life', privacy: 'private' })),
     ...intelligence.filter((item) => item.followUpAt).map((item) => normalizeEvent({ ...item, startAt: item.followUpAt }, { source: 'intelligence' })),
+    ...(showCountdowns ? countdowns.map((item) => normalizeEvent({ ...item, startAt: item.date }, { source: 'countdown' })) : []),
+    ...(showFocus ? focusSessions.filter((item) => item.state === 'completed' && item.startedAt).map((item) => normalizeEvent({
+      ...item, startAt: item.startedAt, endAt: item.endedAt,
+      title: item.title || '专注时段', company: 'ceo', privacy: 'private',
+    }, { source: 'focus' })) : []),
   ].filter((item) => item.id && item.startAt)
     .sort((left, right) => left.startAt.localeCompare(right.startAt));
+}
+
+export function calendarLayout(events = [], options = {}) {
+  const view = ['day', 'week', 'month', 'list'].includes(options.view) ? options.view : 'week';
+  const timeZone = options.timeZone || 'Asia/Shanghai';
+  const anchor = dateKey(options.anchor || Date.now(), timeZone);
+  const grouped = new Map();
+  for (const event of events) {
+    const key = dateKey(event.startAt, timeZone);
+    if (!key) continue;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(event);
+  }
+  for (const rows of grouped.values()) rows.sort((left, right) => left.startAt.localeCompare(right.startAt));
+
+  if (view === 'list') {
+    return {
+      view,
+      groups: [...grouped.entries()].sort(([left], [right]) => left.localeCompare(right))
+        .map(([date, rows]) => ({ date, events: rows })),
+    };
+  }
+
+  let start = anchor;
+  let count = 1;
+  if (view === 'week') {
+    start = mondayOfWeek(anchor);
+    count = 7;
+  } else if (view === 'month') {
+    start = mondayOfWeek(`${anchor.slice(0, 7)}-01`);
+    count = 42;
+  }
+  return {
+    view,
+    days: Array.from({ length: count }, (_, index) => {
+      const date = addDays(start, index);
+      return { date, inMonth: date.slice(0, 7) === anchor.slice(0, 7), events: grouped.get(date) || [] };
+    }),
+  };
 }
 
 export function redactLifeEventForWork(event) {

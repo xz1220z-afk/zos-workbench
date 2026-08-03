@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildCalendar, calendarPeriod, detectCalendarConflicts, redactLifeEventForWork } from '../src/app/calendar-center.mjs';
+import {
+  buildCalendar,
+  calendarLayout,
+  calendarPeriod,
+  detectCalendarConflicts,
+  redactLifeEventForWork,
+} from '../src/app/calendar-center.mjs';
 
 test('calendar combines company milestones, local tasks and private busy slots', () => {
   const calendar = buildCalendar({
@@ -32,4 +38,38 @@ test('calendar includes private user-created events and supports day week month 
   assert.equal(calendar.length, 2);
   assert.deepEqual(calendarPeriod(calendar, { view: 'day', anchor: '2026-08-02T12:00:00+08:00' }).map((item) => item.id), ['manual-1']);
   assert.deepEqual(calendarPeriod(calendar, { view: 'month', anchor: '2026-08-02T12:00:00+08:00' }).map((item) => item.id), ['manual-1', 'manual-2']);
+});
+
+test('calendar keeps countdown and focus layers optional', () => {
+  const source = {
+    countdowns: [{ id: 'c1', title: '交付倒数', date: '2026-08-10' }],
+    focusSessions: [{
+      id: 'f1', title: '专注', startedAt: '2026-08-03T09:00:00+08:00',
+      endedAt: '2026-08-03T09:25:00+08:00', state: 'completed',
+    }],
+  };
+  assert.deepEqual(
+    buildCalendar(source, { showCountdowns: true, showFocus: false }).map((item) => item.source),
+    ['countdown'],
+  );
+  assert.deepEqual(
+    buildCalendar(source, { showCountdowns: false, showFocus: true }).map((item) => item.source),
+    ['focus'],
+  );
+});
+
+test('calendar layout creates 7-day week, 42-cell month and grouped list models', () => {
+  const events = buildCalendar({
+    calendar: [
+      { id: 'a', title: '周会', startAt: '2026-08-03T09:00:00+08:00' },
+      { id: 'b', title: '复盘', startAt: '2026-08-09T16:00:00+08:00' },
+    ],
+  });
+  const week = calendarLayout(events, { view: 'week', anchor: '2026-08-05T12:00:00+08:00' });
+  const month = calendarLayout(events, { view: 'month', anchor: '2026-08-05T12:00:00+08:00' });
+  const list = calendarLayout(events, { view: 'list', anchor: '2026-08-05T12:00:00+08:00' });
+  assert.equal(week.days.length, 7);
+  assert.deepEqual(week.days.flatMap((day) => day.events).map((item) => item.id), ['a', 'b']);
+  assert.equal(month.days.length, 42);
+  assert.deepEqual(list.groups.map((group) => group.date), ['2026-08-03', '2026-08-09']);
 });
