@@ -51,7 +51,7 @@ test('calendar, intelligence and review controls expose executable application a
 test('calendar empty state distinguishes a connected Feishu calendar from missing configuration', async () => {
   const view = await readFile(new URL('../src/app/views/calendar-view.mjs', import.meta.url), 'utf8');
   assert.match(view, /externalCalendarState/);
-  assert.match(view, /飞书日历已连接/);
+  assert.match(view, /当前时间范围没有日程/);
   assert.match(view, /外部日历尚未配置/);
 });
 

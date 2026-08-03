@@ -9,12 +9,14 @@ ZOS 是朱帅个人使用的 CEO OS，当前以深色 PWA 形式发布。它把�
 
 注意：`https://xz1220z-afk.github.io/` 是用户主页根域名，目前没有配置 Pages，因此会显示 404。日常只使用上面的 `/zos-workbench/` 地址。
 
-## 当前能力（v1.7.5）
+## 当前能力（v1.8.0）
 
 - CEO 指挥中心与独立 Life OS；工作端只显示私人日程的忙碌占位
 - 今日行动、待我决策、经营目标、数据健康和每日 CEO 简报
 - TickTick 风格执行中心：富任务、子任务、优先级、开始/截止时间、提醒、重复、公司/项目/业务对象绑定
-- 今日时间轴、日/周/月/列表日历、倒数日、冲突检测、私有生活忙碌占位和番茄专注记录
+- 智能日历：日/周/月/列表视图、跨多日显示、日期跳转、桌面拖拽改期、手机改期入口、倒数日、冲突检测、私有生活忙碌占位和番茄专注记录
+- 本地日程可新建、编辑、复制、删除与回收站恢复；支持每天/每周/每月/每年重复，并可选择仅本次、本次及以后或整个系列
+- 飞书与 ICS 日程严格只读：可打开来源或复制为本地日程，但不能编辑、删除或拖拽；日历只同步当前可见范围
 - 专注中心：25/5、50/10 与自定义时长，绑定任务并累计今日/近 7 天专注统计
 - 万嘉商家 360 查询：按商家名或编号读取经营指标，并区分已完成、待执行、逾期与尚无证据的动作
 - 花火档期查询：按日期读取项目、地点、成员与角色，明确排期冲突、缺字段和“无可核验排期”状态
@@ -69,7 +71,7 @@ curl -fsSI https://xz1220z-afk.github.io/zos-workbench/sw.js
 
 ## Supabase 配置
 
-数据库迁移文件位于 `supabase/migrations/`；v1.7 在 v1.6 经营闭环上增加富任务、专注、倒数日、花火档期与万嘉商家查询，并继续使用本人私有 RLS 同步。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，实施与回滚见 [`docs/superpowers/plans/2026-08-03-zos-v1.7-execution-query.md`](docs/superpowers/plans/2026-08-03-zos-v1.7-execution-query.md)。
+数据库迁移文件位于 `supabase/migrations/`；v1.8 在 v1.7 执行中心上完善智能日历，本地记录继续使用本人私有 RLS 同步，外部日历保持只读。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，智能日历实施与回滚见 [`docs/superpowers/plans/2026-08-03-zos-smart-calendar.md`](docs/superpowers/plans/2026-08-03-zos-smart-calendar.md)。
 
 邮箱登录链接必须回调到：
 
