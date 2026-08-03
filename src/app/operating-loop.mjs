@@ -69,6 +69,7 @@ export function createOperatingLoop({
       decisions: state.decisions,
       health: state.health,
       risks: state.decisions.filter((item) => item.status === 'open'),
+      calendarConflicts: state.conflicts,
       tasks: clone(getTasks()) || [],
     };
   }

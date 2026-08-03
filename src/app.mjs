@@ -19,6 +19,10 @@ import { createReviewDraft } from './app/review-center.mjs';
 import { render as renderRelations } from './app/views/relation-view.mjs';
 import { render as renderReviews } from './app/views/review-view.mjs';
 import { createAutoRefreshController } from './app/auto-refresh-controller.mjs';
+import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs';
+import { buildTodayTop3 } from './app/priority-engine.mjs';
+import { buildReminderQueue } from './app/reminder-center.mjs';
+import { runCompanyAgent } from './app/company-agent-hub.mjs';
 
 export const APP_VERSION = '1.5.0';
 
@@ -73,6 +77,14 @@ export function createCeoOsApplication(config = {}) {
       intelligence,
     }).map((item) => item.company === 'life' ? redactLifeEventForWork(item) : item);
     const visibleCalendar = calendarPeriod(calendar, { view: runtime.calendarView, anchor: now() });
+    const calendarConflicts = detectCalendarConflicts(calendar);
+    const todayTop3 = buildTodayTop3({
+      tasks: state.collections.tasks || [],
+      decisions,
+      risks: runtime.businessExceptions || [],
+      calendarConflicts,
+      intelligence,
+    }, { date: now().slice(0, 10) });
     const filteredIntelligence = runtime.intelligenceCompany === 'all'
       ? todayMustRead(intelligence, { now: now(), limit: 100 })
       : intelligence.filter((item) => (item.relevantCompanies || []).includes(runtime.intelligenceCompany));
@@ -89,15 +101,17 @@ export function createCeoOsApplication(config = {}) {
       targets: runtime.loopConnected ? runtime.targets : (state.collections.targets || []),
       tasks: state.collections.tasks || [],
       inbox: state.collections.inbox || [],
-      todayTop3: brief?.sections?.todayTop3 || [],
+      todayTop3,
+      reminderQueue: buildReminderQueue(todayTop3, { now: now() }),
       brief,
       sources,
+      companyOperating: buildCompanyOperatingContract(sources),
       intelligence: filteredIntelligence,
       intelligenceCompany: runtime.intelligenceCompany,
       mustRead: todayMustRead(intelligence, { now: now() }),
       calendar: visibleCalendar,
       calendarView: runtime.calendarView,
-      calendarConflicts: detectCalendarConflicts(calendar),
+      calendarConflicts,
       relations: buildRelations(businessRecords),
       life,
       lifeSummary: summarizeLife(life),
@@ -255,6 +269,20 @@ export function createCeoOsApplication(config = {}) {
     return item;
   }
 
+  async function generateAgentDraft(agent) {
+    const model = viewModel();
+    const draft = await runCompanyAgent(agent, {
+      companies: model.companyOperating,
+      todayTop3: model.todayTop3,
+      intelligence: model.mustRead,
+      calendarConflicts: model.calendarConflicts,
+    }, { now: now(), model: config.agentModel });
+    store.saveEntity('inbox', { ...draft, title: `${agent === 'ceo' ? 'CEO' : agent} 助理建议｜${now().slice(0, 10)}` });
+    signalLocalChange();
+    renderAll();
+    return draft;
+  }
+
   function bindActions() {
     if (actionsBound || !document?.addEventListener) return;
     actionsBound = true;
@@ -272,6 +300,7 @@ export function createCeoOsApplication(config = {}) {
       const calendarView = event.target?.closest?.('[data-calendar-view]');
       const intelligenceCompany = event.target?.closest?.('[data-intelligence-company]');
       const reviewDraft = event.target?.closest?.('[data-review-draft]');
+      const agentDraft = event.target?.closest?.('[data-agent-draft]');
       try {
         if (previewButton) await previewDecision(previewButton.dataset.previewDecision);
         else if (executeButton) await executeApproval(executeButton.dataset.executeApproval);
@@ -308,6 +337,7 @@ export function createCeoOsApplication(config = {}) {
           const title = (config.prompt || globalThis.prompt)?.('记录一条生活事项');
           if (String(title || '').trim()) store.saveEntity('life', { title: String(title).trim(), area: 'review', status: 'open', privacy: 'private' });
         } else if (reviewDraft) generateReview(reviewDraft.dataset.reviewDraft);
+        else if (agentDraft) await generateAgentDraft(agentDraft.dataset.agentDraft || 'ceo');
         else if (pageButton && globalThis.window?.navigateTo) globalThis.window.navigateTo(pageButton.dataset.page);
       } catch { runtime.syncStatus = '操作未完成，请检查登录与数据权限'; renderAll(); }
     });
@@ -423,7 +453,7 @@ export function createCeoOsApplication(config = {}) {
 
   return {
     start, whenIdle: () => startupWork, render: renderAll, store, runtime, viewModel,
-    refreshSource, refreshAllSources, confirmTarget, previewDecision, executeApproval, quickCapture, captureCalendar, generateReview,
+    refreshSource, refreshAllSources, confirmTarget, previewDecision, executeApproval, quickCapture, captureCalendar, generateReview, generateAgentDraft,
     get operatingRuntime() { return operatingRuntime; },
   };
 }

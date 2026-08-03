@@ -116,6 +116,35 @@ test('production application drives the authenticated operating loop on startup'
   assert.equal(app.viewModel().brief.id, 'brief-1');
 });
 
+test('application exposes the source-aware three-company operating contract', async () => {
+  const operatingLoop = {
+    async refresh() {}, confirmTargets() {}, ensureDailyBrief() { return null; },
+    getState() {
+      return {
+        decisions: [], targets: [], gaps: [], briefs: [], health: [], conflicts: [], approvals: [],
+        sources: {
+          wanjia: { fetchedAt: '2026-08-03T01:00:00.000Z', summary: { paymentGmv: 8800, activeMerchants: 3, totalMerchants: 4 } },
+          huahuo: { fetchedAt: '2026-08-03T01:00:00.000Z', summary: { contractAmount: 12000, receivedAmount: 5000, outstandingAmount: 7000 } },
+          lingli: { fetchedAt: '2026-08-03T01:00:00.000Z', summary: { received: 3000, students: 9 } },
+        },
+      };
+    },
+  };
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} },
+    storage: { getItem: () => 'device-1', setItem() {} },
+    store: fakeStore(), operatingRuntime: { operatingLoop, syncController: { start() {} } },
+  });
+
+  await app.start();
+  await app.whenIdle();
+  const companies = app.viewModel().companyOperating;
+  assert.equal(companies.wanjia.businessVolume.value, 8800);
+  assert.equal(companies.wanjia.finance.cashIn.value, null);
+  assert.equal(companies.huahuo.finance.outstanding.value, 7000);
+  assert.equal(companies.lingli.operations.students.value, 9);
+});
+
 test('application actions keep targets local and require preview before an individual Feishu execution', async () => {
   const targetCalls = [];
   const previewCalls = [];
@@ -176,6 +205,20 @@ test('calendar creation and review generation stay in private synchronized colle
   assert.equal(store.load().collections.calendar.length, 1);
   assert.equal(review.status, 'pending_review');
   assert.equal(store.load().collections.inbox.at(-1).kind, 'review_draft');
+});
+
+test('company agent output is stored only as an Inbox review draft', async () => {
+  const store = fakeStore();
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} },
+    storage: { getItem: () => 'device-1', setItem() {} }, store,
+    createOperatingRuntime: false, now: () => '2026-08-03T09:00:00.000Z',
+  });
+
+  const draft = await app.generateAgentDraft('ceo');
+  assert.equal(draft.reviewStatus, 'pending_review');
+  assert.equal(store.load().collections.inbox[0].kind, 'agent_draft');
+  assert.deepEqual(draft.sideEffects, []);
 });
 
 test('signed-out startup reports intelligence authentication instead of loading forever', async () => {

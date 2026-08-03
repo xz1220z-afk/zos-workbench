@@ -1,13 +1,14 @@
-import { renderState } from './view-utils.mjs';
+import { displayValue, renderState } from './view-utils.mjs';
+import { formatCurrency } from '../value-utils.mjs';
 
 export function render(container, viewModel = {}) {
   if (!container) return;
   const source = viewModel.sources?.lingli;
+  const company = viewModel.companyOperating?.lingli;
   container.innerHTML = `<div class="company-cockpit" data-company="lingli">
-    <article><span>招生线索</span><strong>${source?.summary?.leads ?? '—'}</strong><small>飞书 ERP 事实</small></article>
-    <article><span>在读学员</span><strong>${source?.summary?.students ?? '—'}</strong><small>学员主表</small></article>
-    <article><span>本月实收</span><strong>${source?.summary?.received ?? '—'}</strong><small>现金日记账/收款</small></article>
-    <article><span>课消完成</span><strong>${source?.summary?.consumed ?? '—'}</strong><small>考勤与课消</small></article>
-  </div><div class="v14-section">${source ? '' : renderState('empty', '玲丽教育实时数据')}<p class="truth-note">结构已建立；在飞书 ERP 字段、权限和真实记录回读前，不显示示例人数、收入或课消。</p></div>`;
+    <article><span>招生线索</span><strong>${displayValue(company?.operations?.leads?.value)}</strong><small>飞书 ERP 事实</small></article>
+    <article><span>在读学员</span><strong>${displayValue(company?.operations?.students?.value)}</strong><small>学员主表</small></article>
+    <article><span>本月实收</span><strong>${formatCurrency(company?.finance?.cashIn?.value)}</strong><small>收入成本管理</small></article>
+    <article><span>课消完成</span><strong>${displayValue(company?.operations?.consumed?.value)}</strong><small>排课课时管理</small></article>
+  </div><div class="v14-section">${source ? '' : renderState('empty', '玲丽教育实时数据')}<p class="truth-note">统一经营口径已启用；未被飞书真实记录证明的指标保持“—”，不会用示例数或 0 代替。</p></div>`;
 }
-
