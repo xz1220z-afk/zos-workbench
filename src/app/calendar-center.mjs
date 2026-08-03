@@ -26,6 +26,20 @@ function addDays(date, count) {
   return value.toISOString().slice(0, 10);
 }
 
+function coveredDates(event, timeZone) {
+  const start = dateKey(event.startAt, timeZone);
+  if (!start) return [];
+  const endInstant = new Date(event.endAt || event.startAt);
+  if (Number.isNaN(endInstant.getTime())) return [start];
+  if (!event.allDay && endInstant > new Date(event.startAt)) {
+    endInstant.setMilliseconds(endInstant.getMilliseconds() - 1);
+  }
+  const end = dateKey(endInstant, timeZone) || start;
+  const dates = [];
+  for (let cursor = start; cursor <= end && dates.length < 370; cursor = addDays(cursor, 1)) dates.push(cursor);
+  return dates;
+}
+
 function normalizeEvent(input, fallback = {}) {
   const rawStart = input.startAt || input.dueAt || input.dueDate || input.date;
   const allDay = typeof input.allDay === 'boolean'
@@ -77,10 +91,11 @@ export function calendarLayout(events = [], options = {}) {
   });
   const grouped = new Map();
   for (const event of visibleEvents) {
-    const key = dateKey(event.startAt, timeZone);
-    if (!key) continue;
-    if (!grouped.has(key)) grouped.set(key, []);
-    grouped.get(key).push(event);
+    for (const key of coveredDates(event, timeZone)) {
+      if (key < range.startDate || key >= range.endDate) continue;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(event);
+    }
   }
   for (const rows of grouped.values()) rows.sort((left, right) => left.startAt.localeCompare(right.startAt));
 
@@ -132,5 +147,10 @@ export function calendarPeriod(events = [], { view = 'week', anchor = new Date()
   if (view === 'day') end.setDate(end.getDate() + 1);
   else if (view === 'month') end.setMonth(end.getMonth() + 1);
   else end.setDate(end.getDate() + 7);
-  return events.filter((item) => new Date(item.startAt) >= start && new Date(item.startAt) < end);
+  return events.filter((item) => {
+    const itemStart = new Date(item.startAt);
+    const rawEnd = new Date(item.endAt || item.startAt);
+    const itemEnd = rawEnd > itemStart ? rawEnd : new Date(itemStart.getTime() + 1);
+    return itemEnd > start && itemStart < end;
+  });
 }

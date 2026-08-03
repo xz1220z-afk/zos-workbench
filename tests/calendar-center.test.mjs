@@ -73,3 +73,19 @@ test('calendar layout creates 7-day week, 42-cell month and grouped list models'
   assert.equal(month.days.length, 42);
   assert.deepEqual(list.groups.map((group) => group.date), ['2026-08-03', '2026-08-09']);
 });
+
+test('multi-day events appear on every covered date and period filtering uses overlap', () => {
+  const event = {
+    id: 'trip', title: '三日拍摄', startAt: '2026-08-03T01:00:00.000Z',
+    endAt: '2026-08-05T10:00:00.000Z', source: 'user_calendar',
+  };
+  const week = calendarLayout([event], { view: 'week', anchor: '2026-08-04', timeZone: 'UTC' });
+  assert.deepEqual(
+    week.days.filter((day) => day.events.some((row) => row.id === 'trip')).map((day) => day.date),
+    ['2026-08-03', '2026-08-04', '2026-08-05'],
+  );
+  assert.deepEqual(
+    calendarPeriod([event], { view: 'day', anchor: '2026-08-04T12:00:00.000Z' }).map((row) => row.id),
+    ['trip'],
+  );
+});
