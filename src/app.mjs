@@ -24,7 +24,7 @@ import { buildTodayTop3 } from './app/priority-engine.mjs';
 import { buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs';
 import { runCompanyAgent } from './app/company-agent-hub.mjs';
 
-export const APP_VERSION = '1.6.0';
+export const APP_VERSION = '1.6.1';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
@@ -39,6 +39,7 @@ export function createCeoOsApplication(config = {}) {
   const runtime = {
     health: [], gaps: [], briefs: [], conflicts: [], approvals: [], decisions: [], targets: [],
     businessExceptions: [], intelligence: [], intelligenceState: 'loading', intelligenceCompany: 'all',
+    intelligenceSources: {}, intelligenceFetchedAt: null,
     calendarView: 'week', externalCalendar: [], externalCalendarState: 'pending_configuration', searchQuery: '', searchResults: [],
     syncStatus: '等待首次同步', loopConnected: false,
     autoRefresh: {
@@ -86,9 +87,10 @@ export function createCeoOsApplication(config = {}) {
       calendarConflicts,
       intelligence,
     }, { date: now().slice(0, 10) });
-    const filteredIntelligence = runtime.intelligenceCompany === 'all'
-      ? todayMustRead(intelligence, { now: now(), limit: 100 })
+    const companyIntelligence = runtime.intelligenceCompany === 'all'
+      ? intelligence
       : intelligence.filter((item) => (item.relevantCompanies || []).includes(runtime.intelligenceCompany));
+    const filteredIntelligence = todayMustRead(companyIntelligence, { now: now(), limit: 100 });
     const searchIndex = buildSearchIndex({
       business: businessRecords,
       knowledge: runtime.brain?.notes || [],
@@ -398,6 +400,10 @@ export function createCeoOsApplication(config = {}) {
     runtime.intelligenceState = runtime.intelligence.length
       ? null
       : (sourceState === 'pending_configuration' ? 'pending_configuration' : 'empty');
+    if (!Array.isArray(result)) {
+      runtime.intelligenceSources = result?.sources || {};
+      runtime.intelligenceFetchedAt = result?.fetchedAt || runtime.intelligenceFetchedAt;
+    }
   }
 
   function applyExternalCalendarResult(result) {

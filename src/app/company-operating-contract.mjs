@@ -79,6 +79,8 @@ function buildLingli(payload) {
   const company = baseCompany('lingli', payload);
   const summary = payload?.summary || {};
   company.finance.cashIn = metric(summary.received);
+  company.finance.cost = metric(summary.cost);
+  company.finance.grossProfit = metric(summary.grossProfit);
   company.operations.leads = metric(summary.leads);
   company.operations.students = metric(summary.students);
   company.operations.consumed = metric(summary.consumed);

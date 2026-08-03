@@ -1,5 +1,12 @@
 import { AuthError, requireUser } from '../_shared/auth.ts';
-import { FeishuRequestError, safeFeishuCode } from '../_shared/feishu.ts';
+import {
+  FeishuRequestError,
+  getTenantAccessToken,
+  listFieldNames,
+  listTables,
+  safeFeishuCode,
+  safeFeishuDiagnostic,
+} from '../_shared/feishu.ts';
 import { readBusinessSources } from '../_shared/business-data.ts';
 import { buildCachedBusinessPayload } from '../_shared/business-cache.mjs';
 
@@ -17,7 +24,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
   if (req.method !== 'GET') return response({ error: 'method_not_allowed' }, 405);
 
-  const requestedSource = new URL(req.url).searchParams.get('source') || 'all';
+  const searchParams = new URL(req.url).searchParams;
+  const requestedSource = searchParams.get('source') || 'all';
+  const diagnostic = searchParams.get('diagnostic');
   if (!['all', 'wanjia', 'huahuo', 'lingli', 'projects'].includes(requestedSource)) {
     return response({ error: 'invalid_source' }, 400);
   }
@@ -28,6 +37,29 @@ Deno.serve(async (req) => {
   } catch (error) {
     if (error instanceof AuthError) return response({ error: error.code }, error.status);
     return response({ error: 'authentication_invalid' }, 401);
+  }
+
+  if (diagnostic) {
+    if (!['lingli_tables', 'lingli_fields'].includes(diagnostic)) return response({ error: 'invalid_diagnostic' }, 400);
+    const ownerId = Deno.env.get('ZOS_OWNER_USER_ID');
+    if (!ownerId || identity.user.id !== ownerId) return response({ error: 'forbidden' }, 403);
+    const appToken = Deno.env.get('LINGLI_APP_TOKEN');
+    if (!appToken) return response({ error: 'feishu_configuration_missing' }, 503);
+    try {
+      const token = await getTenantAccessToken();
+      const tables = await listTables(token, appToken);
+      if (diagnostic === 'lingli_tables') {
+        return response({ source: 'lingli', kind: 'table_names', count: tables.length, names: tables.map((table) => table.name) });
+      }
+      const tableName = searchParams.get('table_name') || '';
+      const table = tables.find((item) => item.name === tableName);
+      if (!table) return response({ error: 'table_not_found' }, 404);
+      const fields = await listFieldNames(token, { appToken, tableId: table.tableId });
+      return response({ source: 'lingli', kind: 'field_names', table_name: table.name, count: fields.length, names: fields });
+    } catch (error) {
+      const detail = safeFeishuDiagnostic(error);
+      return response({ error: 'diagnostic_failed', ...detail }, 502);
+    }
   }
 
   try {
@@ -45,8 +77,16 @@ Deno.serve(async (req) => {
     return response(await readBusinessSources(requestedSource as 'all' | 'wanjia' | 'huahuo' | 'lingli' | 'projects'));
   } catch (error) {
     const reason = safeFeishuCode(error);
-    console.error(JSON.stringify({ event: 'zos_business_data_failed', reason }));
+    const diagnostic = safeFeishuDiagnostic(error);
+    console.error(JSON.stringify({ event: 'zos_business_data_failed', reason, stage: diagnostic.stage, upstreamCode: diagnostic.upstream_code }));
     const missingFields = error instanceof FeishuRequestError ? error.missingFields : [];
-    return response({ error: 'source_read_failed', reason, missing_fields: missingFields }, 502);
+    return response({
+      error: 'source_read_failed',
+      reason,
+      stage: diagnostic.stage,
+      upstream_code: diagnostic.upstream_code,
+      missing_fields: missingFields,
+      missing_resources: diagnostic.missing_resources,
+    }, 502);
   }
 });

@@ -17,7 +17,7 @@ test('unifies three companies without treating GMV or contract value as cash inc
     },
     lingli: {
       fetchedAt: '2026-08-03T01:10:00.000Z',
-      summary: { leads: 31, students: 16, received: 22000, consumed: 48 },
+      summary: { leads: 31, students: 16, received: 22000, cost: 6000, grossProfit: 16000, consumed: 48 },
       records: [{ id: 'student-1' }],
     },
   });
@@ -29,6 +29,8 @@ test('unifies three companies without treating GMV or contract value as cash inc
   assert.equal(contract.huahuo.finance.cashIn.value, 50000);
   assert.equal(contract.huahuo.finance.outstanding.value, 30000);
   assert.equal(contract.lingli.finance.cashIn.value, 22000);
+  assert.equal(contract.lingli.finance.cost.value, 6000);
+  assert.equal(contract.lingli.finance.grossProfit.value, 16000);
   assert.equal(contract.lingli.operations.leads.value, 31);
   assert.equal(contract.lingli.operations.students.value, 16);
 });

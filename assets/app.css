@@ -1565,6 +1565,14 @@ body { overflow-x: hidden; }
 .company-overview strong, .company-cockpit strong { display: block; margin: 12px 0 6px; font-size: 24px; color: #fff; }
 .truth-note { margin-top: 12px; color: var(--cc-warning); font-size: 13px; line-height: 1.7; }
 .intelligence-toolbar, .calendar-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+.intelligence-daily-brief { display: grid; grid-template-columns: minmax(220px, 1.2fr) minmax(280px, 1fr); gap: 18px; padding: 22px; margin-bottom: 16px; border: 1px solid var(--cc-border); border-radius: 18px; background: linear-gradient(135deg, rgba(193,145,70,.12), rgba(18,29,48,.96) 55%, rgba(8,14,25,.98)); color: var(--cc-text); }
+.intelligence-daily-brief h2 { margin: 5px 0 8px; font-size: clamp(22px, 3vw, 32px); }
+.intelligence-daily-brief p { margin: 0; color: var(--cc-text-muted); font-size: 13px; line-height: 1.6; }
+.intelligence-coverage, .intelligence-source-health { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.intelligence-coverage span, .intelligence-source-health span { display: flex; flex-direction: column; gap: 4px; padding: 10px 11px; border: 1px solid var(--cc-border); border-radius: 12px; background: rgba(4,10,20,.42); }
+.intelligence-coverage strong, .intelligence-source-health strong { font-size: 12px; color: var(--cc-text); }
+.intelligence-coverage small, .intelligence-source-health small { font-size: 10px; line-height: 1.4; color: var(--cc-text-muted); }
+.intelligence-source-health { grid-column: 1 / -1; }
 .intelligence-source-note { padding: 12px 14px; margin-bottom: 14px; border: 1px solid var(--cc-border); border-radius: 12px; color: var(--cc-text-muted); font-size: 12px; }
 .intelligence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .intelligence-card { padding: 19px; border: 1px solid var(--cc-border); border-radius: 16px; background: linear-gradient(150deg, rgba(20,30,48,.98), rgba(8,14,25,.98)); color: var(--cc-text); }
@@ -1620,6 +1628,7 @@ body { overflow-x: hidden; }
   .v14-main-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .life-area-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .review-lanes { grid-template-columns: 1fr; }
+  .intelligence-daily-brief { grid-template-columns: 1fr; }
 }
 @media (max-width: 767px) {
   .v14-hero { min-height: auto; padding: 21px; align-items: flex-start; }
@@ -1633,6 +1642,7 @@ body { overflow-x: hidden; }
   .life-area-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .calendar-grid { grid-template-columns: 1fr; min-height: 0; overflow-x: visible; }
   .global-search > div { flex-direction: column; }
+  .intelligence-coverage, .intelligence-source-health { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 390px) {
   .v14-kpi-grid, .life-area-grid { grid-template-columns: 1fr 1fr; }
@@ -1641,4 +1651,5 @@ body { overflow-x: hidden; }
   .intelligence-card { padding: 15px; }
   .intelligence-actions { flex-direction: column; align-items: stretch; }
   .intelligence-actions .v13-action { width: 100%; }
+  .intelligence-daily-brief { padding: 16px; }
 }

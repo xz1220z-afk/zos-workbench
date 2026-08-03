@@ -3,6 +3,7 @@ import { readBusinessSources } from '../_shared/business-data.ts';
 import { FeishuRequestError, safeFeishuCode } from '../_shared/feishu.ts';
 import { IntelligenceConfigurationError, readIntelligenceSource } from '../_shared/intelligence-data.ts';
 import { ExternalIntelligenceError, readAihotSource } from '../_shared/external-intelligence.mjs';
+import { chunkIntelligenceRows, prepareIntelligenceRows } from '../_shared/intelligence-cache.mjs';
 import {
   InternalRefreshError,
   authorizeInternalRefresh,
@@ -54,33 +55,46 @@ Deno.serve(async (req) => {
     }
   }
 
-  const intelligenceRows: Record<string, unknown>[] = [];
+  const intelligenceBatches: Record<string, Record<string, unknown>[]> = {
+    intelligence_feishu: [],
+    intelligence_aihot: [],
+  };
   try {
-    intelligenceRows.push(...await readIntelligenceSource());
+    intelligenceBatches.intelligence_feishu = await readIntelligenceSource();
     succeeded.push('intelligence_feishu');
   } catch (error) {
     if (error instanceof IntelligenceConfigurationError) failures.intelligence_feishu = error.code;
     else failures.intelligence_feishu = error instanceof FeishuRequestError ? safeFeishuCode(error) : 'intelligence_refresh_failed';
   }
   try {
-    intelligenceRows.push(...await readAihotSource({ now: new Date().toISOString(), limit: 50 }));
+    intelligenceBatches.intelligence_aihot = await readAihotSource({ now: new Date().toISOString(), limit: 50 });
     succeeded.push('intelligence_aihot');
   } catch (error) {
     failures.intelligence_aihot = error instanceof ExternalIntelligenceError ? error.code : 'external_intelligence_failed';
   }
-  const uniqueIntelligence = [...new Map(intelligenceRows.map((item) => [String(item.external_id || ''), item])).values()]
-    .filter((item) => item.external_id);
-  try {
-    const rows = uniqueIntelligence.map((item) => ({ ...item, user_id: ownerId }));
-    if (rows.length) {
-      const { error } = await supabase.from('zos_intelligence_items').upsert(rows, { onConflict: 'user_id,external_id' });
-      if (error) throw new Error('intelligence_cache_write_failed');
+  const incomingIds = [...new Set(Object.values(intelligenceBatches).flat()
+    .map((item) => String(item.external_id || '')).filter(Boolean))];
+  let persistedIntelligence = 0;
+  if (incomingIds.length) {
+    const { data: currentStatuses, error: statusError } = await supabase.from('zos_intelligence_items')
+      .select('external_id,status').eq('user_id', ownerId).in('external_id', incomingIds);
+    if (statusError) {
+      failures.intelligence_cache = 'intelligence_cache_status_read_failed';
+    } else {
+      for (const [source, sourceRows] of Object.entries(intelligenceBatches)) {
+        const rows = prepareIntelligenceRows(ownerId, sourceRows, currentStatuses || []);
+        let sourceFailed = false;
+        for (const chunk of chunkIntelligenceRows(rows, 50)) {
+          const { error } = await supabase.from('zos_intelligence_items').upsert(chunk, { onConflict: 'user_id,external_id' });
+          if (error) { sourceFailed = true; break; }
+          persistedIntelligence += chunk.length;
+        }
+        if (sourceFailed) failures[`${source}_cache`] = 'intelligence_cache_write_failed';
+      }
     }
-    counts.intelligence = rows.length;
-    if (succeeded.some((source) => source.startsWith('intelligence_'))) succeeded.push('intelligence');
-  } catch {
-    failures.intelligence_cache = 'intelligence_cache_write_failed';
   }
+  counts.intelligence = persistedIntelligence;
+  if (persistedIntelligence) succeeded.push('intelligence');
 
   const durationMs = Date.now() - startedAt;
   console.log(JSON.stringify({ event: 'zos_automatic_refresh_complete', sources: succeeded, failures, counts, durationMs }));

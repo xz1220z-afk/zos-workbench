@@ -33,3 +33,32 @@ test('unsafe source protocols are never rendered as links', () => {
   assert.doesNotMatch(container.innerHTML, /javascript:/i);
   assert.doesNotMatch(container.innerHTML, /查看来源/);
 });
+
+test('daily briefing makes company coverage and source freshness visible', () => {
+  const container = { innerHTML: '' };
+  render(container, {
+    intelligenceCompany: 'all',
+    intelligenceFetchedAt: '2026-08-03T08:00:00.000Z',
+    intelligenceSources: {
+      intelligence_feishu: { state: 'synced', count: 8 },
+      intelligence_aihot: { state: 'synced', count: 4 },
+      intelligence_cache: { state: 'synced', count: 12 },
+    },
+    intelligence: [{
+      externalId: 'aihot:daily', title: '本地生活平台规则更新', sourceName: 'AI HOT',
+      sourceUrl: 'https://aihot.virxact.com/items/daily', factSummary: '规则发生变化。',
+      impactAnalysis: '万嘉需核对在投门店素材。', suggestedAction: '今天完成素材检查。',
+      credibility: 'medium', score: 88, relevantCompanies: ['wanjia', 'ceo'],
+      capturedAt: '2026-08-03T07:30:00.000Z', publishedAt: '2026-08-03T07:00:00.000Z',
+    }],
+  });
+
+  assert.match(container.innerHTML, /每日行业情报/);
+  assert.match(container.innerHTML, /万嘉 1/);
+  assert.match(container.innerHTML, /花火 0/);
+  assert.match(container.innerHTML, /玲丽 0/);
+  assert.match(container.innerHTML, /飞书候选池/);
+  assert.match(container.innerHTML, /AI HOT/);
+  assert.match(container.innerHTML, /已同步 4 条/);
+  assert.match(container.innerHTML, /更新于/);
+});

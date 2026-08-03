@@ -22,3 +22,12 @@ test('intelligence endpoint requires a real user and returns summaries only', ()
 test('Supabase verifies JWT for intelligence reads', () => {
   assert.match(config, /\[functions\.zos-intelligence-data\][\s\S]*?verify_jwt\s*=\s*true/);
 });
+
+test('intelligence refresh reports safe per-source health without upstream bodies', () => {
+  assert.match(source, /sourceHealth/);
+  assert.match(source, /intelligence_feishu/);
+  assert.match(source, /intelligence_aihot/);
+  assert.match(source, /intelligence_cache/);
+  assert.match(source, /safeFeishuCode\(error\)/);
+  assert.doesNotMatch(source, /error\.stack|responseBody|response_body/);
+});

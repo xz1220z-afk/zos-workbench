@@ -3,6 +3,7 @@ import { AuthError, requireUser } from '../_shared/auth.ts';
 import { FeishuRequestError, safeFeishuCode } from '../_shared/feishu.ts';
 import { IntelligenceConfigurationError, readIntelligenceSource } from '../_shared/intelligence-data.ts';
 import { ExternalIntelligenceError, readAihotSource } from '../_shared/external-intelligence.mjs';
+import { chunkIntelligenceRows, prepareIntelligenceRows } from '../_shared/intelligence-cache.mjs';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -30,27 +31,78 @@ Deno.serve(async (req) => {
   if (!url || !serviceRole) return response({ error: 'service_not_configured' }, 503);
   const supabase = createClient(url, serviceRole);
   let refreshState = 'cached';
+  const sourceHealth: Record<string, { state: string; count: number; safeCode: string | null }> = {
+    intelligence_feishu: { state: 'cached', count: 0, safeCode: null },
+    intelligence_aihot: { state: 'cached', count: 0, safeCode: null },
+    intelligence_cache: { state: 'cached', count: 0, safeCode: null },
+  };
 
   if (new URL(req.url).searchParams.get('refresh')) {
-    const rows: Record<string, unknown>[] = [];
+    const sourceBatches: Record<string, Record<string, unknown>[]> = {
+      intelligence_feishu: [],
+      intelligence_aihot: [],
+    };
     const sourceFailures: string[] = [];
-    try { rows.push(...await readIntelligenceSource()); }
+    try {
+      const sourceRows = await readIntelligenceSource();
+      sourceBatches.intelligence_feishu = sourceRows;
+      sourceHealth.intelligence_feishu = { state: 'synced', count: sourceRows.length, safeCode: null };
+    }
     catch (error) {
-      if (error instanceof IntelligenceConfigurationError) sourceFailures.push(error.code);
-      else sourceFailures.push(error instanceof FeishuRequestError ? safeFeishuCode(error) : 'intelligence_refresh_failed');
+      const safeCode = error instanceof IntelligenceConfigurationError
+        ? error.code
+        : (error instanceof FeishuRequestError ? safeFeishuCode(error) : 'intelligence_refresh_failed');
+      sourceFailures.push(safeCode);
+      sourceHealth.intelligence_feishu = { state: 'failed', count: 0, safeCode };
     }
-    try { rows.push(...await readAihotSource({ now: new Date().toISOString(), limit: 50 })); }
+    try {
+      const sourceRows = await readAihotSource({ now: new Date().toISOString(), limit: 50 });
+      sourceBatches.intelligence_aihot = sourceRows;
+      sourceHealth.intelligence_aihot = { state: 'synced', count: sourceRows.length, safeCode: null };
+    }
     catch (error) {
-      sourceFailures.push(error instanceof ExternalIntelligenceError ? error.code : 'external_intelligence_failed');
+      const safeCode = error instanceof ExternalIntelligenceError ? error.code : 'external_intelligence_failed';
+      sourceFailures.push(safeCode);
+      sourceHealth.intelligence_aihot = { state: 'failed', count: 0, safeCode };
     }
-    const uniqueRows = [...new Map(rows.map((item) => [String(item.external_id || ''), item])).values()]
-      .filter((item) => item.external_id)
-      .map((item) => ({ ...item, user_id: identity.user.id }));
-    if (uniqueRows.length) {
-      const { error } = await supabase.from('zos_intelligence_items').upsert(uniqueRows, { onConflict: 'user_id,external_id' });
-      if (error) sourceFailures.push('intelligence_cache_write_failed');
+    const incomingIds = [...new Set(Object.values(sourceBatches).flat()
+      .map((item) => String(item.external_id || '')).filter(Boolean))];
+    let currentStatuses: Record<string, unknown>[] = [];
+    let cacheCount = 0;
+    let cacheFailures = 0;
+    if (incomingIds.length) {
+      const { data: statuses, error: statusError } = await supabase.from('zos_intelligence_items')
+        .select('external_id,status').eq('user_id', identity.user.id).in('external_id', incomingIds);
+      if (statusError) {
+        sourceFailures.push('intelligence_cache_status_read_failed');
+        sourceHealth.intelligence_cache = { state: 'failed', count: 0, safeCode: 'intelligence_cache_status_read_failed' };
+      } else {
+        currentStatuses = statuses || [];
+        for (const [source, sourceRows] of Object.entries(sourceBatches)) {
+          const prepared = prepareIntelligenceRows(identity.user.id, sourceRows, currentStatuses);
+          let sourceFailed = false;
+          for (const chunk of chunkIntelligenceRows(prepared, 50)) {
+            const { error } = await supabase.from('zos_intelligence_items').upsert(chunk, { onConflict: 'user_id,external_id' });
+            if (error) { sourceFailed = true; break; }
+            cacheCount += chunk.length;
+          }
+          if (sourceFailed) {
+            cacheFailures += 1;
+            const safeCode = `${source}_cache_write_failed`;
+            sourceFailures.push(safeCode);
+            sourceHealth[source] = { state: 'failed', count: 0, safeCode };
+          }
+        }
+        sourceHealth.intelligence_cache = {
+          state: cacheFailures ? (cacheCount ? 'partial' : 'failed') : 'synced',
+          count: cacheCount,
+          safeCode: cacheFailures ? 'intelligence_cache_write_failed' : null,
+        };
+      }
+    } else {
+      sourceHealth.intelligence_cache = { state: 'synced', count: 0, safeCode: null };
     }
-    refreshState = sourceFailures.length ? (uniqueRows.length ? 'partial' : sourceFailures[0]) : 'synced';
+    refreshState = sourceFailures.length ? (cacheCount ? 'partial' : sourceFailures[0]) : 'synced';
   }
 
   const { data, error } = await supabase.from('zos_intelligence_items')
@@ -58,5 +110,8 @@ Deno.serve(async (req) => {
     .eq('user_id', identity.user.id).neq('status', 'ignored')
     .order('score', { ascending: false }).order('published_at', { ascending: false }).limit(100);
   if (error) return response({ error: 'intelligence_read_failed' }, 502);
-  return response({ items: data || [], state: refreshState, mode: 'private_summary_cache', fetchedAt: new Date().toISOString() });
+  return response({
+    items: data || [], state: refreshState, sources: sourceHealth,
+    mode: 'private_summary_cache', fetchedAt: new Date().toISOString(),
+  });
 });

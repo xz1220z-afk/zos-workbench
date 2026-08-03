@@ -84,7 +84,9 @@ test('server refresh updates business caches and isolates Feishu from public int
   assert.match(source, /readAihotSource\(/);
   assert.match(source, /intelligence_feishu/);
   assert.match(source, /intelligence_aihot/);
+  assert.match(source, /prepareIntelligenceRows/);
+  assert.match(source, /chunkIntelligenceRows/);
   assert.match(source, /zos_intelligence_items/);
-  assert.match(source, /user_id:\s*ownerId/);
+  assert.match(source, /prepareIntelligenceRows\(ownerId/);
   assert.doesNotMatch(source, /raw_body|article_body|full_content/i);
 });

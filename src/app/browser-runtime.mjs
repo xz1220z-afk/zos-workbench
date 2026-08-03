@@ -36,7 +36,12 @@ async function loadIntelligenceRows(fetchImpl, config, token, { refresh = false 
   if (!response.ok) throw new Error('intelligence_read_failed');
   const payload = await response.json();
   if (!Array.isArray(payload.items)) throw new Error('intelligence_contract_invalid');
-  return { items: payload.items, state: payload.state || 'cached' };
+  return {
+    items: payload.items,
+    state: payload.state || 'cached',
+    sources: payload.sources || {},
+    fetchedAt: payload.fetchedAt || null,
+  };
 }
 
 async function loadExternalCalendar(fetchImpl, config, token) {

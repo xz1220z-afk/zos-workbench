@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const auth = await readFile(new URL('../supabase/functions/_shared/auth.ts', import.meta.url), 'utf8');
 const feishu = await readFile(new URL('../supabase/functions/_shared/feishu.ts', import.meta.url), 'utf8');
+const businessEndpoint = await readFile(new URL('../supabase/functions/zos-business-data/index.ts', import.meta.url), 'utf8');
 
 test('shared authentication requires a real Supabase user without service credentials', () => {
   assert.match(auth, /export async function requireUser/);
@@ -26,7 +27,22 @@ test('shared Feishu helpers use server-owned targets and stable snapshot hashes'
   assert.match(feishu, /AWFUwAbItiI4TjkPMErcpv5Onab/);
   assert.match(feishu, /EqzkwDOMEigNflkDoJdcw7FSn4d/);
   assert.match(feishu, /export async function stableSnapshotHash/);
+  assert.match(feishu, /export function resolveTableByNames/);
   assert.match(feishu, /SHA-256/);
   assert.match(feishu, /record_id/);
   assert.doesNotMatch(feishu, /app_secret\s*:\s*['"][^'"]+['"]/i, 'No literal Feishu secret may be committed');
+});
+
+test('Feishu failures distinguish upstream Base access from local table-name resolution without leaking payloads', () => {
+  assert.match(feishu, /export function safeFeishuDiagnostic/);
+  assert.match(feishu, /responseError\(response, payload, 'list_tables'\)/);
+  assert.match(feishu, /stage:\s*'resolve_table'/);
+  assert.match(feishu, /upstreamCode/);
+  assert.match(feishu, /missingResources/);
+  assert.match(businessEndpoint, /safeFeishuDiagnostic\(error\)/);
+  assert.match(businessEndpoint, /diagnostic\.stage/);
+  assert.match(businessEndpoint, /diagnostic\.upstream_code/);
+  assert.match(businessEndpoint, /diagnostic\.missing_resources/);
+  assert.doesNotMatch(businessEndpoint, /response_body|names:\s*tables\.map\(\(table\)\s*=>\s*table\.(?:tableId|appToken)/,
+    'Signed-in diagnostics must return table titles only, never Feishu tokens or IDs');
 });

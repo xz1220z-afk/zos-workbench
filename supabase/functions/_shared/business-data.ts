@@ -6,10 +6,10 @@ import {
   listRecords,
   listRecordsFlexible,
   listTables,
-  resolveTableByName,
+  resolveTableByNames,
 } from './feishu.ts';
 import { feishuNumber, feishuText, roundMoney } from './feishu-values.mjs';
-import { LINGLI_TABLE_NAMES, summarizeLingli } from './lingli-data.mjs';
+import { LINGLI_TABLE_ALIASES, summarizeLingli } from './lingli-data.mjs';
 
 export type BusinessSource = 'all' | 'wanjia' | 'huahuo' | 'lingli' | 'projects';
 
@@ -196,26 +196,33 @@ export async function readBusinessSources(requestedSource: BusinessSource = 'all
   const lingliAppToken = needsLingli ? Deno.env.get('LINGLI_APP_TOKEN') : null;
   if (needsLingli && !lingliAppToken) throw new FeishuRequestError('feishu_configuration_missing');
   const lingliTables = needsLingli ? await listTables(accessToken, lingliAppToken as string) : [];
-  const lingliTarget = (name: string) => resolveTableByName(lingliAppToken as string, lingliTables, name);
-  const [leads, students, finance, lessons, classes] = needsLingli ? await Promise.all([
-    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_NAMES.leads), [
-      '线索编号', '学员姓名', '姓名', '线索状态', '招生来源', '意向课程', '跟进人', '负责人', '下次跟进日期', '更新时间',
+  const lingliTarget = (names: string[]) => resolveTableByNames(lingliAppToken as string, lingliTables, names);
+  const [leads, students, income, costs, lessons, classes] = needsLingli ? await Promise.all([
+    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_ALIASES.leads), [
+      '线索编号', '线索ID', '客户姓名', '学员姓名', '姓名', '线索状态', '当前阶段', '招生来源', '来源渠道', '意向课程',
+      '咨询课程', '意向等级', '跟进人', '负责人', '下次跟进日期', '最后跟进时间', '更新时间',
     ]),
-    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_NAMES.students), [
-      '学员编号', '学员姓名', '姓名', '学员状态', '在读状态', '状态', '课程', '班级', '负责人', '更新时间',
+    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_ALIASES.students), [
+      '学员编号', '学员ID', '学员姓名', '姓名', '学员状态', '学习状态', '在读状态', '状态', '课程', '购买课程',
+      '班级', '所属班级', '授课老师', '负责人', '报名日期', '更新时间',
     ]),
-    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_NAMES.finance), [
+    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_ALIASES.income), [
       '收支类型', '类型', '业务类型', '科目', '收入金额', '实收金额', '收款金额', '到账金额', '金额', '发生金额',
       '发生日期', '收支日期', '日期', '收款日期', '到账日期',
     ]),
-    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_NAMES.lessons), [
-      '课消状态', '排课状态', '状态', '已消课时', '课消课时', '完成课时', '核销课时', '课程名称', '学员姓名', '上课日期',
+    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_ALIASES.costs), [
+      '收支类型', '类型', '业务类型', '科目', '类别', '支出金额', '成本金额', '金额', '发生金额',
+      '发生日期', '收支日期', '日期', '支出日期', '付款日期',
     ]),
-    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_NAMES.classes), [
+    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_ALIASES.lessons), [
+      '课消状态', '排课状态', '状态', '消耗课时', '已消课时', '课消课时', '完成课时', '核销课时',
+      '记录名称', '课程', '课程名称', '学员', '学员姓名', '教师', '上课日期', '日期',
+    ]),
+    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_ALIASES.classes), [
       '班级编号', '班级ID', '班级名称', '课程名称', '名称', '班级状态', '开班状态', '状态', '班主任', '授课老师', '负责人',
       '开班日期', '上课日期', '更新时间',
     ]),
-  ]) : [[], [], [], [], []];
+  ]) : [[], [], [], [], [], []];
   const completedAt = new Date().toISOString();
   const durationMs = Date.now() - startedAt;
   const health = (recordCount: number) => ({ recordCount, durationMs, lastSuccessAt: completedAt, safeCode: null });
@@ -223,9 +230,9 @@ export async function readBusinessSources(requestedSource: BusinessSource = 'all
     wanjia: { summary: summarizeWanjia(merchants), records: buildWanjiaRecords(merchants), health: health(merchants.length), contractVersion: '1.3' },
     huahuo: { summary: summarizeHuahuo(projects, deliveries, receipts), records: buildHuahuoRecords(projects), health: health(projects.length + deliveries.length + receipts.length), contractVersion: '1.3' },
     lingli: {
-      summary: summarizeLingli({ leads, students, finance, lessons, classes }, { asOf: completedAt }),
+      summary: summarizeLingli({ leads, students, income, costs, lessons, classes }, { asOf: completedAt }),
       records: buildLingliRecords(classes),
-      health: health(leads.length + students.length + finance.length + lessons.length + classes.length),
+      health: health(leads.length + students.length + income.length + costs.length + lessons.length + classes.length),
       contractVersion: '1.6',
     },
     projects: { ...buildProjectsSource(projects, merchants, classes), health: health(projects.length + classes.length + 1), contractVersion: '1.6' },
