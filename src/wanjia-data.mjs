@@ -86,6 +86,30 @@ function normalizeDate(value) {
   return isNaN(d.getTime()) ? new Date(0).toISOString() : d.toISOString();
 }
 
+function normalizeBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  const text = String(value ?? '').trim().toLowerCase();
+  if (['true', '1', '是', '已上团', '已动销', '已完成'].includes(text)) return true;
+  if (['false', '0', '否', '未上团', '未动销', '未完成'].includes(text)) return false;
+  return null;
+}
+
+function normalizeNumber(value) {
+  const number = Number(String(value ?? 0).replaceAll(',', '').replace(/[￥¥\s]/g, ''));
+  return Number.isFinite(number) ? number : 0;
+}
+
+function normalizeActions(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item, index) => ({
+    id: String(item?.id || `action-${index + 1}`),
+    title: String(item?.title || item?.name || '').trim(),
+    status: String(item?.status || 'todo'),
+    dueAt: item?.dueAt || null,
+    source: item?.source || 'feishu',
+  })).filter((item) => item.title);
+}
+
 // Extract + normalize a single merchant-operation record. Throws on missing id/name.
 export function extractWanjiaRecord(raw = {}) {
   if (raw == null || typeof raw !== 'object') throw new Error('wanjia record must be an object');
@@ -96,7 +120,21 @@ export function extractWanjiaRecord(raw = {}) {
 
   return {
     id: String(id),
+    merchantId: String(raw.merchantId ?? raw.商家ID ?? id),
     merchantName: String(merchantName),
+    industry: String(raw.industry ?? raw.行业 ?? ''),
+    category: String(raw.category ?? raw.类目 ?? ''),
+    businessUnit: String(raw.businessUnit ?? raw.经营单元 ?? ''),
+    tier: String(raw.tier ?? raw.商家分层 ?? ''),
+    isListed: normalizeBoolean(raw.isListed ?? raw.是否上团),
+    isActive: normalizeBoolean(raw.isActive ?? raw.是否动销),
+    businessScore: normalizeNumber(raw.businessScore ?? raw.商家经营分),
+    paymentGmv: normalizeNumber(raw.paymentGmv ?? raw.支付GMV),
+    redeemedGmv: normalizeNumber(raw.redeemedGmv ?? raw.核销GMV),
+    refundGmv: normalizeNumber(raw.refundGmv ?? raw.退款GMV),
+    paymentCoupons: normalizeNumber(raw.paymentCoupons ?? raw.支付券数),
+    redeemedCoupons: normalizeNumber(raw.redeemedCoupons ?? raw.核销券数),
+    refundCoupons: normalizeNumber(raw.refundCoupons ?? raw.退款券数),
     cooperationType: normalizeCooperationType(raw.cooperationType ?? raw.合作类型),
     stage: normalizeStage(raw.stage ?? raw.当前阶段 ?? raw.阶段),
     owner: raw.owner ? String(raw.owner) : (raw.项目负责人 ? String(raw.项目负责人) : '未指定'),
@@ -104,6 +142,8 @@ export function extractWanjiaRecord(raw = {}) {
     nextAction: raw.nextAction ? String(raw.nextAction) : (raw.下一步动作 ? String(raw.下一步动作) : ''),
     riskLevel: normalizeRiskLevel(raw.riskLevel ?? raw.风险等级),
     revenueStatus: normalizeRevenueStatus(raw.revenueStatus ?? raw.收入状态 ?? raw.回款状态),
+    actions: normalizeActions(raw.actions ?? raw.动作清单),
+    expectedActionLabels: Array.isArray(raw.expectedActionLabels) ? [...new Set(raw.expectedActionLabels.map(String))] : [],
     source: 'wanjia',
   };
 }

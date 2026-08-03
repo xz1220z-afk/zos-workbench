@@ -76,6 +76,7 @@ function buildWanjiaRecords(records: FeishuRecord[]) {
     records: records.map((record, index) => {
       const fields = fieldsOf(record);
       const updatedAt = sourceUpdatedAt(record, pick(record, '最近更新时间', '更新时间', '修改时间'));
+      const nextAction = feishuText(pick(record, '下一步动作', '待办事项', '后续动作'));
       return {
         id: feishuText(pick(record, '商家ID', '记录ID', 'RecordId'), record.record_id || `wanjia-${index}`),
         sourceRecordId: record.record_id || null,
@@ -83,11 +84,30 @@ function buildWanjiaRecords(records: FeishuRecord[]) {
         writeAvailable: Boolean(record.record_id),
         contractVersion: '1.3',
         merchantName: feishuText(fields['商家名称'], '未知商家'),
+        merchantId: feishuText(pick(record, '商家ID', '记录ID'), record.record_id || `wanjia-${index}`),
+        industry: feishuText(fields['行业']),
+        category: feishuText(fields['类目']),
+        businessUnit: feishuText(fields['经营单元']),
+        tier: feishuText(fields['商家分层']),
+        isListed: ['true', '是', '已上团'].includes(feishuText(fields['是否上团']).toLowerCase()),
+        isActive: ['true', '是', '已动销'].includes(feishuText(fields['是否动销']).toLowerCase()),
+        businessScore: feishuNumber(fields['商家经营分']),
+        paymentGmv: roundMoney(feishuNumber(fields['支付GMV'])),
+        redeemedGmv: roundMoney(feishuNumber(fields['核销GMV'])),
+        refundGmv: roundMoney(feishuNumber(fields['退款GMV'])),
+        paymentCoupons: feishuNumber(fields['支付券数']),
+        redeemedCoupons: feishuNumber(fields['核销券数']),
+        refundCoupons: feishuNumber(fields['退款券数']),
         cooperationType: feishuText(pick(record, '合作模式', '合作类型', '业务类型'), '其他'),
         stage: feishuText(pick(record, '当前阶段', '阶段', '合作阶段'), '未提供'),
         owner: feishuText(pick(record, '跟进人', '项目负责人', '负责人', '对接人'), '未指定'),
         updatedAt,
-        nextAction: feishuText(pick(record, '下一步动作', '待办事项', '后续动作')),
+        nextAction,
+        actions: nextAction ? [{
+          id: `${record.record_id || `wanjia-${index}`}:next`, title: nextAction,
+          status: 'todo', dueAt: null, source: 'feishu',
+        }] : [],
+        expectedActionLabels: [],
         riskLevel: feishuText(pick(record, '风险等级', '风险'), '低'),
         revenueStatus: feishuText(pick(record, '收入状态', '收款状态', '回款状态'), '未提供'),
       };
@@ -192,6 +212,8 @@ export async function readBusinessSources(requestedSource: BusinessSource = 'all
   const merchants = needsWanjia ? await listRecords(accessToken, FEISHU_TARGETS.wanjia.merchant, [
     '商家名称', '商家ID', '行业', '类目', '经营单元', '商家分层', '合作模式', '跟进人',
     '是否上团', '是否动销', '商家经营分', '支付GMV', '核销GMV', '退款GMV', '支付券数', '核销券数', '退款券数',
+    '当前阶段', '阶段', '合作阶段', '项目负责人', '负责人', '对接人',
+    '下一步动作', '待办事项', '后续动作', '风险等级', '风险', '收入状态', '收款状态', '回款状态',
   ]) : [];
   const [projects, deliveries, receipts] = needsHuahuo ? await Promise.all([
     listRecords(accessToken, FEISHU_TARGETS.huahuo.project, [

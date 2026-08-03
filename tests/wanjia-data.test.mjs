@@ -25,6 +25,10 @@ const sampleRaw = [
     nextAction: '核对本周核销数据',
     riskLevel: '中',
     revenueStatus: '待收款',
+    merchantId: 'M-001', industry: '餐饮', category: '茶饮', tier: 'A',
+    isListed: true, isActive: false, businessScore: 82,
+    paymentGmv: 12800, redeemedGmv: 7600, refundGmv: 200,
+    paymentCoupons: 320, redeemedCoupons: 190, refundCoupons: 5,
   },
   {
     merchantId: 'w2',
@@ -48,6 +52,12 @@ test('extractWanjiaRecord normalizes both camelCase and Chinese-field sources', 
   assert.equal(a.riskLevel, '中');
   assert.equal(a.revenueStatus, '待收款');
   assert.equal(a.source, 'wanjia');
+  assert.equal(a.merchantId, 'M-001');
+  assert.equal(a.industry, '餐饮');
+  assert.equal(a.isListed, true);
+  assert.equal(a.isActive, false);
+  assert.equal(a.paymentGmv, 12800);
+  assert.equal(a.redeemedCoupons, 190);
 
   const b = extractWanjiaRecord(sampleRaw[1]);
   assert.equal(b.id, 'w2');
