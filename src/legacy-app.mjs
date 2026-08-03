@@ -122,7 +122,7 @@
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.6.2';
+  const APP_VERSION = '1.7.0';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
   const APP_RELEASE_DATE = '2026-08-03';
 
@@ -2133,6 +2133,7 @@
         'reviews': '复盘中心',
         'decisions': '待我决策',
         'today': '今日视图',
+        'focus': '专注中心',
     'inbox': '收集箱',
     'tasks': '任务',
     'local-life': '万嘉网络',
@@ -2162,7 +2163,7 @@
 
   let currentPage = 'dashboard';
   let sidebarCollapsed = false;
-      const mobileMorePageIds = ['life', 'local-life', 'spark-media', 'lingli', 'intelligence', 'search', 'relations', 'reviews', 'enterprise', 'targets', 'health', 'inbox', 'tasks', 'zos-brain', 'risk', 'privacy', 'settings'];
+      const mobileMorePageIds = ['dashboard', 'decisions', 'life', 'local-life', 'spark-media', 'lingli', 'intelligence', 'search', 'relations', 'reviews', 'enterprise', 'targets', 'health', 'inbox', 'tasks', 'zos-brain', 'risk', 'privacy', 'settings'];
 
   function closeMobileMoreMenu(returnFocus) {
     const menu = document.getElementById('mobileMoreMenu');

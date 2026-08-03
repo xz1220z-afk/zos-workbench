@@ -24,7 +24,7 @@ test('mobile primary navigation dedicates a slot to calendar', () => {
   const bottom = html.match(/<nav class="bottom-nav" id="bottomNav">([\s\S]*?)<\/nav>/)?.[1] || '';
   const labels = [...bottom.matchAll(/<button[^>]*class="bottom-nav-item[^>]*>[\s\S]*?<span[^>]*>[\s\S]*?<\/span>\s*([^<]+?)\s*<\/button>/g)]
     .map(([, label]) => label.trim());
-  assert.deepEqual(labels, ['首页', '决策', '行动', '日历', '更多']);
+  assert.deepEqual(labels, ['今日', '日历', '添加', '专注', '更多']);
   const more = html.match(/id="mobileMoreMenu"[\s\S]*?<\/section>/)?.[0] || '';
   for (const page of ['local-life', 'spark-media', 'lingli', 'intelligence', 'life', 'search', 'relations', 'reviews']) {
     assert.match(more, new RegExp(`data-page="${page}"`), `${page} must remain reachable on mobile`);

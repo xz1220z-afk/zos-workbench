@@ -54,6 +54,7 @@
       <span class="nav-label">任务</span>
       <span class="nav-badge" id="taskBadge" style="display:none">0</span>
     </button>
+    <button type="button" class="nav-item" data-page="focus"><span class="nav-icon">◉</span><span class="nav-label">专注中心</span></button>
     <div class="nav-section">业务模块</div>
     <button type="button" class="nav-item" data-page="local-life">
       <span class="nav-icon">🏪</span>
@@ -138,7 +139,7 @@
         <div class="command-center-actions">
           <button class="btn btn-sm" onclick="refreshCommandCenter()">↻ 刷新只读状态</button>
           <button class="btn btn-sm" onclick="openInboxAdd()">＋ 快速收集</button>
-          <button class="btn btn-sm" onclick="openTaskAdd()">＋ 新建任务</button>
+          <button class="btn btn-sm" data-task-capture>＋ 新建任务</button>
           <button class="btn btn-sm" onclick="openProjectAdd()">＋ 新建项目</button>
         </div>
       </div>
@@ -205,6 +206,7 @@
           <p id="todayDateLabel">聚焦今天最重要的事</p>
         </div>
       </div>
+      <div id="todayExecutionRoot" class="v17-root" aria-live="polite"></div>
       <div class="source-rail" data-source-rail data-source="local">
         <div class="source-rail-main"><div class="source-rail-title">数据来源：本地行动清单</div><div class="source-rail-status" data-source-status>本页仅读取本设备的任务、收集箱和待执行指令。</div><div class="source-rail-updated" data-source-updated>最近更改保存在当前设备。</div><div class="source-rail-empty" data-source-empty-state>暂无待推进事项时，会在下方分别说明。</div><div class="source-rail-error" data-source-error hidden>本地数据暂不可读取；请检查浏览器存储后重试。</div></div>
         <div class="source-rail-meta"><span class="read-only-badge">本地</span></div>
@@ -274,8 +276,9 @@
           <h2>任务</h2>
           <p id="taskSummary">任务管理</p>
         </div>
-        <button class="btn btn-primary" onclick="openTaskAdd()">＋ 新建任务</button>
+        <button class="btn btn-primary" data-task-capture>＋ 新建任务</button>
       </div>
+      <div id="taskCenterRoot" class="v17-root" aria-live="polite"></div>
       <div class="source-rail" data-source-rail data-source="local">
         <div class="source-rail-main"><div class="source-rail-title">数据来源：本地任务</div><div class="source-rail-status" data-source-status>任务和完成状态仅保存在当前设备，不会外发或自动同步。</div><div class="source-rail-updated" data-source-updated>最近更改保存在当前设备。</div><div class="source-rail-error" data-source-error hidden>本地任务暂不可读取；请检查浏览器存储后重试。</div></div>
         <div class="source-rail-meta"><span class="read-only-badge">本地</span></div>
@@ -333,6 +336,7 @@
       </div>
       <div class="section-title" style="margin-top:18px;">📋 商家运营项目明细 <span class="read-only-badge">只读</span></div>
       <div class="page-detail-container"><div id="wanjiaRecordList" class="record-list"></div></div>
+      <div id="merchantCenterRoot" class="v17-root" aria-live="polite"></div>
     </section>
 
     <!-- ===== 玲丽教育 ===== -->
@@ -375,6 +379,7 @@
           <div class="stat-card-placeholder" id="huahuoReceivedAmount">—</div>
         </div>
       </div>
+      <div id="availabilityCenterRoot" class="v17-root" aria-live="polite"></div>
       <div class="empty-state" id="huahuoDataEmpty" data-source-empty-state>
         <div class="empty-state-icon" style="background: var(--orange-light);">🎬</div>
         <div class="empty-state-title">花火只读汇总等待首次刷新</div>
@@ -382,6 +387,12 @@
       </div>
       <div class="section-title" style="margin-top:18px;">🎬 拍摄项目明细 <span class="read-only-badge">只读</span></div>
       <div class="page-detail-container"><div id="huahuoRecordList" class="record-list"></div></div>
+    </section>
+
+    <!-- ===== 专注中心 ===== -->
+    <section class="page" id="page-focus" data-source="local">
+      <div class="page-header"><div class="page-header-left"><h2>专注中心</h2><p>番茄钟、任务绑定与专注复盘；切换页面后计时仍可恢复。</p></div></div>
+      <div id="focusCenterRoot" class="v17-root" aria-live="polite"></div>
     </section>
 
     <!-- ===== 风险中心 · 老板决策页 ===== -->
@@ -650,7 +661,7 @@
         <div class="setting-row">
           <div>
             <div class="setting-label">工作台版本</div>
-            <div class="setting-desc">v1.6.2 · 2026-08-03</div>
+                <div class="setting-desc">v1.7.0 · 2026-08-03</div>
           </div>
         </div>
         <div class="setting-row">
@@ -825,17 +836,17 @@
 
 <!-- ===== Bottom Mobile Nav ===== -->
 <nav class="bottom-nav" id="bottomNav">
-  <button class="bottom-nav-item active" data-page="dashboard">
-    <span class="bn-icon">📊</span>首页
-  </button>
-  <button class="bottom-nav-item" data-page="decisions">
-    <span class="bn-icon">◎</span>决策
-  </button>
-  <button class="bottom-nav-item" data-page="today">
-    <span class="bn-icon">📅</span>行动
+  <button class="bottom-nav-item active" data-page="today">
+    <span class="bn-icon">☀</span>今日
   </button>
   <button class="bottom-nav-item" data-page="calendar">
     <span class="bn-icon">▦</span>日历
+  </button>
+  <button class="bottom-nav-item bottom-nav-add" type="button" data-mobile-add>
+    <span class="bn-icon">＋</span>添加
+  </button>
+  <button class="bottom-nav-item" data-page="focus">
+    <span class="bn-icon">◉</span>专注
   </button>
   <button class="bottom-nav-item" type="button" id="mobileMoreToggle" aria-controls="mobileMoreMenu" aria-expanded="false">
     <span class="bn-icon">☰</span>更多
@@ -848,6 +859,8 @@
     <button type="button" class="mobile-more-close" aria-label="关闭更多功能">×</button>
   </div>
   <div class="mobile-more-grid">
+    <button type="button" class="mobile-more-item" data-page="dashboard">📊 工作首页</button>
+    <button type="button" class="mobile-more-item" data-page="decisions">◎ 待我决策</button>
     <button type="button" class="mobile-more-item" data-page="local-life">🏪 万嘉网络</button>
     <button type="button" class="mobile-more-item" data-page="spark-media">🎬 花火影像</button>
     <button type="button" class="mobile-more-item" data-page="lingli">🎓 玲丽教育</button>

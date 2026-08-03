@@ -40,6 +40,7 @@ const sampleRaw = [
     下一步动作: '',
     风险等级: '低',
     收入状态: '已收款',
+    标准运营动作: '上线团购、发布视频；复盘核销',
   },
 ];
 
@@ -66,6 +67,7 @@ test('extractWanjiaRecord normalizes both camelCase and Chinese-field sources', 
   assert.equal(b.owner, '阿May');
   assert.equal(b.riskLevel, '低');
   assert.equal(b.revenueStatus, '已收款');
+  assert.deepEqual(b.expectedActionLabels, ['上线团购', '发布视频', '复盘核销']);
 });
 
 test('buildWanjiaIndex produces a read_only payload with all required keys', () => {

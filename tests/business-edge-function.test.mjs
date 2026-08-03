@@ -75,6 +75,10 @@ assert.match(runtimeSource, /members:/,
   'Huahuo metadata contract preserves assigned people without narrative bodies');
 assert.match(runtimeSource, /roles:/,
   'Huahuo metadata contract preserves assignment roles');
+assert.match(runtimeSource, /标准运营动作|预期动作|运营动作清单/,
+  'Wanjia read contract requests the source-provided operating action standard');
+assert.match(runtimeSource, /expectedActionLabels:\s*feishuList/,
+  'Wanjia records preserve the source action standard for honest done and missing buckets');
 assert.doesNotMatch(runtimeSource, /cli_aab7f0f691b8dcb3|yimbjqe4EDassDFqmUR9Lh0xdzBHyMvQ/,
   'No user-provided credential may be committed to the Edge Function');
 assert.match(migration, /create table if not exists public\.zos_business_cache/i);

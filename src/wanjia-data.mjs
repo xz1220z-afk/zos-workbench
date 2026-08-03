@@ -110,6 +110,11 @@ function normalizeActions(value) {
   })).filter((item) => item.title);
 }
 
+function normalizeLabels(value) {
+  const items = Array.isArray(value) ? value : String(value || '').split(/[、,，;；\n]/);
+  return [...new Set(items.map((item) => String(item || '').trim()).filter(Boolean))];
+}
+
 // Extract + normalize a single merchant-operation record. Throws on missing id/name.
 export function extractWanjiaRecord(raw = {}) {
   if (raw == null || typeof raw !== 'object') throw new Error('wanjia record must be an object');
@@ -143,7 +148,9 @@ export function extractWanjiaRecord(raw = {}) {
     riskLevel: normalizeRiskLevel(raw.riskLevel ?? raw.风险等级),
     revenueStatus: normalizeRevenueStatus(raw.revenueStatus ?? raw.收入状态 ?? raw.回款状态),
     actions: normalizeActions(raw.actions ?? raw.动作清单),
-    expectedActionLabels: Array.isArray(raw.expectedActionLabels) ? [...new Set(raw.expectedActionLabels.map(String))] : [],
+    expectedActionLabels: normalizeLabels(
+      raw.expectedActionLabels ?? raw.标准运营动作 ?? raw.预期动作 ?? raw.运营动作清单,
+    ),
     source: 'wanjia',
   };
 }

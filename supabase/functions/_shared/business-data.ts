@@ -107,7 +107,7 @@ function buildWanjiaRecords(records: FeishuRecord[]) {
           id: `${record.record_id || `wanjia-${index}`}:next`, title: nextAction,
           status: 'todo', dueAt: null, source: 'feishu',
         }] : [],
-        expectedActionLabels: [],
+        expectedActionLabels: feishuList(pick(record, '标准运营动作', '预期动作', '运营动作清单')),
         riskLevel: feishuText(pick(record, '风险等级', '风险'), '低'),
         revenueStatus: feishuText(pick(record, '收入状态', '收款状态', '回款状态'), '未提供'),
       };
@@ -214,6 +214,7 @@ export async function readBusinessSources(requestedSource: BusinessSource = 'all
     '是否上团', '是否动销', '商家经营分', '支付GMV', '核销GMV', '退款GMV', '支付券数', '核销券数', '退款券数',
     '当前阶段', '阶段', '合作阶段', '项目负责人', '负责人', '对接人',
     '下一步动作', '待办事项', '后续动作', '风险等级', '风险', '收入状态', '收款状态', '回款状态',
+    '标准运营动作', '预期动作', '运营动作清单',
   ]) : [];
   const [projects, deliveries, receipts] = needsHuahuo ? await Promise.all([
     listRecords(accessToken, FEISHU_TARGETS.huahuo.project, [
