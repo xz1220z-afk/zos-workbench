@@ -46,6 +46,7 @@ export function calendarVisibleRange({ view = 'week', anchor, timeZone = 'Asia/S
     startDate = addDays(first, -firstWeekday);
     days = 42;
   } else if (resolvedView === 'list') {
+    startDate = addDays(key, -weekday);
     days = 31;
   }
   const endDate = addDays(startDate, days);

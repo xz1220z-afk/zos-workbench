@@ -1,4 +1,5 @@
 import { calendarVisibleRange } from './calendar-range.mjs';
+import { expandRecurringEvents } from './calendar-recurrence.mjs';
 
 function iso(value) {
   if (!value) return null;
@@ -23,13 +24,6 @@ function addDays(date, count) {
   const [year, month, day] = date.split('-').map(Number);
   const value = new Date(Date.UTC(year, month - 1, day + count));
   return value.toISOString().slice(0, 10);
-}
-
-function mondayOfWeek(date) {
-  const [year, month, day] = date.split('-').map(Number);
-  const value = new Date(Date.UTC(year, month - 1, day));
-  const offset = (value.getUTCDay() + 6) % 7;
-  return addDays(date, -offset);
 }
 
 function normalizeEvent(input, fallback = {}) {
@@ -76,8 +70,13 @@ export function calendarLayout(events = [], options = {}) {
   const view = ['day', 'week', 'month', 'list'].includes(options.view) ? options.view : 'week';
   const timeZone = options.timeZone || 'Asia/Shanghai';
   const anchor = dateKey(options.anchor || Date.now(), timeZone);
+  const range = calendarVisibleRange({ view, anchor, timeZone });
+  const visibleEvents = expandRecurringEvents(events, {
+    rangeStart: range.queryStart,
+    rangeEnd: range.queryEnd,
+  });
   const grouped = new Map();
-  for (const event of events) {
+  for (const event of visibleEvents) {
     const key = dateKey(event.startAt, timeZone);
     if (!key) continue;
     if (!grouped.has(key)) grouped.set(key, []);
@@ -93,7 +92,6 @@ export function calendarLayout(events = [], options = {}) {
     };
   }
 
-  const range = calendarVisibleRange({ view, anchor, timeZone });
   const start = range.startDate;
   const count = range.days;
   return {
