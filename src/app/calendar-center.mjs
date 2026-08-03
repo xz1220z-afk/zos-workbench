@@ -1,3 +1,5 @@
+import { calendarVisibleRange } from './calendar-range.mjs';
+
 function iso(value) {
   if (!value) return null;
   const parsed = new Date(value);
@@ -85,15 +87,9 @@ export function calendarLayout(events = [], options = {}) {
     };
   }
 
-  let start = anchor;
-  let count = 1;
-  if (view === 'week') {
-    start = mondayOfWeek(anchor);
-    count = 7;
-  } else if (view === 'month') {
-    start = mondayOfWeek(`${anchor.slice(0, 7)}-01`);
-    count = 42;
-  }
+  const range = calendarVisibleRange({ view, anchor, timeZone });
+  const start = range.startDate;
+  const count = range.days;
   return {
     view,
     days: Array.from({ length: count }, (_, index) => {
