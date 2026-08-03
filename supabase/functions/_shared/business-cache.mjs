@@ -1,4 +1,4 @@
-const SOURCES = ['wanjia', 'huahuo', 'projects'];
+const SOURCES = ['wanjia', 'huahuo', 'lingli', 'projects'];
 
 export function buildCachedBusinessPayload(rows, requestedSource = 'all', nowMs = Date.now()) {
   const required = requestedSource === 'all' ? SOURCES : [requestedSource];
@@ -8,6 +8,6 @@ export function buildCachedBusinessPayload(rows, requestedSource = 'all', nowMs 
   const payload = {};
   for (const row of selected) payload[row.source] = structuredClone(row.payload);
   const fetchedAt = selected.map((row) => row.fetched_at).filter(Boolean).sort().at(0) || null;
-  payload.meta = { mode: 'read_only', contractVersion: '1.3', fetchedAt, cache: 'cloud' };
+  payload.meta = { mode: 'read_only', contractVersion: '1.6', fetchedAt, cache: 'cloud' };
   return payload;
 }

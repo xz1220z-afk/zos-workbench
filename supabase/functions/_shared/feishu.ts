@@ -1,4 +1,5 @@
 export type FeishuFailureReason =
+  | 'feishu_configuration_missing'
   | 'feishu_auth_failed'
   | 'feishu_permission_denied'
   | 'feishu_resource_not_found'
@@ -17,6 +18,7 @@ export type FeishuRecord = {
 };
 
 export type FeishuTarget = { appToken: string; tableId: string };
+export type FeishuTable = { tableId: string; name: string };
 
 type FeishuPayload = {
   code?: number;
@@ -93,9 +95,50 @@ export async function listFieldNames(token: string, target: FeishuTarget) {
     .filter((name): name is string => typeof name === 'string');
 }
 
+export async function listTables(token: string, appToken: string) {
+  const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${appToken}/tables?page_size=100`;
+  const response = await feishuFetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const payload = await payloadOf(response);
+  const items = payload?.data?.items;
+  if (!response.ok || payload?.code !== 0 || !Array.isArray(items)) {
+    throw new FeishuRequestError(classify(response, payload));
+  }
+  return items.map((item) => {
+    const table = item && typeof item === 'object' ? item as { table_id?: unknown; name?: unknown } : {};
+    return {
+      tableId: typeof table.table_id === 'string' ? table.table_id : '',
+      name: typeof table.name === 'string' ? table.name.trim() : '',
+    };
+  }).filter((table): table is FeishuTable => Boolean(table.tableId && table.name));
+}
+
+export function resolveTableByName(appToken: string, tables: FeishuTable[], expectedName: string): FeishuTarget {
+  const table = tables.find((item) => item.name === expectedName);
+  if (!table) throw new FeishuRequestError('feishu_resource_not_found');
+  return { appToken, tableId: table.tableId };
+}
+
 export async function listRecords(token: string, target: FeishuTarget, requestedFields: string[]) {
   const available = await listFieldNames(token, target);
   const fieldNames = requestedFields.filter((name) => available.includes(name));
+  if (!fieldNames.length) throw new FeishuRequestError('feishu_field_mismatch', requestedFields);
+  const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${target.appToken}/tables/${target.tableId}/records/search?page_size=500`;
+  const response = await feishuFetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify({ field_names: fieldNames }),
+  });
+  const payload = await payloadOf(response);
+  if (!response.ok || payload?.code !== 0 || !Array.isArray(payload?.data?.items)) {
+    throw new FeishuRequestError(classify(response, payload));
+  }
+  return payload.data.items as FeishuRecord[];
+}
+
+export async function listRecordsFlexible(token: string, target: FeishuTarget, requestedFields: string[]) {
+  const available = await listFieldNames(token, target);
+  const matched = requestedFields.filter((name) => available.includes(name));
+  const fieldNames = matched.length ? matched : available.slice(0, 1);
   if (!fieldNames.length) throw new FeishuRequestError('feishu_field_mismatch', requestedFields);
   const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${target.appToken}/tables/${target.tableId}/records/search?page_size=500`;
   const response = await feishuFetch(url, {

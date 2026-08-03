@@ -21,10 +21,10 @@ import { render as renderReviews } from './app/views/review-view.mjs';
 import { createAutoRefreshController } from './app/auto-refresh-controller.mjs';
 import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs';
 import { buildTodayTop3 } from './app/priority-engine.mjs';
-import { buildReminderQueue } from './app/reminder-center.mjs';
+import { buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs';
 import { runCompanyAgent } from './app/company-agent-hub.mjs';
 
-export const APP_VERSION = '1.5.0';
+export const APP_VERSION = '1.6.0';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
@@ -39,7 +39,7 @@ export function createCeoOsApplication(config = {}) {
   const runtime = {
     health: [], gaps: [], briefs: [], conflicts: [], approvals: [], decisions: [], targets: [],
     businessExceptions: [], intelligence: [], intelligenceState: 'loading', intelligenceCompany: 'all',
-    calendarView: 'week', searchQuery: '', searchResults: [],
+    calendarView: 'week', externalCalendar: [], externalCalendarState: 'pending_configuration', searchQuery: '', searchResults: [],
     syncStatus: '等待首次同步', loopConnected: false,
     autoRefresh: {
       phase: 'idle', reason: null, lastAttemptAt: null, lastSuccessAt: null,
@@ -51,6 +51,7 @@ export function createCeoOsApplication(config = {}) {
   let actionsBound = false;
   let started = false;
   let startupWork = Promise.resolve();
+  const notifiedReminderIds = new Set();
 
   function signalLocalChange() {
     try { (config.eventTarget || globalThis).dispatchEvent(new Event('zos:local-change')); } catch { /* Optional outside browsers. */ }
@@ -70,7 +71,7 @@ export function createCeoOsApplication(config = {}) {
     });
     const projects = state.collections.projects || [];
     const calendar = buildCalendar({
-      calendar: state.collections.calendar || [],
+      calendar: [...(state.collections.calendar || []), ...(runtime.externalCalendar || [])],
       tasks: state.collections.tasks || [],
       projects: [...projects, ...businessRecords].map((item) => ({ ...item, dueAt: item.dueAt || item.dueDate || item.shootingDate })),
       life,
@@ -129,7 +130,7 @@ export function createCeoOsApplication(config = {}) {
       brief: brief || next.briefs?.at(-1) || null,
     });
     const knownHealth = new Map((runtime.health || []).map((item) => [item.source, item]));
-    runtime.health = ['wanjia', 'huahuo', 'projects', 'brain', 'sync', 'feishu_write']
+    runtime.health = ['wanjia', 'huahuo', 'lingli', 'projects', 'brain', 'sync', 'feishu_write']
       .map((source) => knownHealth.get(source) || { source, state: 'pending', recordCount: null, lastSuccessAt: null });
     const current = store.load();
     for (const decision of next.decisions || []) {
@@ -168,13 +169,15 @@ export function createCeoOsApplication(config = {}) {
       ['sync', () => syncController?.sync ? syncController.sync(reason) : Promise.resolve()],
       ['wanjia', () => operatingRuntime.operatingLoop?.refresh('wanjia')],
       ['huahuo', () => operatingRuntime.operatingLoop?.refresh('huahuo')],
+      ['lingli', () => operatingRuntime.operatingLoop?.refresh('lingli')],
       ['projects', () => operatingRuntime.operatingLoop?.refresh('projects')],
       ['intelligence', async () => applyIntelligenceResult(await operatingRuntime.loadIntelligence?.({ refresh: true }))],
+      ['calendar', async () => applyExternalCalendarResult(await operatingRuntime.loadExternalCalendar?.())],
     ];
     const results = await Promise.all(jobs.map(async ([source, run]) => {
       try {
         await run();
-        if (['wanjia', 'huahuo', 'projects'].includes(source)) updateFromOperatingLoop();
+        if (['wanjia', 'huahuo', 'lingli', 'projects'].includes(source)) updateFromOperatingLoop();
         renderAll();
         return { source, ok: true };
       } catch (error) {
@@ -191,10 +194,19 @@ export function createCeoOsApplication(config = {}) {
       }
     }
     renderAll();
+    notifyCurrentReminders();
     return {
       succeeded: results.filter((item) => item.ok).map((item) => item.source),
       failed: results.filter((item) => !item.ok).map(({ source, safeCode }) => ({ source, safeCode })),
     };
+  }
+
+  function notifyCurrentReminders() {
+    const pending = viewModel().reminderQueue.filter((item) => !notifiedReminderIds.has(item.id));
+    const result = notifyGrantedReminders(pending, config.notificationEnvironment || globalThis);
+    if (result.state === 'sent') pending.forEach((item) => notifiedReminderIds.add(item.id));
+    runtime.notificationState = result.state;
+    return result;
   }
 
   function confirmTarget(input = {}) {
@@ -388,6 +400,11 @@ export function createCeoOsApplication(config = {}) {
       : (sourceState === 'pending_configuration' ? 'pending_configuration' : 'empty');
   }
 
+  function applyExternalCalendarResult(result) {
+    runtime.externalCalendar = Array.isArray(result) ? result : (result?.items || []);
+    runtime.externalCalendarState = Array.isArray(result) ? 'synced' : (result?.state || 'pending_configuration');
+  }
+
   async function initializeRemote() {
     if (config.hydrateHealth) {
       try { Object.assign(runtime, { health: await config.hydrateHealth() }); }
@@ -453,7 +470,7 @@ export function createCeoOsApplication(config = {}) {
 
   return {
     start, whenIdle: () => startupWork, render: renderAll, store, runtime, viewModel,
-    refreshSource, refreshAllSources, confirmTarget, previewDecision, executeApproval, quickCapture, captureCalendar, generateReview, generateAgentDraft,
+    refreshSource, refreshAllSources, notifyCurrentReminders, confirmTarget, previewDecision, executeApproval, quickCapture, captureCalendar, generateReview, generateAgentDraft,
     get operatingRuntime() { return operatingRuntime; },
   };
 }

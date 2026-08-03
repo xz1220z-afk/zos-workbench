@@ -22,6 +22,10 @@ verify_jwt = true
 # Reads private intelligence summaries; optional Feishu refresh uses server-only configured targets.
 verify_jwt = true
 
+[functions.zos-calendar-data]
+# Reads an optional server-side ICS feed and returns only event metadata to authenticated users.
+verify_jwt = true
+
 [functions.zos-business-refresh]
 # Internal cron-only endpoint. It performs read-only Feishu reads and requires x-zos-cron-secret.
 verify_jwt = false

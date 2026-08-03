@@ -24,7 +24,7 @@ test('all-source cache requires every business source and rejects stale or unsaf
   const unsafe = row('wanjia');
   unsafe.payload.mode = 'write';
   assert.equal(buildCachedBusinessPayload([unsafe], 'wanjia', now), null);
-  assert.ok(buildCachedBusinessPayload([row('wanjia'), row('huahuo'), row('projects')], 'all', now));
+  assert.ok(buildCachedBusinessPayload([row('wanjia'), row('huahuo'), row('lingli'), row('projects')], 'all', now));
 });
 
 test('business endpoint reads RLS cache first and preserves read-only Feishu fallback', async () => {

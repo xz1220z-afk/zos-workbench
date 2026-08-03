@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'GET') return response({ error: 'method_not_allowed' }, 405);
 
   const requestedSource = new URL(req.url).searchParams.get('source') || 'all';
-  if (!['all', 'wanjia', 'huahuo', 'projects'].includes(requestedSource)) {
+  if (!['all', 'wanjia', 'huahuo', 'lingli', 'projects'].includes(requestedSource)) {
     return response({ error: 'invalid_source' }, 400);
   }
 
@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const sources = requestedSource === 'all' ? ['wanjia', 'huahuo', 'projects'] : [requestedSource];
+    const sources = requestedSource === 'all' ? ['wanjia', 'huahuo', 'lingli', 'projects'] : [requestedSource];
     const { data, error } = await identity.supabase.from('zos_business_cache')
       .select('source,payload,fetched_at,expires_at')
       .in('source', sources);
@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   } catch { /* A cache miss or unavailable cache safely falls back to live read-only Feishu. */ }
 
   try {
-    return response(await readBusinessSources(requestedSource as 'all' | 'wanjia' | 'huahuo' | 'projects'));
+    return response(await readBusinessSources(requestedSource as 'all' | 'wanjia' | 'huahuo' | 'lingli' | 'projects'));
   } catch (error) {
     const reason = safeFeishuCode(error);
     console.error(JSON.stringify({ event: 'zos_business_data_failed', reason }));

@@ -11,7 +11,7 @@ function decisionRows(decisions = []) {
 }
 
 const SOURCE_LABELS = Object.freeze({
-  sync: '跨端', wanjia: '万嘉', huahuo: '花火', projects: '项目', intelligence: '情报', all: '全部',
+  sync: '跨端', wanjia: '万嘉', huahuo: '花火', lingli: '玲丽', projects: '项目', intelligence: '情报', calendar: '日历', all: '全部',
 });
 
 const SAFE_MESSAGES = Object.freeze({
@@ -19,6 +19,7 @@ const SAFE_MESSAGES = Object.freeze({
   feishu_permission_denied: '飞书读取权限待检查',
   feishu_resource_not_found: '数据表配置待检查',
   feishu_field_mismatch: '字段配置待检查',
+  feishu_configuration_missing: '来源尚未配置',
   source_timeout: '连接超时',
   source_refresh_failed: '本轮未更新',
   refresh_failed: '本轮未更新',
@@ -34,7 +35,7 @@ function syncRail(autoRefresh = {}) {
         : phase === 'authentication_required' ? '需要登录 Supabase'
           : phase === 'stale' ? '数据超过 30 分钟未更新'
             : '自动更新已开启';
-  const sourceItems = ['wanjia', 'huahuo', 'projects', 'intelligence', 'sync'].map((source) => {
+  const sourceItems = ['wanjia', 'huahuo', 'lingli', 'projects', 'intelligence', 'calendar', 'sync'].map((source) => {
     const code = failed.get(source);
     const state = code ? 'failed' : succeeded.has(source) ? 'synced' : 'pending';
     const detail = code ? SAFE_MESSAGES[code] || '本轮未更新' : state === 'synced' ? '已更新' : '等待本轮';
@@ -72,7 +73,7 @@ export function render(container, viewModel = {}) {
       <article><span>数据健康</span><strong>${synced}/${health.length || '—'}</strong><small>正常来源</small></article>
     </div>
     <div class="v14-main-grid">
-      <article class="v13-panel v14-span-2"><div class="v14-section-head"><h3>◎ 今日 Top 3 <span class="v13-chip">${displayValue(viewModel.reminderQueue?.length)} 条提醒</span></h3><button class="v13-action" data-page="today">查看行动</button></div>${(viewModel.todayTop3 || []).length ? `<div class="v13-list">${viewModel.todayTop3.slice(0, 3).map((item, index) => `<div class="v13-row"><div><strong>0${index + 1} · ${escapeHtml(humanText(item.title || item.factSummary || item.id, '待确认行动'))}</strong><div class="v13-meta">${escapeHtml(humanText(item.reason, '待确认优先原因'))}${item.dueAt ? ` · ${escapeHtml(item.dueAt)}` : ''}</div></div><span class="v13-chip">${escapeHtml(humanText(item.sourceType, '行动'))}</span></div>`).join('')}</div>` : renderState('empty', '今日行动')}</article>
+      <article class="v13-panel v14-span-2"><div class="v14-section-head"><h3>◎ 今日 Top 3 <span class="v13-chip">${displayValue(viewModel.reminderQueue?.length)} 条提醒</span></h3><button class="v13-action" data-page="today">查看行动</button></div>${(viewModel.todayTop3 || []).length ? `<div class="v13-list">${viewModel.todayTop3.slice(0, 3).map((item, index) => `<div class="v13-row"><div><strong>0${index + 1} · ${escapeHtml(humanText(item.title || item.factSummary || item.id, '待确认行动'))}</strong><div class="v13-meta">${escapeHtml(humanText(item.reason, '待确认优先原因'))}${item.dueAt ? ` · ${escapeHtml(item.dueAt)}` : ''}</div></div><div>${item.sourceType === 'decision' ? `<button class="v13-action" data-preview-decision="${escapeHtml(item.sourceId)}">预览催办</button>` : ''}<span class="v13-chip">${escapeHtml(humanText(item.sourceType, '行动'))}</span></div></div>`).join('')}</div>` : renderState('empty', '今日行动')}</article>
       <article class="v13-panel"><div class="v14-section-head"><h3>◎ 待我决策</h3><button class="v13-action" data-page="decisions">全部</button></div>${decisionRows(activeDecisions)}</article>
       <article class="v13-panel v14-span-2"><div class="v14-section-head"><h3>◫ 三家公司经营全景</h3><span>真实来源</span></div><div class="company-overview">
         <button data-page="local-life"><span>万嘉网络</span><strong>${formatCurrency(companies.wanjia?.businessVolume?.value ?? viewModel.sources?.wanjia?.summary?.paymentGmv)}</strong><small>支付 GMV · 非收入</small></button>

@@ -13,6 +13,7 @@ function businessDataError(status, body) {
   let payload = {};
   try { payload = body ? JSON.parse(body) : {}; } catch { /* Keep the generic status message. */ }
   const reasons = {
+    feishu_configuration_missing: 'Feishu source configuration is missing',
     feishu_auth_failed: 'Feishu application authentication failed',
     feishu_permission_denied: 'Feishu app has no permission for the configured Bitable',
     feishu_resource_not_found: 'Feishu Base or table configuration was not found',

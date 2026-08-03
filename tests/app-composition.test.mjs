@@ -46,7 +46,7 @@ test('renders cached content before remote startup settles', async () => {
   const calls = [];
   const syncGate = deferred();
   const intelligenceGate = deferred();
-  const sourceGates = { wanjia: deferred(), huahuo: deferred(), projects: deferred() };
+  const sourceGates = { wanjia: deferred(), huahuo: deferred(), lingli: deferred(), projects: deferred() };
   const document = renderDocument();
   const operatingLoop = {
     async refresh(source) { calls.push(source); await sourceGates[source].promise; },
@@ -64,6 +64,7 @@ test('renders cached content before remote startup settles', async () => {
       operatingLoop,
       syncController: { start() {}, async sync() { calls.push('sync'); await syncGate.promise; } },
       async loadIntelligence() { calls.push('intelligence'); await intelligenceGate.promise; return { items: [] }; },
+      async loadExternalCalendar() { calls.push('calendar'); return { items: [], state: 'pending_configuration' }; },
     },
   });
 
@@ -76,12 +77,13 @@ test('renders cached content before remote startup settles', async () => {
   intelligenceGate.resolve();
   sourceGates.wanjia.resolve();
   sourceGates.huahuo.resolve();
+  sourceGates.lingli.resolve();
   sourceGates.projects.resolve();
   await startPromise;
   await app.whenIdle();
 
   assert.equal(startedBeforeRemote, true);
-  assert.deepEqual(calls, ['sync', 'wanjia', 'huahuo', 'projects', 'intelligence']);
+  assert.deepEqual(calls, ['sync', 'wanjia', 'huahuo', 'lingli', 'projects', 'intelligence', 'calendar']);
   assert.ok(document.nodes.get('ceoDashboardRoot').innerHTML.length > 0);
 });
 
@@ -109,7 +111,7 @@ test('production application drives the authenticated operating loop on startup'
   await app.whenIdle();
 
   assert.deepEqual(calls, [
-    ['sync'], ['refresh', 'wanjia'], ['refresh', 'huahuo'], ['refresh', 'projects'], ['targets', ['target-1']], ['brief'],
+    ['sync'], ['refresh', 'wanjia'], ['refresh', 'huahuo'], ['refresh', 'lingli'], ['refresh', 'projects'], ['targets', ['target-1']], ['brief'],
   ]);
   assert.equal(app.viewModel().decisions[0].id, 'decision-1');
   assert.equal(app.viewModel().gaps[0].gap, 2000);

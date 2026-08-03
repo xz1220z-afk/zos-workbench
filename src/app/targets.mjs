@@ -11,6 +11,11 @@ export const METRIC_CATALOG = Object.freeze({
   'huahuo.activeProjects': { source: 'huahuo', field: 'activeProjects', label: '进行中项目', unit: 'count' },
   'huahuo.pendingDeliveries': { source: 'huahuo', field: 'pendingDeliveries', label: '待交付', unit: 'count' },
   'huahuo.lossRiskProjects': { source: 'huahuo', field: 'lossRiskProjects', label: '亏损风险项目', unit: 'count' },
+  'lingli.received': { source: 'lingli', field: 'received', label: '玲丽本月实收', unit: 'currency' },
+  'lingli.leads': { source: 'lingli', field: 'leads', label: '玲丽招生线索', unit: 'count' },
+  'lingli.students': { source: 'lingli', field: 'students', label: '玲丽在读学员', unit: 'count' },
+  'lingli.consumed': { source: 'lingli', field: 'consumed', label: '玲丽已消课时', unit: 'count' },
+  'lingli.activeClasses': { source: 'lingli', field: 'activeClasses', label: '玲丽进行中班级', unit: 'count' },
 });
 
 function finiteNumber(value) {

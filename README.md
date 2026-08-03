@@ -9,19 +9,21 @@ ZOS 是朱帅个人使用的 CEO OS，当前以深色 PWA 形式发布。它把�
 
 注意：`https://xz1220z-afk.github.io/` 是用户主页根域名，目前没有配置 Pages，因此会显示 404。日常只使用上面的 `/zos-workbench/` 地址。
 
-## 当前能力（v1.5.0）
+## 当前能力（v1.6.0）
 
 - CEO 指挥中心与独立 Life OS；工作端只显示私人日程的忙碌占位
 - 今日行动、待我决策、经营目标、数据健康和每日 CEO 简报
 - 日/周/月日历、冲突检测、私有生活事项、关系聚合、周/月复盘草稿和跨域全局搜索
 - 独立情报中心：飞书候选池只读拉取到 Supabase 私有摘要缓存，人工标记已读或转为行动
-- 万嘉 / 花火真实飞书事实只读聚合；玲丽教育保留真实空态，未接入前不显示虚构指标
+- 万嘉 / 花火 / 玲丽真实飞书事实只读聚合；三家公司统一区分业务量、合同额、实收与待回款
 - 企业大脑仅同步 Obsidian 元数据，不上传正文
 - localStorage 本地持久化与自动四端同步；关键决策和目标并发修改必须人工解冲突
 - JSON 数据导出、校验、覆盖导入和清除
 - PWA 安装：Mac/Windows Edge 或 Chrome、iPhone Safari、Android Chrome
 - Supabase 私有云同步：邮箱或密码登录，记录按用户隔离；联网、回到前台和本地改动后自动同步
-- 自动更新：登录后一次刷新万嘉、花火、企业项目和情报；工作台在前台且联网时每 15 分钟检查，回到前台或恢复网络会自动补刷新
+- 自动更新：登录后一次刷新万嘉、花火、玲丽、企业项目、情报和外部日历；工作台在前台且联网时每 15 分钟检查，回到前台或恢复网络会自动补刷新
+- 今日 Top 3 与催办：按真实到期日、风险、冲突和情报排序；浏览器已授权通知时自动提醒，未授权时不主动弹窗索权
+- 外部日历：可通过服务端私有 ICS 订阅接入 Google / Apple / Outlook，工作台仅展示最小事件元数据
 - 云端企业缓存：Supabase 每 15 分钟以只读方式刷新已配置的飞书来源，即使不逐页打开公司页面也能获得新缓存
 - 飞书受控写入：先生成精确预览，逐条人工确认，再执行一次并回读验证；不允许批量静默写入
 - 脱敏运行监控：只记录安全错误码、耗时、条数和版本，不保存业务正文、客户信息或凭证
@@ -33,7 +35,7 @@ ZOS 是朱帅个人使用的 CEO OS，当前以深色 PWA 形式发布。它把�
 2. 新设备完成 Supabase 登录后等待前台同步；首次使用仍建议先保留最近的 JSON 备份。
 3. 重要改动前先导出备份；导入会覆盖当前设备本地数据。
 4. 只填写 Supabase Project URL 和 Publishable/anon key。绝不填写数据库密码、OTP、service_role key 或其他管理令牌。
-5. 私人任务、日历与生活数据的设备同步只在工作台打开且网络可用时运行；万嘉、花火与企业项目的只读缓存由云端每 15 分钟更新。
+5. 私人任务、日历与生活数据的设备同步只在工作台打开且网络可用时运行；万嘉、花火、玲丽与企业项目的只读缓存由云端每 15 分钟更新。
 6. 情报中心已连接飞书 `08.07｜ZOS 情报候选池`，由云端每 15 分钟只读同步到本人 Supabase 私有摘要缓存；若配置失效会明确显示异常，不会用公司业务表冒充行业情报。
 
 ## 发布与回归验证
@@ -63,7 +65,7 @@ curl -fsSI https://xz1220z-afk.github.io/zos-workbench/sw.js
 
 ## Supabase 配置
 
-数据库迁移文件位于 `supabase/migrations/`；v1.5 在 v1.4 双首页与情报系统上增加前台统一刷新和云端只读定时缓存。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，实现与回滚步骤见 [`docs/superpowers/plans/2026-08-02-automatic-sync-implementation.md`](docs/superpowers/plans/2026-08-02-automatic-sync-implementation.md)。
+数据库迁移文件位于 `supabase/migrations/`；v1.6 在 v1.5 自动缓存上增加玲丽教育、三公司统一口径、Top 3、提醒、外部日历和三公司 Agent。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，实施与回滚见 [`docs/superpowers/plans/2026-08-03-zos-v1.6-operating-loop.md`](docs/superpowers/plans/2026-08-03-zos-v1.6-operating-loop.md)。
 
 邮箱登录链接必须回调到：
 

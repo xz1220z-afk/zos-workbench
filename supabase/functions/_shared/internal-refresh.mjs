@@ -28,7 +28,7 @@ export function authorizeInternalRefresh({ providedSecret, expectedSecret, owner
 export function buildBusinessCacheRows(ownerId, payload, nowMs = Date.now()) {
   if (!ownerId) throw new Error('ownerId is required');
   if (payload?.meta?.mode !== 'read_only') throw new Error('business payload must be read_only');
-  const sources = ['wanjia', 'huahuo', 'projects'];
+  const sources = ['wanjia', 'huahuo', 'lingli', 'projects'];
   for (const source of sources) {
     if (!payload?.[source] || typeof payload[source] !== 'object') throw new Error(`${source} payload is required`);
   }

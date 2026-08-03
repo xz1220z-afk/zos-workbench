@@ -1,12 +1,17 @@
 import {
   FEISHU_TARGETS,
   FeishuRecord,
+  FeishuRequestError,
   getTenantAccessToken,
   listRecords,
+  listRecordsFlexible,
+  listTables,
+  resolveTableByName,
 } from './feishu.ts';
 import { feishuNumber, feishuText, roundMoney } from './feishu-values.mjs';
+import { LINGLI_TABLE_NAMES, summarizeLingli } from './lingli-data.mjs';
 
-export type BusinessSource = 'all' | 'wanjia' | 'huahuo' | 'projects';
+export type BusinessSource = 'all' | 'wanjia' | 'huahuo' | 'lingli' | 'projects';
 
 function fieldsOf(record: FeishuRecord | Record<string, unknown>) {
   return 'fields' in record && record.fields && typeof record.fields === 'object' ? record.fields : record;
@@ -112,7 +117,31 @@ function buildHuahuoRecords(records: FeishuRecord[]) {
   };
 }
 
-function buildProjectsSource(huahuoProjects: FeishuRecord[], merchants: FeishuRecord[]) {
+function buildLingliRecords(records: FeishuRecord[]) {
+  return {
+    source: 'lingli', mode: 'read_only', scannedAt: new Date().toISOString(),
+    records: records.map((record, index) => {
+      const status = feishuText(pick(record, '班级状态', '开班状态', '状态'), '未提供');
+      const updatedAt = sourceUpdatedAt(record, pick(record, '更新时间', '开班日期', '上课日期'));
+      return {
+        id: feishuText(pick(record, '班级编号', '班级ID'), record.record_id || `lingli-${index}`),
+        sourceRecordId: record.record_id || null,
+        sourceUpdatedAt: updatedAt,
+        writeAvailable: Boolean(record.record_id),
+        contractVersion: '1.6',
+        name: feishuText(pick(record, '班级名称', '课程名称', '名称'), '玲丽教学班'),
+        type: '玲丽教学班',
+        status,
+        owner: feishuText(pick(record, '班主任', '授课老师', '负责人'), '未指定'),
+        updatedAt,
+        riskLevel: /延期|停课|异常|欠费|风险/.test(status) ? '高' : '低',
+        source: 'lingli',
+      };
+    }),
+  };
+}
+
+function buildProjectsSource(huahuoProjects: FeishuRecord[], merchants: FeishuRecord[], lingliClasses: FeishuRecord[]) {
   const projects = huahuoProjects.map((record, index) => {
     const fields = fieldsOf(record);
     const status = feishuText(fields['项目状态'], '进行中');
@@ -136,15 +165,17 @@ function buildProjectsSource(huahuoProjects: FeishuRecord[], merchants: FeishuRe
     updatedAt: new Date().toISOString(), riskLevel: activeMerchants > 0 ? '低' : '中', source: 'wanjia',
     sourceRecordId: null, sourceUpdatedAt: null, writeAvailable: false, contractVersion: '1.3',
   });
+  projects.push(...buildLingliRecords(lingliClasses).records);
   return { source: 'projects', mode: 'read_only', scannedAt: new Date().toISOString(), projects };
 }
 
 export async function readBusinessSources(requestedSource: BusinessSource = 'all') {
-  if (!['all', 'wanjia', 'huahuo', 'projects'].includes(requestedSource)) throw new Error('invalid_source');
+  if (!['all', 'wanjia', 'huahuo', 'lingli', 'projects'].includes(requestedSource)) throw new Error('invalid_source');
   const startedAt = Date.now();
   const accessToken = await getTenantAccessToken();
   const needsWanjia = ['all', 'wanjia', 'projects'].includes(requestedSource);
   const needsHuahuo = ['all', 'huahuo', 'projects'].includes(requestedSource);
+  const needsLingli = ['all', 'lingli', 'projects'].includes(requestedSource);
   const merchants = needsWanjia ? await listRecords(accessToken, FEISHU_TARGETS.wanjia.merchant, [
     '商家名称', '商家ID', '行业', '类目', '经营单元', '商家分层', '合作模式', '跟进人',
     '是否上团', '是否动销', '商家经营分', '支付GMV', '核销GMV', '退款GMV', '支付券数', '核销券数', '退款券数',
@@ -162,14 +193,43 @@ export async function readBusinessSources(requestedSource: BusinessSource = 'all
       '项目', '订单', '收款金额', '到账金额', '实收金额', '收款日期', '到账日期', '收款状态', '回款状态', '状态',
     ]),
   ]) : [[], [], []];
+  const lingliAppToken = needsLingli ? Deno.env.get('LINGLI_APP_TOKEN') : null;
+  if (needsLingli && !lingliAppToken) throw new FeishuRequestError('feishu_configuration_missing');
+  const lingliTables = needsLingli ? await listTables(accessToken, lingliAppToken as string) : [];
+  const lingliTarget = (name: string) => resolveTableByName(lingliAppToken as string, lingliTables, name);
+  const [leads, students, finance, lessons, classes] = needsLingli ? await Promise.all([
+    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_NAMES.leads), [
+      '线索编号', '学员姓名', '姓名', '线索状态', '招生来源', '意向课程', '跟进人', '负责人', '下次跟进日期', '更新时间',
+    ]),
+    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_NAMES.students), [
+      '学员编号', '学员姓名', '姓名', '学员状态', '在读状态', '状态', '课程', '班级', '负责人', '更新时间',
+    ]),
+    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_NAMES.finance), [
+      '收支类型', '类型', '业务类型', '科目', '收入金额', '实收金额', '收款金额', '到账金额', '金额', '发生金额',
+      '发生日期', '收支日期', '日期', '收款日期', '到账日期',
+    ]),
+    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_NAMES.lessons), [
+      '课消状态', '排课状态', '状态', '已消课时', '课消课时', '完成课时', '核销课时', '课程名称', '学员姓名', '上课日期',
+    ]),
+    listRecordsFlexible(accessToken, lingliTarget(LINGLI_TABLE_NAMES.classes), [
+      '班级编号', '班级ID', '班级名称', '课程名称', '名称', '班级状态', '开班状态', '状态', '班主任', '授课老师', '负责人',
+      '开班日期', '上课日期', '更新时间',
+    ]),
+  ]) : [[], [], [], [], []];
   const completedAt = new Date().toISOString();
   const durationMs = Date.now() - startedAt;
   const health = (recordCount: number) => ({ recordCount, durationMs, lastSuccessAt: completedAt, safeCode: null });
   return {
     wanjia: { summary: summarizeWanjia(merchants), records: buildWanjiaRecords(merchants), health: health(merchants.length), contractVersion: '1.3' },
     huahuo: { summary: summarizeHuahuo(projects, deliveries, receipts), records: buildHuahuoRecords(projects), health: health(projects.length + deliveries.length + receipts.length), contractVersion: '1.3' },
-    projects: { ...buildProjectsSource(projects, merchants), health: health(projects.length + 1), contractVersion: '1.3' },
+    lingli: {
+      summary: summarizeLingli({ leads, students, finance, lessons, classes }, { asOf: completedAt }),
+      records: buildLingliRecords(classes),
+      health: health(leads.length + students.length + finance.length + lessons.length + classes.length),
+      contractVersion: '1.6',
+    },
+    projects: { ...buildProjectsSource(projects, merchants, classes), health: health(projects.length + classes.length + 1), contractVersion: '1.6' },
     brain: { state: 'not_configured', note: 'Obsidian bridge not configured' },
-    meta: { fetchedAt: completedAt, mode: 'read_only', contractVersion: '1.3' },
+    meta: { fetchedAt: completedAt, mode: 'read_only', contractVersion: '1.6' },
   };
 }

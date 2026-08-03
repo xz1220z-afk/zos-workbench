@@ -18,6 +18,6 @@ export function render(container, viewModel = {}) {
     <div class="v13-row"><h3>${escapeHtml(item.label || item.source)}</h3><span class="v13-chip">${escapeHtml(item.state)}</span></div>
     <div class="v13-row"><span>记录数</span><span class="v13-value">${displayValue(item.recordCount)}</span></div>
     <p>最近成功：${displayValue(item.lastSuccessAt)}</p>
-    ${['wanjia', 'huahuo'].includes(item.source) ? `<button class="v13-action" data-refresh-source="${escapeHtml(item.source)}">重新读取</button>` : ''}
+    ${['wanjia', 'huahuo', 'lingli'].includes(item.source) ? `<button class="v13-action" data-refresh-source="${escapeHtml(item.source)}">重新读取</button>` : ''}
   </article>`).join('')}</div>` : renderState('empty', '来源状态'));
 }

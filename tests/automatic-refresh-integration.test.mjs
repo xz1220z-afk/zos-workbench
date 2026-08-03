@@ -58,6 +58,7 @@ test('startup refreshes every connected source without visiting company pages', 
       operatingLoop,
       syncController: { start() { calls.push('sync:start'); }, async sync(reason) { calls.push(`sync:${reason}`); } },
       async loadIntelligence({ refresh }) { calls.push(`intelligence:${refresh}`); return { items: [], state: 'cached' }; },
+      async loadExternalCalendar() { calls.push('calendar'); return { items: [], state: 'pending_configuration' }; },
     },
     autoRefreshFactory: fakeAutoRefreshFactory(calls),
   });
@@ -67,10 +68,10 @@ test('startup refreshes every connected source without visiting company pages', 
 
   assert.deepEqual(calls, [
     'sync:start', 'controller:start', 'sync:startup',
-    'business:wanjia', 'business:huahuo', 'business:projects', 'intelligence:true',
+    'business:wanjia', 'business:huahuo', 'business:lingli', 'business:projects', 'intelligence:true', 'calendar',
   ]);
   assert.equal(app.viewModel().autoRefresh.phase, 'idle');
-  assert.deepEqual(app.viewModel().autoRefresh.succeeded.sort(), ['huahuo', 'intelligence', 'projects', 'sync', 'wanjia']);
+  assert.deepEqual(app.viewModel().autoRefresh.succeeded.sort(), ['calendar', 'huahuo', 'intelligence', 'lingli', 'projects', 'sync', 'wanjia']);
 });
 
 test('one source failure keeps other sources successful and exposes only a safe code', async () => {

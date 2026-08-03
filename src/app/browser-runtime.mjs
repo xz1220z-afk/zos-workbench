@@ -39,6 +39,15 @@ async function loadIntelligenceRows(fetchImpl, config, token, { refresh = false 
   return { items: payload.items, state: payload.state || 'cached' };
 }
 
+async function loadExternalCalendar(fetchImpl, config, token) {
+  const endpoint = new URL('/functions/v1/zos-calendar-data', `${config.url.replace(/\/$/, '')}/`);
+  const response = await fetchImpl(endpoint, { headers: { apikey: config.anonKey, Authorization: `Bearer ${token}` } });
+  if (!response.ok) throw new Error('calendar_read_failed');
+  const payload = await response.json();
+  if (!Array.isArray(payload.items)) throw new Error('calendar_contract_invalid');
+  return { items: payload.items, state: payload.state || 'synced', fetchedAt: payload.fetchedAt || null };
+}
+
 export async function createBrowserOperatingRuntime({
   storage, store, deviceId, now = () => new Date().toISOString(), fetchImpl = globalThis.fetch,
   eventTarget = globalThis, document = globalThis.document,
@@ -105,5 +114,6 @@ export async function createBrowserOperatingRuntime({
   return {
     operatingLoop, syncController, session,
     loadIntelligence: (options) => loadIntelligenceRows(fetchImpl, config, session.accessToken, options),
+    loadExternalCalendar: () => loadExternalCalendar(fetchImpl, config, session.accessToken),
   };
 }

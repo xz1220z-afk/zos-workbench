@@ -35,11 +35,12 @@ test('cache rows are owner scoped, expire after thirty minutes, and exclude resp
   const rows = buildBusinessCacheRows('owner-1', {
     wanjia: { summary: { paymentGmv: 1 }, records: [], contractVersion: '1.3' },
     huahuo: { summary: { outstandingAmount: 2 }, records: [], contractVersion: '1.3' },
+    lingli: { summary: { received: 3 }, records: [], contractVersion: '1.6' },
     projects: { projects: [], contractVersion: '1.3' },
     meta: { mode: 'read_only', fetchedAt: '2026-08-02T08:00:00.000Z' },
   }, 1_754_121_600_000);
 
-  assert.deepEqual(rows.map((row) => row.source), ['wanjia', 'huahuo', 'projects']);
+  assert.deepEqual(rows.map((row) => row.source), ['wanjia', 'huahuo', 'lingli', 'projects']);
   assert.ok(rows.every((row) => row.user_id === 'owner-1'));
   assert.ok(rows.every((row) => row.expires_at === '2025-08-02T08:30:00.000Z'));
   assert.ok(rows.every((row) => row.payload.mode === 'read_only'));
@@ -48,10 +49,10 @@ test('cache rows are owner scoped, expire after thirty minutes, and exclude resp
 
 test('cache builder rejects non-read-only or incomplete source payloads', () => {
   assert.throws(() => buildBusinessCacheRows('owner-1', {
-    wanjia: {}, huahuo: {}, projects: {}, meta: { mode: 'write' },
+    wanjia: {}, huahuo: {}, lingli: {}, projects: {}, meta: { mode: 'write' },
   }, 0), /read_only/);
   assert.throws(() => buildBusinessCacheRows('owner-1', {
-    wanjia: {}, huahuo: {}, meta: { mode: 'read_only' },
+    wanjia: {}, huahuo: {}, lingli: {}, meta: { mode: 'read_only' },
   }, 0), /projects/);
 });
 

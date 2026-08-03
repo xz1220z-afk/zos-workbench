@@ -22,9 +22,14 @@ const EXPECTED_KEYS = [
   'huahuo.activeProjects',
   'huahuo.pendingDeliveries',
   'huahuo.lossRiskProjects',
+  'lingli.received',
+  'lingli.leads',
+  'lingli.students',
+  'lingli.consumed',
+  'lingli.activeClasses',
 ];
 
-test('metric catalog exposes only the approved Wanjia and Huahuo facts', () => {
+test('metric catalog exposes only the approved three-company facts', () => {
   assert.deepEqual(Object.keys(METRIC_CATALOG), EXPECTED_KEYS);
 });
 
@@ -73,6 +78,10 @@ test('actualMetrics extracts only demonstrable numbers and keeps missing facts n
       summary: { contractAmount: 10000, receivedAmount: 4500, lossRiskProjects: 2 },
       fetchedAt: '2026-08-02T08:05:00.000Z',
     },
+    lingli: {
+      summary: { received: 3000, students: 9, activeClasses: 2 },
+      fetchedAt: '2026-08-02T08:10:00.000Z',
+    },
   });
 
   assert.equal(metrics['wanjia.paymentGmv'].value, 0);
@@ -81,6 +90,9 @@ test('actualMetrics extracts only demonstrable numbers and keeps missing facts n
   assert.equal(metrics['huahuo.receivedAmount'].value, 4500);
   assert.equal(metrics['huahuo.pendingDeliveries'].value, null);
   assert.equal(metrics['huahuo.lossRiskProjects'].value, 2);
+  assert.equal(metrics['lingli.received'].value, 3000);
+  assert.equal(metrics['lingli.students'].value, 9);
+  assert.equal(metrics['lingli.activeClasses'].value, 2);
 });
 
 test('daily snapshots are owner/date idempotent and contain no business body', () => {

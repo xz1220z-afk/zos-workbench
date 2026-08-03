@@ -82,6 +82,7 @@ function buildLingli(payload) {
   company.operations.leads = metric(summary.leads);
   company.operations.students = metric(summary.students);
   company.operations.consumed = metric(summary.consumed);
+  company.projects.active = metric(summary.activeClasses);
   return company;
 }
 

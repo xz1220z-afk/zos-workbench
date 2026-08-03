@@ -122,9 +122,9 @@
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.4.3';
+  const APP_VERSION = '1.6.0';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
-  const APP_RELEASE_DATE = '2026-08-02';
+  const APP_RELEASE_DATE = '2026-08-03';
 
   // ==================== DATA LAYER ====================
   const KEYS = { TASKS:'zos_tasks', INBOX:'zos_inbox', PROJECTS:'zos_projects', COMMANDS:'zos_commands', TOMBSTONES:'zos_tombstones', ONBOARDED:'zos_onboarded', DEVICE:'zos_device_id', SCHEMA:'zos_schema_version', SYNC_CONFIG:'zos_supabase_config', SYNC_SESSION:'zos_supabase_session' };
