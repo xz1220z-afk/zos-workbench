@@ -2,6 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { readBusinessSources } from '../_shared/business-data.ts';
 import { FeishuRequestError, safeFeishuCode } from '../_shared/feishu.ts';
 import { IntelligenceConfigurationError, readIntelligenceSource } from '../_shared/intelligence-data.ts';
+import { ExternalIntelligenceError, readAihotSource } from '../_shared/external-intelligence.mjs';
 import {
   InternalRefreshError,
   authorizeInternalRefresh,
@@ -49,18 +50,32 @@ Deno.serve(async (req) => {
     failures.business = error instanceof FeishuRequestError ? safeFeishuCode(error) : 'business_refresh_failed';
   }
 
+  const intelligenceRows: Record<string, unknown>[] = [];
   try {
-    const intelligence = await readIntelligenceSource();
-    const rows = intelligence.map((item) => ({ ...item, user_id: ownerId }));
+    intelligenceRows.push(...await readIntelligenceSource());
+    succeeded.push('intelligence_feishu');
+  } catch (error) {
+    if (error instanceof IntelligenceConfigurationError) failures.intelligence_feishu = error.code;
+    else failures.intelligence_feishu = error instanceof FeishuRequestError ? safeFeishuCode(error) : 'intelligence_refresh_failed';
+  }
+  try {
+    intelligenceRows.push(...await readAihotSource({ now: new Date().toISOString(), limit: 50 }));
+    succeeded.push('intelligence_aihot');
+  } catch (error) {
+    failures.intelligence_aihot = error instanceof ExternalIntelligenceError ? error.code : 'external_intelligence_failed';
+  }
+  const uniqueIntelligence = [...new Map(intelligenceRows.map((item) => [String(item.external_id || ''), item])).values()]
+    .filter((item) => item.external_id);
+  try {
+    const rows = uniqueIntelligence.map((item) => ({ ...item, user_id: ownerId }));
     if (rows.length) {
       const { error } = await supabase.from('zos_intelligence_items').upsert(rows, { onConflict: 'user_id,external_id' });
       if (error) throw new Error('intelligence_cache_write_failed');
     }
     counts.intelligence = rows.length;
-    succeeded.push('intelligence');
-  } catch (error) {
-    if (error instanceof IntelligenceConfigurationError) failures.intelligence = error.code;
-    else failures.intelligence = error instanceof FeishuRequestError ? safeFeishuCode(error) : 'intelligence_refresh_failed';
+    if (succeeded.some((source) => source.startsWith('intelligence_'))) succeeded.push('intelligence');
+  } catch {
+    failures.intelligence_cache = 'intelligence_cache_write_failed';
   }
 
   const durationMs = Date.now() - startedAt;

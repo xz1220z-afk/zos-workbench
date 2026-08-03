@@ -55,10 +55,13 @@ test('cache builder rejects non-read-only or incomplete source payloads', () => 
   }, 0), /projects/);
 });
 
-test('server refresh updates both business caches and private intelligence summaries', async () => {
+test('server refresh updates business caches and isolates Feishu from public intelligence failures', async () => {
   const source = await readFile(new URL('../supabase/functions/zos-business-refresh/index.ts', import.meta.url), 'utf8');
   assert.match(source, /readBusinessSources\('all'\)/);
   assert.match(source, /readIntelligenceSource\(\)/);
+  assert.match(source, /readAihotSource\(/);
+  assert.match(source, /intelligence_feishu/);
+  assert.match(source, /intelligence_aihot/);
   assert.match(source, /zos_intelligence_items/);
   assert.match(source, /user_id:\s*ownerId/);
   assert.doesNotMatch(source, /raw_body|article_body|full_content/i);
