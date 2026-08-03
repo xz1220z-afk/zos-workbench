@@ -108,10 +108,17 @@ export function seriesMutationRecords(base = {}, occurrence = {}, scope, patch =
   if (!boundary) throw new Error('calendar_occurrence_required');
   const originalStartAt = validDate(boundary).toISOString();
   if (scope === 'single') {
+    const baseStart = validDate(base.startAt || originalStartAt);
+    const baseEnd = validDate(base.endAt || base.startAt || originalStartAt);
+    const duration = Math.max(base.allDay ? 86_400_000 : 1, baseEnd.getTime() - baseStart.getTime());
     return [{
+      ...base,
+      id: undefined,
       seriesId: base.seriesId || base.id,
       originalStartAt,
       exceptionType: patch.deleted ? 'cancelled' : 'modified',
+      startAt: patch.startAt || originalStartAt,
+      endAt: patch.endAt || new Date(validDate(originalStartAt).getTime() + duration).toISOString(),
       ...patch,
       source: 'user_calendar',
     }];

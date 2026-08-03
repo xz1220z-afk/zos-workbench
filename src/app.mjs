@@ -7,6 +7,8 @@ import { render as renderMobile } from './app/views/mobile-view.mjs';
 import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs';
 import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs';
 import { calendarEventCapabilities, normalizeCalendarDraft } from './app/calendar-event.mjs';
+import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs';
+import { seriesMutationRecords } from './app/calendar-recurrence.mjs';
 import { normalizeTask, groupAgenda } from './app/task-center.mjs';
 import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs';
 import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs';
@@ -51,7 +53,11 @@ export function createCeoOsApplication(config = {}) {
     health: [], gaps: [], briefs: [], conflicts: [], approvals: [], decisions: [], targets: [],
     businessExceptions: [], intelligence: [], intelligenceState: 'loading', intelligenceCompany: 'all',
     intelligenceSources: {}, intelligenceFetchedAt: null,
-    calendarView: 'week', showCountdowns: true, showFocus: false, externalCalendar: [], externalCalendarState: 'pending_configuration', searchQuery: '', searchResults: [],
+    calendarView: 'week', calendarAnchor: now().slice(0, 10), calendarPanel: null,
+    selectedCalendarId: null, calendarDraft: null, calendarMutationScope: 'single',
+    calendarPendingMutation: null, calendarFormError: null, calendarSyncState: 'idle',
+    externalCalendar: [], externalCalendarState: 'pending_configuration', externalCalendarRange: null,
+    showCountdowns: true, showFocus: false, searchQuery: '', searchResults: [],
     taskDrawerOpen: false, taskDraft: null, focusDuration: 25, focusTaskId: null,
     availabilityDate: now().slice(0, 10), merchantQuery: '', selectedMerchantId: null,
     syncStatus: '等待首次同步', loopConnected: false,
@@ -135,7 +141,9 @@ export function createCeoOsApplication(config = {}) {
       mustRead: todayMustRead(intelligence, { now: now() }),
       calendar,
       calendarView: runtime.calendarView,
-      calendarLayout: calendarLayout(calendar, { view: runtime.calendarView, anchor: now() }),
+      calendarAnchor: runtime.calendarAnchor,
+      calendarLayout: calendarLayout(calendar, { view: runtime.calendarView, anchor: runtime.calendarAnchor }),
+      calendarTrash: state.tombstones || [],
       showCountdowns: runtime.showCountdowns,
       showFocus: runtime.showFocus,
       calendarConflicts,
@@ -213,7 +221,7 @@ export function createCeoOsApplication(config = {}) {
       ['lingli', () => operatingRuntime.operatingLoop?.refresh('lingli')],
       ['projects', () => operatingRuntime.operatingLoop?.refresh('projects')],
       ['intelligence', async () => applyIntelligenceResult(await operatingRuntime.loadIntelligence?.({ refresh: true }))],
-      ['calendar', async () => applyExternalCalendarResult(await operatingRuntime.loadExternalCalendar?.())],
+      ['calendar', async () => refreshCalendarRange({ force: true, render: false })],
     ];
     const results = await Promise.all(jobs.map(async ([source, run]) => {
       try {
@@ -444,12 +452,13 @@ export function createCeoOsApplication(config = {}) {
   }
 
   function copyCalendar(id) {
-    const existing = store.load().collections.calendar.find((record) => record.id === id);
-    if (!existing) throw new Error('calendar_local_event_required');
+    const existing = viewModel().calendar.find((record) => record.id === id);
+    if (!existing || !calendarEventCapabilities(existing).copy) throw new Error('calendar_event_required');
     const {
       id: _id, revision: _revision, createdAt: _createdAt, updatedAt: _updatedAt,
       deletedAt: _deletedAt, deviceId: _deviceId, seriesId: _seriesId,
-      originalStartAt: _originalStartAt, exceptionType: _exceptionType, ...copy
+      originalStartAt: _originalStartAt, exceptionType: _exceptionType,
+      recurrenceRule: _recurrenceRule, source: _source, sourceUrl: _sourceUrl, ...copy
     } = existing;
     return saveCalendar({ ...copy, title: `${existing.title}（副本）` });
   }
@@ -457,7 +466,114 @@ export function createCeoOsApplication(config = {}) {
   function moveCalendar(id, patch = {}) {
     const existing = store.load().collections.calendar.find((record) => record.id === id);
     if (!existing || !calendarEventCapabilities(existing).drag) throw new Error('calendar_local_event_required');
-    return saveCalendar({ id, ...patch });
+    const duration = Math.max(0, new Date(existing.endAt) - new Date(existing.startAt));
+    const endAt = patch.endAt || (patch.startAt
+      ? new Date(new Date(patch.startAt).getTime() + duration).toISOString()
+      : existing.endAt);
+    return saveCalendar({ id, ...patch, endAt });
+  }
+
+  function selectedCalendarEvent(id = runtime.selectedCalendarId) {
+    return viewModel().calendar.find((record) => record.id === id) || null;
+  }
+
+  function selectCalendar(id) {
+    if (!selectedCalendarEvent(id)) throw new Error('calendar_event_required');
+    runtime.selectedCalendarId = id;
+    runtime.calendarPanel = 'detail';
+    renderAll();
+  }
+
+  function openCalendarEditor(id = null) {
+    const event = id ? selectedCalendarEvent(id) : null;
+    if (event && !calendarEventCapabilities(event).edit) throw new Error('calendar_local_event_required');
+    runtime.selectedCalendarId = id;
+    runtime.calendarDraft = event ? { ...event } : {
+      startAt: `${runtime.calendarAnchor}T09:00:00+08:00`,
+      endAt: `${runtime.calendarAnchor}T10:00:00+08:00`,
+      company: 'ceo', privacy: 'work', reminders: [],
+    };
+    runtime.calendarFormError = null;
+    runtime.calendarPanel = 'editor';
+    renderAll();
+  }
+
+  function closeCalendarPanel() {
+    runtime.calendarPanel = null;
+    runtime.calendarDraft = null;
+    runtime.selectedCalendarId = null;
+    runtime.calendarPendingMutation = null;
+    runtime.calendarFormError = null;
+    renderAll();
+  }
+
+  function requestCalendarMutation(id, action) {
+    const event = selectedCalendarEvent(id);
+    if (!event || !calendarEventCapabilities(event)[action === 'delete' ? 'remove' : 'edit']) {
+      throw new Error('calendar_local_event_required');
+    }
+    const recurring = Boolean(event.recurrenceRule || event.originalStartAt || event.seriesId);
+    if (!recurring) {
+      if (action === 'delete') return deleteCalendar(id);
+      openCalendarEditor(id);
+      return event;
+    }
+    runtime.calendarPendingMutation = { id, action };
+    runtime.calendarPanel = 'series';
+    renderAll();
+    return event;
+  }
+
+  function seriesContext(id) {
+    const occurrence = selectedCalendarEvent(id);
+    const baseId = occurrence?.seriesId || occurrence?.id;
+    const base = store.load().collections.calendar.find((record) => record.id === baseId);
+    if (!occurrence || !base) throw new Error('calendar_series_required');
+    return { occurrence, base };
+  }
+
+  function deleteRecurringCalendar(id, scope) {
+    const { occurrence, base } = seriesContext(id);
+    if (scope === 'series') return deleteCalendar(base.id);
+    const records = seriesMutationRecords(base, occurrence, 'future', {});
+    if (scope === 'future') return saveCalendar(records[0]);
+    if (scope !== 'single') throw new Error('calendar_series_scope_invalid');
+    return saveCalendar(seriesMutationRecords(base, occurrence, 'single', { deleted: true })[0]);
+  }
+
+  function applyCalendarSeriesScope(scope) {
+    const pending = runtime.calendarPendingMutation;
+    if (!pending) throw new Error('calendar_series_action_required');
+    if (!['single', 'future', 'series'].includes(scope)) throw new Error('calendar_series_scope_invalid');
+    if (pending.action === 'delete') {
+      const result = deleteRecurringCalendar(pending.id, scope);
+      closeCalendarPanel();
+      return result;
+    }
+    const { occurrence, base } = seriesContext(pending.id);
+    runtime.calendarMutationScope = scope;
+    runtime.calendarDraft = scope === 'series' ? { ...base } : { ...occurrence };
+    runtime.calendarPanel = 'editor';
+    renderAll();
+    return runtime.calendarDraft;
+  }
+
+  function saveCalendarFromPanel(input = {}) {
+    const pending = runtime.calendarPendingMutation;
+    let saved;
+    if (pending && runtime.calendarMutationScope !== 'series') {
+      const { occurrence, base } = seriesContext(pending.id);
+      const { id: _id, ...patch } = input;
+      const records = seriesMutationRecords(base, occurrence, runtime.calendarMutationScope, patch);
+      saved = records.map((record) => saveCalendar(record)).at(-1);
+    } else if (pending && runtime.calendarMutationScope === 'series') {
+      const { base } = seriesContext(pending.id);
+      saved = saveCalendar({ ...input, id: base.id });
+    } else {
+      saved = saveCalendar(input);
+    }
+    closeCalendarPanel();
+    return saved;
   }
 
   function generateReview(type) {
@@ -508,6 +624,18 @@ export function createCeoOsApplication(config = {}) {
       const focusDuration = event.target?.closest?.('[data-focus-duration]');
       const countdownCapture = event.target?.closest?.('[data-countdown-capture]');
       const calendarLayer = event.target?.closest?.('[data-calendar-layer]');
+      const calendarNav = event.target?.closest?.('[data-calendar-nav]');
+      const calendarToday = event.target?.closest?.('[data-calendar-today]');
+      const calendarSync = event.target?.closest?.('[data-calendar-sync]');
+      const calendarTrash = event.target?.closest?.('[data-calendar-trash]');
+      const calendarSelect = event.target?.closest?.('[data-calendar-select]');
+      const calendarEdit = event.target?.closest?.('[data-calendar-edit]');
+      const calendarDelete = event.target?.closest?.('[data-calendar-delete]');
+      const calendarCopy = event.target?.closest?.('[data-calendar-copy]');
+      const calendarRestore = event.target?.closest?.('[data-calendar-restore]');
+      const calendarClose = event.target?.closest?.('[data-calendar-close]');
+      const calendarReschedule = event.target?.closest?.('[data-calendar-reschedule]');
+      const calendarSeriesScope = event.target?.closest?.('[data-calendar-series-scope]');
       const merchantSelect = event.target?.closest?.('[data-merchant-select]');
       try {
         if (previewButton) await previewDecision(previewButton.dataset.previewDecision);
@@ -532,8 +660,33 @@ export function createCeoOsApplication(config = {}) {
           runtime.intelligenceCompany = intelligenceCompany.dataset.intelligenceCompany || 'all';
           renderAll();
         } else if (calendarView) {
-          runtime.calendarView = ['day', 'week', 'month', 'list'].includes(calendarView.dataset.calendarView) ? calendarView.dataset.calendarView : 'week';
-          renderAll();
+          setCalendarView(calendarView.dataset.calendarView);
+          await refreshCalendarRange();
+        } else if (calendarNav) {
+          await navigateCalendar(calendarNav.dataset.calendarNav === 'prev' ? -1 : 1);
+        } else if (calendarToday) {
+          await goToCalendarToday();
+        } else if (calendarSync) {
+          await refreshCalendarRange({ force: true });
+        } else if (calendarTrash) {
+          runtime.calendarPanel = 'trash'; renderAll();
+        } else if (calendarSelect) {
+          selectCalendar(calendarSelect.dataset.calendarSelect);
+        } else if (calendarEdit) {
+          requestCalendarMutation(calendarEdit.dataset.calendarEdit, 'edit');
+        } else if (calendarDelete) {
+          requestCalendarMutation(calendarDelete.dataset.calendarDelete, 'delete');
+        } else if (calendarCopy) {
+          copyCalendar(calendarCopy.dataset.calendarCopy);
+          closeCalendarPanel();
+        } else if (calendarRestore) {
+          restoreCalendar(calendarRestore.dataset.calendarRestore);
+        } else if (calendarClose) {
+          closeCalendarPanel();
+        } else if (calendarReschedule) {
+          requestCalendarMutation(calendarReschedule.dataset.calendarReschedule, 'edit');
+        } else if (calendarSeriesScope) {
+          applyCalendarSeriesScope(calendarSeriesScope.dataset.calendarSeriesScope);
         } else if (calendarLayer) {
           if (calendarLayer.dataset.calendarLayer === 'countdown') runtime.showCountdowns = !runtime.showCountdowns;
           if (calendarLayer.dataset.calendarLayer === 'focus') runtime.showFocus = !runtime.showFocus;
@@ -544,12 +697,7 @@ export function createCeoOsApplication(config = {}) {
           const date = title && ask?.('日期（YYYY-MM-DD）', now().slice(0, 10));
           if (title && date) saveCountdown({ title, date });
         } else if (calendarCapture) {
-          const ask = config.prompt || globalThis.prompt;
-          const title = ask?.('日程标题');
-          if (String(title || '').trim()) {
-            const startAt = ask?.('开始时间（YYYY-MM-DD HH:mm）', `${now().slice(0, 10)} 09:00`);
-            captureCalendar({ title, startAt });
-          }
+          openCalendarEditor();
         } else if (lifeCapture) {
           const title = (config.prompt || globalThis.prompt)?.('记录一条生活事项');
           if (String(title || '').trim()) store.saveEntity('life', { title: String(title).trim(), area: 'review', status: 'open', privacy: 'private' });
@@ -602,6 +750,34 @@ export function createCeoOsApplication(config = {}) {
         });
         return;
       }
+      if (event.target?.matches?.('[data-calendar-form]')) {
+        event.preventDefault();
+        const data = new FormData(event.target);
+        const startAt = data.get('startAt');
+        const frequency = data.get('recurrenceFrequency');
+        const startDate = new Date(startAt);
+        const recurrenceRule = frequency && frequency !== 'none' ? {
+          frequency,
+          interval: Math.max(1, Number(data.get('recurrenceInterval')) || 1),
+          ...(frequency === 'weekly' ? { byWeekdays: [startDate.getDay() || 7] } : {}),
+        } : null;
+        try {
+          saveCalendarFromPanel({
+            id: data.get('id') || undefined,
+            title: data.get('title'), startAt, endAt: data.get('endAt'),
+            allDay: data.get('allDay') === 'on', company: data.get('company'),
+            privacy: data.get('privacy'), notes: data.get('notes'), recurrenceRule,
+            reminders: String(data.get('reminders') || '').split(/[、,，]/).map((value) => Number(value.trim())).filter(Number.isFinite),
+          });
+        } catch (error) {
+          runtime.calendarFormError = {
+            calendar_title_required: '请填写日程标题', calendar_time_invalid: '请填写有效时间',
+            calendar_end_before_start: '结束时间不能早于开始时间',
+          }[error?.message] || '日程未保存，请检查填写内容';
+          renderAll();
+        }
+        return;
+      }
       if (event.target?.matches?.('[data-availability-form]')) {
         event.preventDefault();
         queryHuahuoAvailability({ date: new FormData(event.target).get('date') });
@@ -621,11 +797,38 @@ export function createCeoOsApplication(config = {}) {
       } catch { runtime.syncStatus = '目标保存失败，请检查数值和登录状态'; renderAll(); }
     });
     document.addEventListener('change', (event) => {
-      if (!event.target?.matches?.('[data-focus-task]')) return;
-      runtime.focusTaskId = event.target.value || null;
-      const active = viewModel().focusSession;
-      if (active?.state === 'planned') store.saveEntity('focus_sessions', { ...active, taskId: runtime.focusTaskId });
-      renderAll();
+      if (event.target?.matches?.('[data-calendar-anchor]')) {
+        runtime.calendarAnchor = event.target.value || now().slice(0, 10);
+        runtime.calendarPanel = null;
+        renderAll();
+        refreshCalendarRange().catch(() => {});
+        return;
+      }
+      if (event.target?.matches?.('[data-focus-task]')) {
+        runtime.focusTaskId = event.target.value || null;
+        const active = viewModel().focusSession;
+        if (active?.state === 'planned') store.saveEntity('focus_sessions', { ...active, taskId: runtime.focusTaskId });
+        renderAll();
+      }
+    });
+    document.addEventListener('dragstart', (event) => {
+      const card = event.target?.closest?.('[data-calendar-event][draggable="true"]');
+      if (card && event.dataTransfer) event.dataTransfer.setData('text/calendar-id', card.dataset.calendarEvent);
+    });
+    document.addEventListener('dragover', (event) => {
+      if (event.target?.closest?.('[data-calendar-drop-date]')) event.preventDefault();
+    });
+    document.addEventListener('drop', (event) => {
+      const target = event.target?.closest?.('[data-calendar-drop-date]');
+      const id = event.dataTransfer?.getData?.('text/calendar-id');
+      if (!target || !id) return;
+      event.preventDefault();
+      const existing = store.load().collections.calendar.find((record) => record.id === id);
+      if (!existing) return;
+      const start = new Date(existing.startAt);
+      const [year, month, day] = target.dataset.calendarDropDate.split('-').map(Number);
+      start.setFullYear(year, month - 1, day);
+      try { moveCalendar(id, { startAt: start.toISOString() }); } catch { /* External and recurring rows are not draggable. */ }
     });
   }
 
@@ -671,6 +874,54 @@ export function createCeoOsApplication(config = {}) {
   function applyExternalCalendarResult(result) {
     runtime.externalCalendar = Array.isArray(result) ? result : (result?.items || []);
     runtime.externalCalendarState = Array.isArray(result) ? 'synced' : (result?.state || 'pending_configuration');
+  }
+
+  async function refreshCalendarRange({ force = false, render = true } = {}) {
+    const range = calendarVisibleRange({ view: runtime.calendarView, anchor: runtime.calendarAnchor });
+    const key = calendarRangeKey(range);
+    if (!force && runtime.externalCalendarRange === key) return runtime.externalCalendar;
+    if (!operatingRuntime?.loadExternalCalendar) {
+      runtime.calendarSyncState = 'authentication_required';
+      if (render) renderAll();
+      return runtime.externalCalendar;
+    }
+    runtime.calendarSyncState = 'loading';
+    if (render) renderAll();
+    try {
+      const result = await operatingRuntime.loadExternalCalendar({ start: range.queryStart, end: range.queryEnd });
+      applyExternalCalendarResult(result || { items: [], state: 'pending_configuration' });
+      runtime.externalCalendarRange = key;
+      runtime.calendarSyncState = 'synced';
+      return runtime.externalCalendar;
+    } catch (error) {
+      runtime.calendarSyncState = safeRefreshCode(error);
+      throw error;
+    } finally {
+      if (render) renderAll();
+    }
+  }
+
+  function setCalendarView(view) {
+    runtime.calendarView = ['day', 'week', 'month', 'list'].includes(view) ? view : 'week';
+    runtime.calendarPanel = null;
+    renderAll();
+    return runtime.calendarView;
+  }
+
+  async function navigateCalendar(direction) {
+    runtime.calendarAnchor = moveCalendarAnchor(runtime.calendarAnchor, runtime.calendarView, Number(direction));
+    runtime.calendarPanel = null;
+    renderAll();
+    await refreshCalendarRange();
+    return runtime.calendarAnchor;
+  }
+
+  async function goToCalendarToday() {
+    runtime.calendarAnchor = now().slice(0, 10);
+    runtime.calendarPanel = null;
+    renderAll();
+    await refreshCalendarRange();
+    return runtime.calendarAnchor;
   }
 
   async function initializeRemote() {
@@ -760,6 +1011,8 @@ export function createCeoOsApplication(config = {}) {
     start, stop, whenIdle: () => startupWork, render: renderAll, store, runtime, viewModel,
     refreshSource, refreshAllSources, notifyCurrentReminders, confirmTarget, previewDecision, executeApproval,
     quickCapture, captureCalendar, saveCalendar, deleteCalendar, restoreCalendar, copyCalendar, moveCalendar,
+    setCalendarView, navigateCalendar, goToCalendarToday, refreshCalendarRange,
+    selectCalendar, openCalendarEditor, closeCalendarPanel, requestCalendarMutation, applyCalendarSeriesScope,
     saveTask, convertIntelligenceToTask, saveCountdown,
     createFocus, transitionCurrentFocus, queryMerchant, queryHuahuoAvailability,
     openTaskEditor, closeTaskEditor, generateReview, generateAgentDraft,

@@ -80,7 +80,7 @@ function renderEditor(viewModel) {
       <div class="calendar-form-row"><label>重复<select name="recurrenceFrequency">${option('none', frequency, '不重复')}${option('daily', frequency, '每天')}${option('weekly', frequency, '每周')}${option('monthly', frequency, '每月')}${option('yearly', frequency, '每年')}</select></label><label>间隔<input type="number" name="recurrenceInterval" min="1" max="365" value="${escapeHtml(draft.recurrenceRule?.interval || 1)}"></label></div>
       <label>提醒（分钟前，逗号分隔）<input name="reminders" value="${escapeHtml((draft.reminders || []).join(','))}" placeholder="15,60"></label>
       <label>备注<textarea name="notes" rows="4" maxlength="2000">${escapeHtml(draft.notes || '')}</textarea></label>
-      <p class="calendar-form-error" data-calendar-form-error role="alert"></p>
+      <p class="calendar-form-error" data-calendar-form-error role="alert">${escapeHtml(viewModel.calendarFormError || '')}</p>
       <footer><button type="button" data-calendar-close>取消</button><button class="primary" type="submit">保存日程</button></footer>
     </form>
   </aside>`;
@@ -91,10 +91,16 @@ function renderTrash(viewModel) {
   return `<aside class="calendar-drawer" data-calendar-panel="trash" aria-label="日程回收站"><header><h2>回收站</h2><button data-calendar-close aria-label="关闭">×</button></header><div class="calendar-trash-list">${rows.length ? rows.map((row) => `<article><div><strong>${escapeHtml(row.title || '未命名日程')}</strong><small>${escapeHtml(row.deletedAt || '')}</small></div><button data-calendar-restore="${escapeHtml(row.id)}">恢复</button></article>`).join('') : '<p>回收站为空</p>'}</div></aside>`;
 }
 
+function renderSeriesScope(viewModel) {
+  const action = viewModel.calendarPendingMutation?.action === 'delete' ? '删除' : '编辑';
+  return `<aside class="calendar-drawer calendar-scope-dialog" data-calendar-panel="series" aria-label="重复日程范围"><header><h2>${action}重复日程</h2><button data-calendar-close aria-label="关闭">×</button></header><p>请选择本次操作影响的范围：</p><div class="calendar-scope-actions"><button data-calendar-series-scope="single">仅此日程</button><button data-calendar-series-scope="future">本次及以后</button><button data-calendar-series-scope="series">整个系列</button></div></aside>`;
+}
+
 function renderCalendarPanel(viewModel) {
   if (viewModel.calendarPanel === 'detail') return renderDetail(viewModel);
   if (viewModel.calendarPanel === 'editor') return renderEditor(viewModel);
   if (viewModel.calendarPanel === 'trash') return renderTrash(viewModel);
+  if (viewModel.calendarPanel === 'series') return renderSeriesScope(viewModel);
   return '';
 }
 

@@ -83,7 +83,7 @@ export function calendarEventCapabilities(event = {}) {
   return {
     edit: local,
     remove: local,
-    drag: local,
+    drag: local && !event.recurrenceRule && !event.seriesId && !event.originalStartAt,
     openSource: !local && Boolean(safeSourceUrl(event.sourceUrl)),
     copy: true,
   };

@@ -56,3 +56,13 @@ test('external event detail is read-only and opens only a safe source URL', () =
   assert.doesNotMatch(html, /data-calendar-edit/);
   assert.match(html, /data-calendar-open-source/);
 });
+
+test('recurring event mutations require a visible scope choice', () => {
+  const html = renderCalendarHtml({
+    calendar: [], calendarView: 'week', calendarAnchor: '2026-08-03',
+    calendarPanel: 'series', calendarPendingMutation: { id: 'series-1', action: 'delete' },
+  });
+  for (const scope of ['single', 'future', 'series']) {
+    assert.match(html, new RegExp(`data-calendar-series-scope="${scope}"`));
+  }
+});

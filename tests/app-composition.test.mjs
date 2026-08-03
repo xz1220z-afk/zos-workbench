@@ -267,6 +267,38 @@ test('application calendar actions edit delete restore copy and move only local 
   assert.throws(() => app.deleteCalendar('external-event'), /calendar_local_event_required/);
 });
 
+test('calendar navigation changes anchors and requests only the visible range', async () => {
+  const calls = [];
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {}, visibilityState: 'visible' },
+    storage: { getItem: () => 'device-1', setItem() {} },
+    store: fakeStore(),
+    now: () => '2026-08-03T08:00:00.000Z',
+    operatingRuntime: {
+      async loadExternalCalendar(range) { calls.push(range); return { items: [], state: 'synced' }; },
+    },
+  });
+  app.setCalendarView('month');
+  await app.navigateCalendar(1);
+  assert.equal(app.runtime.calendarAnchor, '2026-09-03');
+  assert.equal(calls.at(-1).start, '2026-08-31T00:00:00+08:00');
+  assert.equal(calls.at(-1).end, '2026-10-12T00:00:00+08:00');
+});
+
+test('external events cannot be dragged or deleted through public actions', () => {
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} },
+    storage: { getItem: () => 'device-1', setItem() {} }, store: fakeStore(),
+    createOperatingRuntime: false,
+  });
+  app.runtime.externalCalendar = [{
+    id: 'feishu:event-1', source: 'feishu_calendar', title: '飞书会议',
+    startAt: '2026-08-04T02:00:00.000Z', endAt: '2026-08-04T03:00:00.000Z',
+  }];
+  assert.throws(() => app.deleteCalendar('feishu:event-1'), /calendar_local_event_required/);
+  assert.throws(() => app.moveCalendar('feishu:event-1', { startAt: '2026-08-05T10:00' }), /calendar_local_event_required/);
+});
+
 test('company agent output is stored only as an Inbox review draft', async () => {
   const store = fakeStore();
   const app = createCeoOsApplication({
