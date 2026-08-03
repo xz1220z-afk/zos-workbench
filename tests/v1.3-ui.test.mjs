@@ -25,7 +25,7 @@ test('desktop and mobile navigation expose the approved CEO OS information archi
 
 test('HTML is a modular shell with external design and application entrypoints', () => {
   assert.match(indexHtml, /<link rel="stylesheet" href="assets\/app\.css"\s*\/?>/);
-  assert.match(indexHtml, /<script type="module" src="src\/app\.mjs"><\/script>/);
+  assert.match(indexHtml, /<script type="module" src="src\/app\.mjs\?v=1\.7\.4"><\/script>/);
   assert.doesNotMatch(indexHtml, /<style>/);
   assert.doesNotMatch(indexHtml, /<script type="module">[\s\S]*?\/functions\/v1\/zos-business-data/);
 });
