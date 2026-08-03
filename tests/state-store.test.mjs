@@ -13,6 +13,20 @@ function memoryStorage(seed = {}) {
   };
 }
 
+function quotaOnNewSchemaStorage(seed = {}) {
+  const storage = memoryStorage(seed);
+  const setItem = storage.setItem.bind(storage);
+  storage.setItem = (key, value) => {
+    if (key === 'zos_ceo_os_state_v1_7' || key === 'zos_ceo_os_base_revisions_v1_7') {
+      const error = new Error(`quota exceeded for ${key}`);
+      error.name = 'QuotaExceededError';
+      throw error;
+    }
+    setItem(key, value);
+  };
+  return storage;
+}
+
 const oldTask = {
   id: 'task-existing', title: '保留旧任务', revision: 7,
   createdAt: '2026-07-30T01:00:00.000Z', updatedAt: '2026-08-01T01:00:00.000Z',
@@ -118,4 +132,30 @@ test('v1.3 private state migrates through v1.7 without losing records or base re
   assert.deepEqual(state.collections.focus_sessions, []);
   assert.deepEqual(state.collections.countdowns, []);
   assert.deepEqual(store.loadBaseRevisions(), { 'tasks:task-existing': 7 });
+  store.saveBaseRevisions({ 'tasks:task-existing': 8 });
+  assert.deepEqual(JSON.parse(storage.getItem('zos_ceo_os_base_revisions_v1_7')), { 'tasks:task-existing': 8 });
+});
+
+test('quota-limited migration keeps the previous snapshot writable and survives reload', () => {
+  const storage = quotaOnNewSchemaStorage({
+    zos_ceo_os_state_v1_4: JSON.stringify({
+      schemaVersion: '1.4', deviceId: 'device-old', tombstones: [],
+      collections: { tasks: [oldTask], decisions: [], targets: [] },
+    }),
+    zos_ceo_os_base_revisions_v1_4: JSON.stringify({ 'tasks:task-existing': 7 }),
+  });
+  const options = {
+    storage, now: () => '2026-08-03T00:00:00.000Z',
+    deviceId: 'device-new', createId: () => 'new-id',
+  };
+
+  const first = createStateStore(options);
+  first.saveEntity('tasks', { id: 'task-new', title: '新增任务' });
+  first.saveBaseRevisions({ 'tasks:task-existing': 7, 'tasks:task-new': 1 });
+
+  const second = createStateStore(options);
+  assert.deepEqual(second.load().collections.tasks.map((item) => item.id).sort(), ['task-existing', 'task-new']);
+  assert.deepEqual(second.loadBaseRevisions(), { 'tasks:task-existing': 7, 'tasks:task-new': 1 });
+  assert.equal(storage.getItem('zos_ceo_os_state_v1_7'), null);
+  assert.match(storage.getItem('zos_ceo_os_state_v1_4'), /task-new/);
 });

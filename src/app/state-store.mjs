@@ -88,17 +88,29 @@ export function createStateStore(config = {}) {
     createId: config.createId || (() => globalThis.crypto.randomUUID()),
   };
   const listeners = new Set();
+  let stateStorageKey = STATE_KEY;
+  let baseRevisionsStorageKey = BASE_REVISIONS_KEY;
 
   function persist(state) {
     const next = normalizeState(state, context);
-    storage.setItem(STATE_KEY, JSON.stringify(next));
+    storage.setItem(stateStorageKey, JSON.stringify(next));
     return next;
   }
 
   let state = (() => {
-    const current = parse(storage, STATE_KEY, null)
-      || PREVIOUS_STATE_KEYS.map((key) => parse(storage, key, null)).find(Boolean);
-    return persist(current ? normalizeState(current, context) : migrateLegacy(storage, context));
+    const candidates = [STATE_KEY, ...PREVIOUS_STATE_KEYS]
+      .map((key) => ({ key, value: parse(storage, key, null) }));
+    const current = candidates.find((candidate) => candidate.value);
+    const next = current ? normalizeState(current.value, context) : migrateLegacy(storage, context);
+    try {
+      return persist(next);
+    } catch (error) {
+      if (error?.name !== 'QuotaExceededError' || !current || current.key === STATE_KEY) throw error;
+      stateStorageKey = current.key;
+      baseRevisionsStorageKey = PREVIOUS_BASE_REVISIONS_KEYS[PREVIOUS_STATE_KEYS.indexOf(current.key)]
+        || BASE_REVISIONS_KEY;
+      return persist(next);
+    }
   })();
 
   function publish() {
@@ -158,16 +170,26 @@ export function createStateStore(config = {}) {
       return () => listeners.delete(listener);
     },
     loadBaseRevisions() {
-      const value = parse(storage, BASE_REVISIONS_KEY, null)
-        || PREVIOUS_BASE_REVISIONS_KEYS.map((key) => parse(storage, key, null)).find(Boolean)
-        || {};
+      const current = [BASE_REVISIONS_KEY, ...PREVIOUS_BASE_REVISIONS_KEYS]
+        .map((key) => ({ key, value: parse(storage, key, null) }))
+        .find((candidate) => candidate.value);
+      const value = current?.value || {};
       return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
     },
     saveBaseRevisions(revisions) {
       const safe = Object.fromEntries(
         Object.entries(revisions || {}).filter(([, revision]) => Number.isInteger(revision) && revision > 0),
       );
-      storage.setItem(BASE_REVISIONS_KEY, JSON.stringify(safe));
+      const serialized = JSON.stringify(safe);
+      try {
+        storage.setItem(baseRevisionsStorageKey, serialized);
+      } catch (error) {
+        if (error?.name !== 'QuotaExceededError' || baseRevisionsStorageKey !== BASE_REVISIONS_KEY) throw error;
+        const fallbackKey = PREVIOUS_BASE_REVISIONS_KEYS.find((key) => storage.getItem(key) != null);
+        if (!fallbackKey) throw error;
+        baseRevisionsStorageKey = fallbackKey;
+        storage.setItem(baseRevisionsStorageKey, serialized);
+      }
     },
     needsFullPull(recordKeys = []) {
       const bases = this.loadBaseRevisions();
