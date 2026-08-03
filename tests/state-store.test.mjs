@@ -27,6 +27,18 @@ function quotaOnNewSchemaStorage(seed = {}) {
   return storage;
 }
 
+function quotaOnEveryStateWriteStorage(seed = {}) {
+  const storage = memoryStorage(seed);
+  storage.setItem = (key) => {
+    if (key.startsWith('zos_ceo_os_state_')) {
+      const error = new Error(`quota exceeded for ${key}`);
+      error.name = 'QuotaExceededError';
+      throw error;
+    }
+  };
+  return storage;
+}
+
 const oldTask = {
   id: 'task-existing', title: '保留旧任务', revision: 7,
   createdAt: '2026-07-30T01:00:00.000Z', updatedAt: '2026-08-01T01:00:00.000Z',
@@ -158,4 +170,21 @@ test('quota-limited migration keeps the previous snapshot writable and survives 
   assert.deepEqual(second.loadBaseRevisions(), { 'tasks:task-existing': 7, 'tasks:task-new': 1 });
   assert.equal(storage.getItem('zos_ceo_os_state_v1_7'), null);
   assert.match(storage.getItem('zos_ceo_os_state_v1_4'), /task-new/);
+});
+
+test('startup remains readable when both new-key and in-place migration writes exceed quota', () => {
+  const original = JSON.stringify({
+    schemaVersion: '1.4', deviceId: 'device-old', tombstones: [],
+    collections: { tasks: [oldTask], decisions: [], targets: [] },
+  });
+  const storage = quotaOnEveryStateWriteStorage({ zos_ceo_os_state_v1_4: original });
+
+  const store = createStateStore({
+    storage, now: () => '2026-08-03T00:00:00.000Z',
+    deviceId: 'device-new', createId: () => 'new-id',
+  });
+
+  assert.equal(store.load().schemaVersion, '1.7');
+  assert.equal(store.load().collections.tasks[0].title, '保留旧任务');
+  assert.equal(storage.getItem('zos_ceo_os_state_v1_4'), original);
 });

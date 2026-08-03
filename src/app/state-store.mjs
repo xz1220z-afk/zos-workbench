@@ -109,7 +109,12 @@ export function createStateStore(config = {}) {
       stateStorageKey = current.key;
       baseRevisionsStorageKey = PREVIOUS_BASE_REVISIONS_KEYS[PREVIOUS_STATE_KEYS.indexOf(current.key)]
         || BASE_REVISIONS_KEY;
-      return persist(next);
+      try {
+        return persist(next);
+      } catch (fallbackError) {
+        if (fallbackError?.name !== 'QuotaExceededError') throw fallbackError;
+        return next;
+      }
     }
   })();
 
