@@ -51,5 +51,10 @@
 
 ## 生产部署回读
 
-- 待执行：Supabase migration 007、受影响 Edge Functions、GitHub Pages v1.7.0。
-- 待回读：生产静态资产版本、函数状态、未登录 401 边界、真实登录态只读数据与第二设备 UAT。
+- Supabase migration 007 已通过官方 Management API 的事务 SQL 通道执行；回读约束包含 `focus_sessions`、`countdowns`，`relrowsecurity=true`，四条策略仍仅允许 `authenticated` 用户操作自己的 `user_id`。
+- `zos-business-data` 已升级至 v24、状态 ACTIVE、`verify_jwt=true`；未携带认证请求返回 401。
+- `zos-business-refresh` 已升级至 v10、状态 ACTIVE、`verify_jwt=false`，但函数自己的 cron secret 闸门在无密钥请求时返回 403。
+- GitHub `main` 已快进至 `f9dea8b`；CI 与 Pages deployment 均完成且 conclusion 为 success。
+- 正式地址的 `index.html`、`src/app.mjs`、`assets/app.css`、`manifest.webmanifest`、`sw.js` SHA-256 与发布树逐文件一致；线上版本为 v1.7.0，service worker cache 为 `zos-workbench-v1.7.0`。
+- 正式浏览器已回读桌面任务中心、独立情报中心与 390×844 手机布局；页面无横向溢出，手机五入口正常。
+- 待真人会话 UAT：当前内置浏览器没有 Supabase 登录会话，Atlas 又处于 macOS 锁屏状态，因此本次不宣称已完成真实登录态业务数据与第二设备回读。解锁并保留登录后，只需点一次“全部刷新”完成该项，不需要再次部署。
