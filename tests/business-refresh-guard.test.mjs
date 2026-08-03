@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 import {
   authorizeInternalRefresh,
+  buildBusinessCacheRow,
   buildBusinessCacheRows,
 } from '../supabase/functions/_shared/internal-refresh.mjs';
 
@@ -56,9 +57,29 @@ test('cache builder rejects non-read-only or incomplete source payloads', () => 
   }, 0), /projects/);
 });
 
+test('single-source cache rows let the scheduler isolate company failures', () => {
+  const row = buildBusinessCacheRow('owner-1', 'lingli', {
+    lingli: { summary: { received: 3 }, records: [], contractVersion: '1.6' },
+    meta: { mode: 'read_only' },
+  }, 1_754_121_600_000);
+
+  assert.equal(row.user_id, 'owner-1');
+  assert.equal(row.source, 'lingli');
+  assert.equal(row.payload.summary.received, 3);
+  assert.equal(row.payload.mode, 'read_only');
+  assert.equal(row.expires_at, '2025-08-02T08:30:00.000Z');
+  assert.throws(() => buildBusinessCacheRow('owner-1', 'unknown', {
+    unknown: {}, meta: { mode: 'read_only' },
+  }, 0), /unsupported source/);
+});
+
 test('server refresh updates business caches and isolates Feishu from public intelligence failures', async () => {
   const source = await readFile(new URL('../supabase/functions/zos-business-refresh/index.ts', import.meta.url), 'utf8');
-  assert.match(source, /readBusinessSources\('all'\)/);
+  assert.doesNotMatch(source, /readBusinessSources\('all'\)/);
+  for (const businessSource of ['wanjia', 'huahuo', 'lingli', 'projects']) {
+    assert.match(source, new RegExp(`'${businessSource}'`));
+  }
+  assert.match(source, /buildBusinessCacheRow/);
   assert.match(source, /readIntelligenceSource\(\)/);
   assert.match(source, /readAihotSource\(/);
   assert.match(source, /intelligence_feishu/);

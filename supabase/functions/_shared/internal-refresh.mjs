@@ -32,13 +32,21 @@ export function buildBusinessCacheRows(ownerId, payload, nowMs = Date.now()) {
   for (const source of sources) {
     if (!payload?.[source] || typeof payload[source] !== 'object') throw new Error(`${source} payload is required`);
   }
+  return sources.map((source) => buildBusinessCacheRow(ownerId, source, payload, nowMs));
+}
+
+export function buildBusinessCacheRow(ownerId, source, payload, nowMs = Date.now()) {
+  if (!ownerId) throw new Error('ownerId is required');
+  if (!['wanjia', 'huahuo', 'lingli', 'projects'].includes(source)) throw new Error('unsupported source');
+  if (payload?.meta?.mode !== 'read_only') throw new Error('business payload must be read_only');
+  if (!payload?.[source] || typeof payload[source] !== 'object') throw new Error(`${source} payload is required`);
   const fetchedAt = new Date(nowMs).toISOString();
   const expiresAt = new Date(nowMs + 30 * 60_000).toISOString();
-  return sources.map((source) => ({
+  return {
     user_id: String(ownerId),
     source,
     payload: { ...structuredClone(payload[source]), mode: 'read_only' },
     fetched_at: fetchedAt,
     expires_at: expiresAt,
-  }));
+  };
 }

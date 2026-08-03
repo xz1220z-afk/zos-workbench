@@ -6,7 +6,7 @@ import { ExternalIntelligenceError, readAihotSource } from '../_shared/external-
 import {
   InternalRefreshError,
   authorizeInternalRefresh,
-  buildBusinessCacheRows,
+  buildBusinessCacheRow,
 } from '../_shared/internal-refresh.mjs';
 
 const HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
@@ -38,16 +38,20 @@ Deno.serve(async (req) => {
   const failures: Record<string, string> = {};
   let counts: Record<string, number> = {};
 
-  try {
-    const payload = await readBusinessSources('all');
-    const rows = buildBusinessCacheRows(ownerId, payload, Date.now());
-    const { error } = await supabase.from('zos_business_cache').upsert(rows, { onConflict: 'user_id,source' });
-    if (error) throw new Error('cache_write_failed');
-    counts = Object.fromEntries(rows.map((row) => [row.source,
-      row.payload.health?.recordCount ?? row.payload.projects?.length ?? row.payload.records?.records?.length ?? 0]));
-    succeeded.push(...rows.map((row) => row.source));
-  } catch (error) {
-    failures.business = error instanceof FeishuRequestError ? safeFeishuCode(error) : 'business_refresh_failed';
+  for (const source of ['wanjia', 'huahuo', 'lingli', 'projects'] as const) {
+    try {
+      const payload = await readBusinessSources(source);
+      const row = buildBusinessCacheRow(ownerId, source, payload, Date.now());
+      const { error } = await supabase.from('zos_business_cache').upsert(row, { onConflict: 'user_id,source' });
+      if (error) throw new Error('cache_write_failed');
+      counts[source] = row.payload.health?.recordCount
+        ?? row.payload.projects?.length
+        ?? row.payload.records?.records?.length
+        ?? 0;
+      succeeded.push(source);
+    } catch (error) {
+      failures[source] = error instanceof FeishuRequestError ? safeFeishuCode(error) : 'business_refresh_failed';
+    }
   }
 
   const intelligenceRows: Record<string, unknown>[] = [];
