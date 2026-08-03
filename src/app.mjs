@@ -8,7 +8,7 @@ import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs';
 import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs';
 import { calendarEventCapabilities, normalizeCalendarDraft } from './app/calendar-event.mjs';
 import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs';
-import { seriesMutationRecords } from './app/calendar-recurrence.mjs';
+import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs';
 import { normalizeTask, groupAgenda } from './app/task-center.mjs';
 import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs';
 import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs';
@@ -420,7 +420,11 @@ export function createCeoOsApplication(config = {}) {
     const existing = input.id
       ? state.collections.calendar.find((record) => record.id === input.id)
       : null;
-    if (input.id && (!existing || !calendarEventCapabilities(existing).edit)) {
+    const derivedException = Boolean(
+      input.id && !existing && input.seriesId && input.originalStartAt
+      && input.id === calendarExceptionId(input.seriesId, input.originalStartAt),
+    );
+    if (input.id && ((!existing && !derivedException) || (existing && !calendarEventCapabilities(existing).edit))) {
       throw new Error('calendar_local_event_required');
     }
     const item = store.saveEntity('calendar', normalizeCalendarDraft(input, existing || {}));

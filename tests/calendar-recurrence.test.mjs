@@ -58,6 +58,7 @@ test('single occurrence deletion produces a synchronized cancelled exception', (
     { deleted: true },
   );
   assert.equal(record.exceptionType, 'cancelled');
+  assert.equal(record.id, 'calendar-exception:series-1:2026-08-10T02:00:00.000Z');
   assert.equal(record.originalStartAt, '2026-08-10T02:00:00.000Z');
 });
 

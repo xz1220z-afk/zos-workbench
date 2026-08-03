@@ -45,6 +45,11 @@ function overlaps(start, end, rangeStart, rangeEnd) {
   return end > rangeStart && start < rangeEnd;
 }
 
+export function calendarExceptionId(seriesId, originalStartAt) {
+  if (!seriesId) throw new Error('calendar_series_required');
+  return `calendar-exception:${String(seriesId)}:${validDate(originalStartAt).toISOString()}`;
+}
+
 export function expandRecurringEvents(events = [], { rangeStart, rangeEnd } = {}) {
   const startBoundary = validDate(rangeStart, 'calendar_recurrence_range_invalid');
   const endBoundary = validDate(rangeEnd, 'calendar_recurrence_range_invalid');
@@ -113,7 +118,7 @@ export function seriesMutationRecords(base = {}, occurrence = {}, scope, patch =
     const duration = Math.max(base.allDay ? 86_400_000 : 1, baseEnd.getTime() - baseStart.getTime());
     return [{
       ...base,
-      id: undefined,
+      id: calendarExceptionId(base.seriesId || base.id, originalStartAt),
       seriesId: base.seriesId || base.id,
       originalStartAt,
       exceptionType: patch.deleted ? 'cancelled' : 'modified',

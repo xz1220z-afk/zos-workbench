@@ -41,6 +41,24 @@ test('partial edits preserve existing optional values and support explicit clear
   assert.equal(normalizeCalendarDraft({ notes: '' }, existing).notes, '');
 });
 
+test('recurrence and synchronized exception identity survive normalization', () => {
+  const recurring = normalizeCalendarDraft({
+    title: '每周经营会', startAt: '2026-08-10T01:00:00.000Z', endAt: '2026-08-10T02:00:00.000Z',
+    recurrenceRule: { frequency: 'weekly', interval: 2, byWeekdays: [1, 3] },
+  });
+  assert.deepEqual(recurring.recurrenceRule, { frequency: 'weekly', interval: 2, byWeekdays: [1, 3] });
+
+  const exception = normalizeCalendarDraft({
+    id: 'calendar-exception:series-1:2026-08-10T01:00:00.000Z',
+    title: '改期经营会', startAt: '2026-08-10T03:00:00.000Z', endAt: '2026-08-10T04:00:00.000Z',
+    seriesId: 'series-1', originalStartAt: '2026-08-10T01:00:00.000Z', exceptionType: 'modified',
+  });
+  assert.equal(exception.id, 'calendar-exception:series-1:2026-08-10T01:00:00.000Z');
+  assert.equal(exception.seriesId, 'series-1');
+  assert.equal(exception.originalStartAt, '2026-08-10T01:00:00.000Z');
+  assert.equal(exception.exceptionType, 'modified');
+});
+
 test('only ZOS local events expose destructive calendar actions', () => {
   assert.deepEqual(
     calendarEventCapabilities({ source: 'user_calendar' }),

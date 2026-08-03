@@ -1,5 +1,7 @@
 const COMPANIES = new Set(['ceo', 'wanjia', 'huahuo', 'lingli', 'life']);
 const PRIVACY = new Set(['work', 'private']);
+const RECURRENCE_FREQUENCIES = new Set(['daily', 'weekly', 'monthly', 'yearly']);
+const EXCEPTION_TYPES = new Set(['modified', 'cancelled']);
 
 function hasOwn(input, key) {
   return Object.prototype.hasOwnProperty.call(input, key);
@@ -25,6 +27,22 @@ function normalizedReminders(value) {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.map(Number).filter((minutes) => Number.isInteger(minutes) && minutes >= 0 && minutes <= 43_200))]
     .sort((left, right) => left - right);
+}
+
+function normalizedRecurrenceRule(value) {
+  if (!value || value.frequency === 'none') return null;
+  if (!RECURRENCE_FREQUENCIES.has(value.frequency)) throw new Error('calendar_recurrence_invalid');
+  const rule = {
+    frequency: value.frequency,
+    interval: Math.max(1, Math.min(365, Number(value.interval) || 1)),
+  };
+  const weekdays = Array.isArray(value.byWeekdays)
+    ? [...new Set(value.byWeekdays.map(Number).filter((day) => Number.isInteger(day) && day >= 1 && day <= 7))]
+    : [];
+  if (weekdays.length) rule.byWeekdays = weekdays;
+  if (Number(value.count) > 0) rule.count = Math.floor(Number(value.count));
+  if (value.until) rule.until = timestamp(value.until);
+  return rule;
 }
 
 export function validateCalendarDraft(input = {}, existing = {}) {
@@ -62,8 +80,13 @@ export function normalizeCalendarDraft(input = {}, existing = {}) {
   const notes = hasOwn(input, 'notes') ? input.notes : existing.notes;
   const reminders = hasOwn(input, 'reminders') ? input.reminders : existing.reminders;
   const sourceUrl = hasOwn(input, 'sourceUrl') ? input.sourceUrl : existing.sourceUrl;
+  const recurrenceRule = hasOwn(input, 'recurrenceRule') ? input.recurrenceRule : existing.recurrenceRule;
+  const seriesId = hasOwn(input, 'seriesId') ? input.seriesId : existing.seriesId;
+  const originalStartAt = hasOwn(input, 'originalStartAt') ? input.originalStartAt : existing.originalStartAt;
+  const exceptionType = hasOwn(input, 'exceptionType') ? input.exceptionType : existing.exceptionType;
   return {
     ...existing,
+    id: hasOwn(input, 'id') ? (input.id || undefined) : existing.id,
     title,
     startAt,
     endAt,
@@ -72,6 +95,10 @@ export function normalizeCalendarDraft(input = {}, existing = {}) {
     privacy: PRIVACY.has(privacy) ? privacy : 'work',
     notes: String(notes || '').trim(),
     reminders: normalizedReminders(reminders),
+    recurrenceRule: normalizedRecurrenceRule(recurrenceRule),
+    seriesId: seriesId ? String(seriesId) : undefined,
+    originalStartAt: originalStartAt ? timestamp(originalStartAt) : undefined,
+    exceptionType: EXCEPTION_TYPES.has(exceptionType) ? exceptionType : undefined,
     sourceUrl: safeSourceUrl(sourceUrl),
     status: hasOwn(input, 'status') ? input.status : (existing.status || 'scheduled'),
     source: 'user_calendar',

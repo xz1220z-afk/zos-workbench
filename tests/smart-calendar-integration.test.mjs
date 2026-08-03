@@ -63,6 +63,7 @@ test('smart calendar keeps local CRUD synchronized while external events remain 
     title: '本地安排', startAt: '2026-08-03T10:00', endAt: '2026-08-05T11:00',
     recurrenceRule: { frequency: 'weekly', interval: 1 },
   });
+  assert.deepEqual(app.store.load().collections.calendar[0].recurrenceRule, { frequency: 'weekly', interval: 1 });
   const visibleDays = app.viewModel().calendarLayout.days
     .filter((day) => day.events.some((row) => row.seriesId === local.id || row.id === local.id));
   assert.equal(visibleDays.length >= 3, true, 'a multi-day local event must cover every visible day');
