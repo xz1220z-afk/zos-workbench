@@ -167,6 +167,28 @@ export function createStateStore(config = {}) {
       publish();
       return clone(tombstone);
     },
+    restoreEntity(entityType, id) {
+      requireEntityType(entityType);
+      const tombstone = state.tombstones.find((record) => record.entity === entityType && record.id === id);
+      if (!tombstone) throw new Error('tombstone_not_found');
+      const restored = touchRecord(
+        { ...tombstone, deletedAt: null, entity: undefined },
+        { now: context.now(), deviceId: state.deviceId },
+      );
+      state = persist({
+        ...state,
+        collections: {
+          ...state.collections,
+          [entityType]: [
+            ...state.collections[entityType].filter((record) => record.id !== id),
+            restored,
+          ],
+        },
+        tombstones: state.tombstones.filter((record) => !(record.entity === entityType && record.id === id)),
+      });
+      publish();
+      return clone(state.collections[entityType].find((record) => record.id === id));
+    },
     replaceSnapshot(snapshot) {
       state = persist({ ...snapshot, deviceId: state.deviceId });
       publish();

@@ -6,20 +6,54 @@ import { createCeoOsApplication } from '../src/app.mjs';
 
 function fakeStore(targets = []) {
   const listeners = new Set();
+  let sequence = 0;
   const state = {
     schemaVersion: '1.4', deviceId: 'device-1', tombstones: [],
-    collections: { tasks: [], inbox: [], projects: [], commands: [], decisions: [], targets, intelligence: [], calendar: [], life: [] },
+    collections: {
+      tasks: [], inbox: [], projects: [], commands: [], decisions: [], targets,
+      intelligence: [], calendar: [], life: [], focus_sessions: [], countdowns: [],
+    },
   };
   return {
     load: () => structuredClone(state),
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     saveEntity(entityType, fields) {
+      const existing = state.collections[entityType].find((item) => item.id === fields.id);
+      const record = {
+        ...existing,
+        ...structuredClone(fields),
+        id: fields.id || `fake-${entityType}-${++sequence}`,
+        revision: (existing?.revision || 0) + 1,
+        deletedAt: null,
+      };
       state.collections[entityType] = [
-        ...state.collections[entityType].filter((item) => item.id !== fields.id),
-        structuredClone(fields),
+        ...state.collections[entityType].filter((item) => item.id !== record.id),
+        record,
       ];
       listeners.forEach((listener) => listener(structuredClone(state)));
-      return structuredClone(fields);
+      return structuredClone(record);
+    },
+    deleteEntity(entityType, id) {
+      const previous = state.collections[entityType].find((item) => item.id === id);
+      if (!previous) throw new Error('record not found');
+      const tombstone = {
+        ...previous, entity: entityType, revision: previous.revision + 1,
+        deletedAt: '2026-08-03T09:00:00.000Z',
+      };
+      state.collections[entityType] = state.collections[entityType].filter((item) => item.id !== id);
+      state.tombstones = [...state.tombstones.filter((item) => !(item.entity === entityType && item.id === id)), tombstone];
+      listeners.forEach((listener) => listener(structuredClone(state)));
+      return structuredClone(tombstone);
+    },
+    restoreEntity(entityType, id) {
+      const tombstone = state.tombstones.find((item) => item.entity === entityType && item.id === id);
+      if (!tombstone) throw new Error('tombstone_not_found');
+      const restored = { ...tombstone, revision: tombstone.revision + 1, deletedAt: null };
+      delete restored.entity;
+      state.tombstones = state.tombstones.filter((item) => !(item.entity === entityType && item.id === id));
+      state.collections[entityType] = [...state.collections[entityType], restored];
+      listeners.forEach((listener) => listener(structuredClone(state)));
+      return structuredClone(restored);
     },
   };
 }
@@ -207,6 +241,30 @@ test('calendar creation and review generation stay in private synchronized colle
   assert.equal(store.load().collections.calendar.length, 1);
   assert.equal(review.status, 'pending_review');
   assert.equal(store.load().collections.inbox.at(-1).kind, 'review_draft');
+});
+
+test('application calendar actions edit delete restore copy and move only local events', () => {
+  const store = fakeStore();
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} },
+    storage: { getItem: () => 'device-1', setItem() {} },
+    store,
+    createOperatingRuntime: false,
+    now: () => '2026-08-03T08:00:00.000Z',
+  });
+  const created = app.saveCalendar({
+    title: '周会', startAt: '2026-08-03T10:00:00+08:00', endAt: '2026-08-03T11:00:00+08:00',
+  });
+  assert.equal(app.saveCalendar({ id: created.id, title: '经营周会' }).title, '经营周会');
+  assert.equal(app.moveCalendar(created.id, {
+    startAt: '2026-08-04T10:00:00+08:00', endAt: '2026-08-04T11:00:00+08:00',
+  }).startAt.slice(0, 10), '2026-08-04');
+  const copy = app.copyCalendar(created.id);
+  assert.notEqual(copy.id, created.id);
+  assert.equal(copy.title, '经营周会（副本）');
+  app.deleteCalendar(created.id);
+  assert.equal(app.restoreCalendar(created.id).title, '经营周会');
+  assert.throws(() => app.deleteCalendar('external-event'), /calendar_local_event_required/);
 });
 
 test('company agent output is stored only as an Inbox review draft', async () => {

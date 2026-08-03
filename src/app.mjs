@@ -6,6 +6,7 @@ import { render as renderHealth } from './app/views/health-view.mjs';
 import { render as renderMobile } from './app/views/mobile-view.mjs';
 import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs';
 import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs';
+import { calendarEventCapabilities, normalizeCalendarDraft } from './app/calendar-event.mjs';
 import { normalizeTask, groupAgenda } from './app/task-center.mjs';
 import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs';
 import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs';
@@ -406,17 +407,57 @@ export function createCeoOsApplication(config = {}) {
     renderAll();
   }
 
-  function captureCalendar(input = {}) {
-    const title = String(input.title || '').trim();
-    const start = new Date(String(input.startAt || '').replace(' ', 'T'));
-    if (!title || Number.isNaN(start.getTime())) throw new Error('日程标题和时间不能为空');
-    const item = store.saveEntity('calendar', {
-      title, startAt: start.toISOString(), endAt: input.endAt || null,
-      company: input.company || 'ceo', privacy: input.privacy || 'work', status: 'scheduled',
-    });
+  function saveCalendar(input = {}) {
+    const state = store.load();
+    const existing = input.id
+      ? state.collections.calendar.find((record) => record.id === input.id)
+      : null;
+    if (input.id && (!existing || !calendarEventCapabilities(existing).edit)) {
+      throw new Error('calendar_local_event_required');
+    }
+    const item = store.saveEntity('calendar', normalizeCalendarDraft(input, existing || {}));
     signalLocalChange();
     renderAll();
     return item;
+  }
+
+  function captureCalendar(input = {}) {
+    return saveCalendar(input);
+  }
+
+  function deleteCalendar(id) {
+    const existing = store.load().collections.calendar.find((record) => record.id === id);
+    if (!existing || !calendarEventCapabilities(existing).remove) throw new Error('calendar_local_event_required');
+    const result = store.deleteEntity('calendar', id);
+    signalLocalChange();
+    renderAll();
+    return result;
+  }
+
+  function restoreCalendar(id) {
+    const tombstone = store.load().tombstones.find((record) => record.entity === 'calendar' && record.id === id);
+    if (!tombstone || !calendarEventCapabilities(tombstone).edit) throw new Error('calendar_local_event_required');
+    const result = store.restoreEntity('calendar', id);
+    signalLocalChange();
+    renderAll();
+    return result;
+  }
+
+  function copyCalendar(id) {
+    const existing = store.load().collections.calendar.find((record) => record.id === id);
+    if (!existing) throw new Error('calendar_local_event_required');
+    const {
+      id: _id, revision: _revision, createdAt: _createdAt, updatedAt: _updatedAt,
+      deletedAt: _deletedAt, deviceId: _deviceId, seriesId: _seriesId,
+      originalStartAt: _originalStartAt, exceptionType: _exceptionType, ...copy
+    } = existing;
+    return saveCalendar({ ...copy, title: `${existing.title}（副本）` });
+  }
+
+  function moveCalendar(id, patch = {}) {
+    const existing = store.load().collections.calendar.find((record) => record.id === id);
+    if (!existing || !calendarEventCapabilities(existing).drag) throw new Error('calendar_local_event_required');
+    return saveCalendar({ id, ...patch });
   }
 
   function generateReview(type) {
@@ -718,7 +759,8 @@ export function createCeoOsApplication(config = {}) {
   return {
     start, stop, whenIdle: () => startupWork, render: renderAll, store, runtime, viewModel,
     refreshSource, refreshAllSources, notifyCurrentReminders, confirmTarget, previewDecision, executeApproval,
-    quickCapture, captureCalendar, saveTask, convertIntelligenceToTask, saveCountdown,
+    quickCapture, captureCalendar, saveCalendar, deleteCalendar, restoreCalendar, copyCalendar, moveCalendar,
+    saveTask, convertIntelligenceToTask, saveCountdown,
     createFocus, transitionCurrentFocus, queryMerchant, queryHuahuoAvailability,
     openTaskEditor, closeTaskEditor, generateReview, generateAgentDraft,
     get operatingRuntime() { return operatingRuntime; },

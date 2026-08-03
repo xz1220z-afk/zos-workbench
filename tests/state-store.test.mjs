@@ -115,6 +115,24 @@ test('save, delete and snapshot replacement preserve sync metadata and notify su
   unsubscribe();
 });
 
+test('deleted calendar records restore with a higher revision and no stale tombstone', () => {
+  let tick = 0;
+  const store = createStateStore({
+    storage: memoryStorage(),
+    now: () => `2026-08-03T12:00:0${tick++}.000Z`,
+    deviceId: 'd1',
+    createId: () => 'event-1',
+  });
+  const created = store.saveEntity('calendar', { title: '经营会', startAt: '2026-08-04T02:00:00.000Z' });
+  const deleted = store.deleteEntity('calendar', created.id);
+  const restored = store.restoreEntity('calendar', created.id);
+  assert.equal(restored.revision, deleted.revision + 1);
+  assert.equal(restored.deletedAt, null);
+  assert.equal(restored.entity, undefined);
+  assert.equal(store.load().tombstones.some((row) => row.id === created.id), false);
+  assert.equal(store.load().collections.calendar[0].id, created.id);
+});
+
 test('base revisions survive reload and missing legacy bases request a full-pull fallback', () => {
   const storage = memoryStorage();
   const options = { storage, now: () => '2026-08-02T00:00:00.000Z', deviceId: 'device-1', createId: () => 'id-1' };
