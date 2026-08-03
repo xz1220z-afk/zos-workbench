@@ -34,7 +34,9 @@ function mondayOfWeek(date) {
 
 function normalizeEvent(input, fallback = {}) {
   const rawStart = input.startAt || input.dueAt || input.dueDate || input.date;
-  const allDay = !String(input.startAt || input.dueAt || '').includes('T');
+  const allDay = typeof input.allDay === 'boolean'
+    ? input.allDay
+    : !String(input.startAt || input.dueAt || '').includes('T');
   const startAt = dateOnlyIso(rawStart) || iso(rawStart);
   const endAt = iso(input.endAt) || (startAt && !allDay ? new Date(new Date(startAt).getTime() + 3_600_000).toISOString() : startAt);
   return {
@@ -42,6 +44,10 @@ function normalizeEvent(input, fallback = {}) {
     startAt, endAt, allDay, company: input.company || fallback.company || 'ceo',
     source: input.source || fallback.source, privacy: input.privacy || fallback.privacy || 'work',
     owner: input.owner || null, sourceUpdatedAt: input.sourceUpdatedAt || input.updatedAt || null,
+    notes: input.notes || '', reminders: Array.isArray(input.reminders) ? input.reminders : [],
+    sourceUrl: input.sourceUrl || null, status: input.status || 'scheduled',
+    recurrenceRule: input.recurrenceRule || null, seriesId: input.seriesId || null,
+    originalStartAt: input.originalStartAt || null, exceptionType: input.exceptionType || null,
   };
 }
 
