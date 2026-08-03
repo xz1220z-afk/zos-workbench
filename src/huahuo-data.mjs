@@ -111,6 +111,38 @@ function normalizeDate(value) {
   return isNaN(d.getTime()) ? new Date(0).toISOString() : d.toISOString();
 }
 
+function normalizeOptionalDate(value) {
+  if (!value) return null;
+  const normalized = normalizeDate(value);
+  return normalized === new Date(0).toISOString() ? null : normalized;
+}
+
+function normalizeText(value, fallback = '') {
+  if (value == null || value === '') return fallback;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).trim() || fallback;
+  }
+  if (Array.isArray(value)) return normalizeList(value).join('、') || fallback;
+  if (typeof value === 'object') {
+    for (const key of ['name', 'text', 'title', 'label', 'value']) {
+      if (key in value) {
+        const text = normalizeText(value[key], '');
+        if (text) return text;
+      }
+    }
+  }
+  return fallback;
+}
+
+function normalizeList(value) {
+  const items = Array.isArray(value) ? value : value == null || value === '' ? [] : [value];
+  const strings = items.flatMap((item) => {
+    const text = normalizeText(item, '');
+    return text.split(/[、,，;；]/).map((part) => part.trim()).filter(Boolean);
+  });
+  return [...new Set(strings)];
+}
+
 // Extract + normalize a single shooting-project record. Throws on missing id/name.
 export function extractHuahuoRecord(raw = {}) {
   if (raw == null || typeof raw !== 'object') throw new Error('huahuo record must be an object');
@@ -125,6 +157,12 @@ export function extractHuahuoRecord(raw = {}) {
     projectName: String(projectName),
     projectType: normalizeProjectType(raw.projectType ?? raw.项目类型),
     shootingDate: normalizeDate(raw.shootingDate ?? raw.拍摄日期),
+    startAt: normalizeOptionalDate(raw.startAt ?? raw.开始时间 ?? raw.拍摄开始时间),
+    endAt: normalizeOptionalDate(raw.endAt ?? raw.结束时间 ?? raw.拍摄结束时间),
+    location: normalizeText(raw.location ?? raw.拍摄地点),
+    owner: normalizeText(raw.owner ?? raw.项目负责人 ?? raw.负责人),
+    members: normalizeList(raw.members ?? raw.项目成员 ?? raw.参与人员),
+    roles: normalizeList(raw.roles ?? raw.岗位 ?? raw.角色),
     updatedAt: normalizeDate(raw.updatedAt ?? raw.最近更新时间 ?? raw.更新时间 ?? raw.shootingDate ?? raw.拍摄日期),
     stage: normalizeStage(raw.stage ?? raw.当前阶段 ?? raw.项目状态 ?? raw.阶段),
     deliveryStatus: normalizeDeliveryStatus(raw.deliveryStatus ?? raw.交付状态),

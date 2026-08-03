@@ -67,6 +67,14 @@ assert.match(runtimeSource, /1254045/,
   'Function classifies missing or inaccessible Feishu field names safely');
 assert.match(runtimeSource, /wanjia/);
 assert.match(runtimeSource, /huahuo/);
+assert.match(runtimeSource, /开始时间|拍摄开始时间/,
+  'Huahuo read contract requests a proven shooting start field alias');
+assert.match(runtimeSource, /结束时间|拍摄结束时间/,
+  'Huahuo read contract requests a proven shooting end field alias');
+assert.match(runtimeSource, /members:/,
+  'Huahuo metadata contract preserves assigned people without narrative bodies');
+assert.match(runtimeSource, /roles:/,
+  'Huahuo metadata contract preserves assignment roles');
 assert.doesNotMatch(runtimeSource, /cli_aab7f0f691b8dcb3|yimbjqe4EDassDFqmUR9Lh0xdzBHyMvQ/,
   'No user-provided credential may be committed to the Edge Function');
 assert.match(migration, /create table if not exists public\.zos_business_cache/i);

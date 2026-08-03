@@ -26,6 +26,9 @@ const sampleRaw = [
     deliveryStatus: '交付中',
     revenueStatus: '部分回款',
     profitStatus: '盈利',
+    startAt: '2026-07-15T10:00:00+08:00',
+    endAt: '2026-07-15T13:00:00+08:00',
+    location: '阳西', owner: '朱帅', members: ['阿杰', '小林'], roles: ['摄影', '灯光'],
   },
   {
     projectId: 'h2',
@@ -50,6 +53,12 @@ test('extractHuahuoRecord normalizes both camelCase and Chinese-field sources', 
   assert.equal(a.revenueStatus, '部分回款');
   assert.equal(a.profitStatus, '盈利');
   assert.equal(a.source, 'huahuo');
+  assert.equal(a.startAt, '2026-07-15T10:00:00+08:00');
+  assert.equal(a.endAt, '2026-07-15T13:00:00+08:00');
+  assert.equal(a.location, '阳西');
+  assert.equal(a.owner, '朱帅');
+  assert.deepEqual(a.members, ['阿杰', '小林']);
+  assert.deepEqual(a.roles, ['摄影', '灯光']);
 
   const b = extractHuahuoRecord(sampleRaw[1]);
   assert.equal(b.id, 'h2');
@@ -60,6 +69,18 @@ test('extractHuahuoRecord normalizes both camelCase and Chinese-field sources', 
   assert.equal(b.deliveryStatus, '待交付');
   assert.equal(b.revenueStatus, '待回款');
   assert.equal(b.profitStatus, '待核算');
+});
+
+test('extractHuahuoRecord normalizes Feishu list-like people and role values', () => {
+  const record = extractHuahuoRecord({
+    id: 'people', projectName: '人员测试', shootingDate: '2026-08-08',
+    项目成员: [{ name: '阿杰' }, { name: '阿杰' }, { name: '小林' }],
+    岗位: '摄影、灯光', 项目负责人: { name: '朱帅' }, 拍摄地点: { text: '阳西' },
+  });
+  assert.deepEqual(record.members, ['阿杰', '小林']);
+  assert.deepEqual(record.roles, ['摄影', '灯光']);
+  assert.equal(record.owner, '朱帅');
+  assert.equal(record.location, '阳西');
 });
 
 test('buildHuahuoIndex produces a read_only payload with all required keys', () => {

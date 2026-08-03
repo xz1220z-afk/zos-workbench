@@ -39,6 +39,11 @@ function sum(records: FeishuRecord[], ...fieldNames: string[]) {
   return records.reduce((total, record) => total + feishuNumber(pick(record, ...fieldNames)), 0);
 }
 
+function feishuList(value: unknown) {
+  const text = feishuText(value);
+  return [...new Set(text.split(/[、,，;；]/).map((item) => item.trim()).filter(Boolean))];
+}
+
 function summarizeWanjia(records: FeishuRecord[]) {
   return {
     totalMerchants: records.length,
@@ -96,17 +101,25 @@ function buildHuahuoRecords(records: FeishuRecord[]) {
     records: records.map((record, index) => {
       const fields = fieldsOf(record);
       const shootingDate = feishuText(pick(record, '拍摄日期', '外拍日期'), new Date().toISOString());
+      const startAt = feishuText(pick(record, '开始时间', '拍摄开始时间')) || null;
+      const endAt = feishuText(pick(record, '结束时间', '拍摄结束时间')) || null;
       const updatedAt = sourceUpdatedAt(record, pick(record, '最近更新时间', '更新时间')) || shootingDate;
       return {
         id: feishuText(pick(record, '项目编号', '项目ID', 'RecordId'), record.record_id || `huahuo-${index}`),
         sourceRecordId: record.record_id || null,
         sourceUpdatedAt: sourceUpdatedAt(record, updatedAt),
         writeAvailable: Boolean(record.record_id),
-        contractVersion: '1.3',
+        contractVersion: '1.7',
         clientName: feishuText(pick(record, '客户名称', '客户'), '未指定'),
         projectName: feishuText(fields['项目名称'], '花火项目'),
         projectType: feishuText(pick(record, '项目类型', '项目来源'), '其他'),
         shootingDate,
+        startAt,
+        endAt,
+        location: feishuText(pick(record, '拍摄地点', '地点')),
+        owner: feishuText(pick(record, '项目负责人', '负责人')),
+        members: feishuList(pick(record, '项目成员', '参与人员')),
+        roles: feishuList(pick(record, '岗位', '角色', '人员角色')),
         updatedAt,
         stage: feishuText(pick(record, '项目状态', '当前阶段', '阶段'), '筹备中'),
         deliveryStatus: feishuText(pick(record, '交付状态', '交付进度'), '待交付'),
@@ -185,6 +198,7 @@ export async function readBusinessSources(requestedSource: BusinessSource = 'all
       '项目编号', '项目名称', '订单', '项目来源', '项目负责人', '项目成员', '拍摄地点', '项目状态',
       '【预算】合同金额', '【预算】已收金额', '合同金额', '已收金额', '负责人', '项目类型',
       '回款状态', '利润状态', '最近更新时间', '更新时间', '拍摄日期',
+      '开始时间', '拍摄开始时间', '结束时间', '拍摄结束时间', '岗位', '角色', '人员角色',
     ]),
     listRecords(accessToken, FEISHU_TARGETS.huahuo.delivery, [
       '交付编号', '项目', '订单', '交付类型', '计划交付日期', '实际交付日期', '交付状态', '接收人', '交付负责人', '客户确认状态',
