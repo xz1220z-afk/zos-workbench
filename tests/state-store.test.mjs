@@ -188,3 +188,20 @@ test('startup remains readable when both new-key and in-place migration writes e
   assert.equal(store.load().collections.tasks[0].title, '保留旧任务');
   assert.equal(storage.getItem('zos_ceo_os_state_v1_4'), original);
 });
+
+test('startup remains readable when the current v1.7 snapshot already fills storage quota', () => {
+  const original = JSON.stringify({
+    schemaVersion: '1.7', deviceId: 'device-current', tombstones: [],
+    collections: { tasks: [oldTask], decisions: [], targets: [] },
+  });
+  const storage = quotaOnEveryStateWriteStorage({ zos_ceo_os_state_v1_7: original });
+
+  const store = createStateStore({
+    storage, now: () => '2026-08-03T00:00:00.000Z',
+    deviceId: 'device-new', createId: () => 'new-id',
+  });
+
+  assert.equal(store.load().schemaVersion, '1.7');
+  assert.equal(store.load().collections.tasks[0].title, '保留旧任务');
+  assert.equal(storage.getItem('zos_ceo_os_state_v1_7'), original);
+});

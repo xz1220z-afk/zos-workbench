@@ -1,4 +1,4 @@
-const DEFAULT_CLIENT_VERSION = '1.7.4';
+const DEFAULT_CLIENT_VERSION = '1.7.5';
 
 function safeText(value) {
   const text = String(value ?? '').trim();

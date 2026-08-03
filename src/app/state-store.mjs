@@ -105,7 +105,10 @@ export function createStateStore(config = {}) {
     try {
       return persist(next);
     } catch (error) {
-      if (error?.name !== 'QuotaExceededError' || !current || current.key === STATE_KEY) throw error;
+      if (error?.name !== 'QuotaExceededError') throw error;
+      // A current-schema snapshot can already occupy the browser quota. Startup
+      // must stay readable even when rewriting the same logical state is denied.
+      if (!current || current.key === STATE_KEY) return next;
       stateStorageKey = current.key;
       baseRevisionsStorageKey = PREVIOUS_BASE_REVISIONS_KEYS[PREVIOUS_STATE_KEYS.indexOf(current.key)]
         || BASE_REVISIONS_KEY;
