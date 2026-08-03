@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { parseIcsCalendar } from '../src/app/ics-calendar.mjs';
+import { parseIcsCalendar as parseEdgeIcsCalendar } from '../supabase/functions/_shared/ics-calendar.mjs';
 
 test('parses timed and all-day ICS events with Asia Shanghai semantics', () => {
   const events = parseIcsCalendar(`BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:meeting-1\r\nSUMMARY:经营复盘\r\nDTSTART;TZID=Asia/Shanghai:20260803T100000\r\nDTEND;TZID=Asia/Shanghai:20260803T110000\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:day-1\r\nSUMMARY:交付日\r\nDTSTART;VALUE=DATE:20260804\r\nEND:VEVENT\r\nEND:VCALENDAR`);
@@ -34,4 +35,17 @@ END:VCALENDAR`);
   assert.equal(events[0].title, '个人安排');
   assert.equal(events[0].privacy, 'private');
   assert.equal('description' in events[0], false);
+});
+
+test('browser and edge calendar parsers keep the same privacy contract', () => {
+  const input = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:shared-1
+SUMMARY:私人预约
+CLASS:PRIVATE
+DTSTART;TZID=Asia/Shanghai:20260803T180000
+DTEND;TZID=Asia/Shanghai:20260803T190000
+END:VEVENT
+END:VCALENDAR`;
+  assert.deepEqual(parseEdgeIcsCalendar(input), parseIcsCalendar(input));
 });

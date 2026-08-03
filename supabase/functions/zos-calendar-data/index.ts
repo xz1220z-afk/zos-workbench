@@ -1,5 +1,5 @@
 import { AuthError, requireUser } from '../_shared/auth.ts';
-import { parseIcsCalendar } from '../../../src/app/ics-calendar.mjs';
+import { parseIcsCalendar } from '../_shared/ics-calendar.mjs';
 
 const HEADERS = {
   'Access-Control-Allow-Origin': '*',

@@ -11,6 +11,8 @@ test('external calendar endpoint is authenticated, bounded and metadata-only', a
   assert.match(source, /AbortSignal\.timeout\(12_000\)/);
   assert.match(source, /body\.length > 1_000_000/);
   assert.match(source, /parseIcsCalendar/);
+  assert.match(source, /\.\.\/_shared\/ics-calendar\.mjs/);
+  assert.doesNotMatch(source, /\.\.\/\.\.\/\.\.\/src\//);
   assert.doesNotMatch(source, /response\(\{[^}]*configuredUrl|response\(\{[^}]*url:\s*url/);
   assert.match(config, /\[functions\.zos-calendar-data\][\s\S]*verify_jwt\s*=\s*true/);
 });
