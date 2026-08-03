@@ -24,7 +24,7 @@ import { buildTodayTop3 } from './app/priority-engine.mjs';
 import { buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs';
 import { runCompanyAgent } from './app/company-agent-hub.mjs';
 
-export const APP_VERSION = '1.6.1';
+export const APP_VERSION = '1.6.2';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;

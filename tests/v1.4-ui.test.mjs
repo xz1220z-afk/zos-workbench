@@ -48,6 +48,13 @@ test('calendar, intelligence and review controls expose executable application a
   assert.match(app, /data-review-draft/);
 });
 
+test('calendar empty state distinguishes a connected Feishu calendar from missing configuration', async () => {
+  const view = await readFile(new URL('../src/app/views/calendar-view.mjs', import.meta.url), 'utf8');
+  assert.match(view, /externalCalendarState/);
+  assert.match(view, /飞书日历已连接/);
+  assert.match(view, /外部日历尚未配置/);
+});
+
 test('intelligence view has explicit signed-out and source-configuration states', async () => {
   const viewUtils = await readFile(new URL('src/app/views/view-utils.mjs', root), 'utf8');
   const { stateMessage } = await import('../src/app/views/view-utils.mjs');

@@ -45,7 +45,8 @@ order by policyname;
 
 - `FEISHU_APP_ID` / `FEISHU_APP_SECRET`：已发布且具备多维表格只读权限的飞书企业自建应用。
 - `LINGLI_APP_TOKEN`：玲丽教育正式 Base 的 app token；函数会按正式表名动态解析 table ID。
-- `EXTERNAL_CALENDAR_ICS_URL`：可选的只读 ICS 订阅地址；未配置时日历中心返回 `pending_configuration`。
+- `FEISHU_OWNER_NAME`：可选的飞书日历本人姓名兜底；优先使用登录邮箱或已共享给应用的日历。
+- `EXTERNAL_CALENDAR_ICS_URL`：可选的只读 ICS 订阅地址；配置后优先于飞书日历，适合 Google / Apple / Outlook。
 - `ZOS_CRON_SECRET` / `ZOS_OWNER_USER_ID`：内部定时刷新鉴权与本人 Supabase user id。
 
 设置后部署：
