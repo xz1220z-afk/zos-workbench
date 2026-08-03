@@ -15,6 +15,35 @@ const HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
 };
 
+const MAX_RANGE_DAYS = 370;
+
+type CalendarRange = {
+  start: Date;
+  end: Date;
+  startTime: number;
+  endTime: number;
+};
+
+function requestedRange(req: Request): CalendarRange {
+  const url = new URL(req.url);
+  const start = new Date(url.searchParams.get('start') || Date.now() - 30 * 86_400_000);
+  const end = new Date(url.searchParams.get('end') || Date.now() + 180 * 86_400_000);
+  const span = end.getTime() - start.getTime();
+  if (!Number.isFinite(span) || span <= 0 || span > MAX_RANGE_DAYS * 86_400_000) {
+    throw new Error('range_invalid');
+  }
+  return {
+    start,
+    end,
+    startTime: Math.floor(start.getTime() / 1000),
+    endTime: Math.floor(end.getTime() / 1000),
+  };
+}
+
+function rangeMetadata(range: CalendarRange) {
+  return { start: range.start.toISOString(), end: range.end.toISOString() };
+}
+
 function response(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: HEADERS });
 }
@@ -42,7 +71,7 @@ async function feishuJson(url: string, token: string, stage: string, init: Reque
   return payload?.data as Record<string, unknown> || {};
 }
 
-async function readFeishuCalendar(email: string) {
+async function readFeishuCalendar(email: string, range: CalendarRange) {
   const token = await getTenantAccessToken();
   let userId: string | null = null;
   let calendarIds: string[] = [];
@@ -90,16 +119,15 @@ async function readFeishuCalendar(email: string) {
   if (!calendarIds.length) return {
     state: 'pending_configuration', source: 'feishu', items: [],
     reason: userId ? 'calendar_primary_not_found' : 'calendar_owner_not_found',
+    range: rangeMetadata(range),
   };
 
-  const startTime = Math.floor(Date.now() / 1000) - 30 * 86400;
-  const endTime = Math.floor(Date.now() / 1000) + 180 * 86400;
   const items: unknown[] = [];
   for (const calendarId of calendarIds.slice(0, 10)) {
     let pageToken = '';
     for (let page = 0; page < 5; page += 1) {
       const query = new URLSearchParams({
-        start_time: String(startTime), end_time: String(endTime), page_size: '500', user_id_type: 'open_id',
+        start_time: String(range.startTime), end_time: String(range.endTime), page_size: '500', user_id_type: 'open_id',
       });
       if (pageToken) query.set('page_token', pageToken);
       const data = await feishuJson(
@@ -112,9 +140,15 @@ async function readFeishuCalendar(email: string) {
       pageToken = data.page_token;
     }
   }
+  const normalized = normalizeFeishuCalendarEvents(items).filter((item) => {
+    const itemStart = new Date(item.startAt).getTime();
+    const rawEnd = new Date(item.endAt || item.startAt).getTime();
+    const itemEnd = Math.max(rawEnd, itemStart + 1);
+    return itemEnd > range.start.getTime() && itemStart < range.end.getTime();
+  }).slice(0, 500);
   return {
-    state: 'synced', source: 'feishu', items: normalizeFeishuCalendarEvents(items).slice(0, 500),
-    fetchedAt: new Date().toISOString(),
+    state: 'synced', source: 'feishu', items: normalized,
+    fetchedAt: new Date().toISOString(), range: rangeMetadata(range),
   };
 }
 
@@ -126,11 +160,15 @@ Deno.serve(async (req) => {
     if (error instanceof AuthError) return response({ error: error.code }, error.status);
     return response({ error: 'authentication_invalid' }, 401);
   }
+  let range: CalendarRange;
+  try { range = requestedRange(req); } catch {
+    return response({ error: 'range_invalid' }, 400);
+  }
 
   const configuredUrl = Deno.env.get('EXTERNAL_CALENDAR_ICS_URL');
   if (!configuredUrl) {
     try {
-      return response(await readFeishuCalendar(user.email || ''));
+      return response(await readFeishuCalendar(user.email || '', range));
     } catch (error) {
       const status = error && typeof error === 'object' && 'status' in error ? Number(error.status) : 502;
       if (status === 401) return response({ error: 'calendar_feishu_auth_failed' }, 502);
@@ -152,7 +190,16 @@ Deno.serve(async (req) => {
     if (!upstream.ok) return response({ error: 'calendar_read_failed' }, 502);
     const body = await upstream.text();
     if (body.length > 1_000_000) return response({ error: 'calendar_too_large' }, 413);
-    return response({ state: 'synced', source: 'ics', items: parseIcsCalendar(body).slice(0, 500), fetchedAt: new Date().toISOString() });
+    const items = parseIcsCalendar(body).filter((item) => {
+      const itemStart = new Date(item.startAt).getTime();
+      const rawEnd = new Date(item.endAt || item.startAt).getTime();
+      const itemEnd = Math.max(rawEnd, itemStart + 1);
+      return itemEnd > range.start.getTime() && itemStart < range.end.getTime();
+    }).slice(0, 500);
+    return response({
+      state: 'synced', source: 'ics', items,
+      fetchedAt: new Date().toISOString(), range: rangeMetadata(range),
+    });
   } catch {
     return response({ error: 'calendar_read_failed' }, 502);
   }

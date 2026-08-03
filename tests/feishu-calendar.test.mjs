@@ -43,6 +43,7 @@ test('normalizes Feishu events to bounded metadata and redacts private titles', 
       start_time: { timestamp: '1785722400', timezone: 'Asia/Shanghai' },
       end_time: { timestamp: '1785726000', timezone: 'Asia/Shanghai' },
       updated_at: '1785720000', description: '不得进入工作台的正文',
+      app_link: 'https://applink.feishu.cn/client/calendar/event/detail',
     },
     {
       event_id: 'event-private', summary: '体检安排', visibility: 'private',
@@ -53,10 +54,20 @@ test('normalizes Feishu events to bounded metadata and redacts private titles', 
   assert.equal(events[0].title, '客户复盘');
   assert.equal(events[0].source, 'feishu_calendar');
   assert.equal(events[0].company, 'ceo');
+  assert.equal(events[0].sourceUrl, 'https://applink.feishu.cn/client/calendar/event/detail');
   assert.equal(events[1].title, '个人安排');
   assert.equal(events[1].privacy, 'private');
   assert.equal(events[1].allDay, true);
   assert.equal(Object.hasOwn(events[0], 'description'), false);
+});
+
+test('drops unsafe Feishu event links', () => {
+  const [event] = normalizeFeishuCalendarEvents([{
+    event_id: 'unsafe-link', summary: '测试', visibility: 'public',
+    start_time: { timestamp: '1785722400' }, end_time: { timestamp: '1785726000' },
+    app_link: 'javascript:alert(1)',
+  }]);
+  assert.equal(event.sourceUrl, null);
 });
 
 test('converts timestamp and all-day date values without inventing time', () => {

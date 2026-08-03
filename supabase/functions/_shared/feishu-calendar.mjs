@@ -2,6 +2,17 @@ function text(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function safeSourceUrl(value) {
+  const candidate = text(value);
+  if (!candidate) return null;
+  try {
+    const url = new URL(candidate);
+    return ['https:', 'http:'].includes(url.protocol) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export function userIdForEmail(data, email) {
   const target = text(email).toLowerCase();
   const users = Array.isArray(data?.user_list) ? data.user_list : [];
@@ -66,6 +77,7 @@ export function normalizeFeishuCalendarEvents(items = []) {
       privacy,
       owner: null,
       sourceUpdatedAt: updated.iso,
+      sourceUrl: safeSourceUrl(item?.app_link),
     });
   }
   const seen = new Set();

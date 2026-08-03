@@ -44,13 +44,20 @@ async function loadIntelligenceRows(fetchImpl, config, token, { refresh = false 
   };
 }
 
-async function loadExternalCalendar(fetchImpl, config, token) {
+async function loadExternalCalendar(fetchImpl, config, token, { start, end } = {}) {
   const endpoint = new URL('/functions/v1/zos-calendar-data', `${config.url.replace(/\/$/, '')}/`);
+  if (start) endpoint.searchParams.set('start', start);
+  if (end) endpoint.searchParams.set('end', end);
   const response = await fetchImpl(endpoint, { headers: { apikey: config.anonKey, Authorization: `Bearer ${token}` } });
   if (!response.ok) throw new Error('calendar_read_failed');
   const payload = await response.json();
   if (!Array.isArray(payload.items)) throw new Error('calendar_contract_invalid');
-  return { items: payload.items, state: payload.state || 'synced', fetchedAt: payload.fetchedAt || null };
+  return {
+    items: payload.items,
+    state: payload.state || 'synced',
+    fetchedAt: payload.fetchedAt || null,
+    range: payload.range || null,
+  };
 }
 
 export async function createBrowserOperatingRuntime({
@@ -119,6 +126,6 @@ export async function createBrowserOperatingRuntime({
   return {
     operatingLoop, syncController, session,
     loadIntelligence: (options) => loadIntelligenceRows(fetchImpl, config, session.accessToken, options),
-    loadExternalCalendar: () => loadExternalCalendar(fetchImpl, config, session.accessToken),
+    loadExternalCalendar: (options) => loadExternalCalendar(fetchImpl, config, session.accessToken, options),
   };
 }

@@ -11,6 +11,11 @@ test('external calendar endpoint is authenticated, bounded and metadata-only', a
   assert.match(source, /AbortSignal\.timeout\(12_000\)/);
   assert.match(source, /body\.length > 1_000_000/);
   assert.match(source, /parseIcsCalendar/);
+  assert.match(source, /searchParams\.get\('start'\)/);
+  assert.match(source, /searchParams\.get\('end'\)/);
+  assert.match(source, /MAX_RANGE_DAYS/);
+  assert.match(source, /range_invalid/);
+  assert.match(source, /itemEnd > range\.start\.getTime\(\) && itemStart < range\.end\.getTime\(\)/);
   assert.match(source, /\.\.\/_shared\/ics-calendar\.mjs/);
   assert.doesNotMatch(source, /\.\.\/\.\.\/\.\.\/src\//);
   assert.doesNotMatch(source, /response\(\{[^}]*configuredUrl|response\(\{[^}]*url:\s*url/);
