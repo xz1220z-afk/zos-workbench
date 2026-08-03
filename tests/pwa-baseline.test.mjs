@@ -19,6 +19,8 @@ assert.match(shellHtml, /src\/app\.mjs\?v=1\.8\.1/,
   'The application bootstrap must bypass a stale controlling Service Worker cache');
 assert.match(appSource, /\.\/app\/state-store\.mjs\?v=1\.8\.1/,
   'The startup-critical state module must bypass a stale controlling Service Worker cache');
+assert.match(legacySource, /\.\/app\/router\.mjs\?v=1\.8\.1/,
+  'The startup-critical deep-link router must bypass a stale controlling Service Worker cache');
 for (const asset of [
   'assets/app.css', 'src/app.mjs', 'src/legacy-app.mjs', 'src/app/operating-loop.mjs',
   'src/app/decision-center.mjs', 'src/app/targets.mjs', 'src/app/source-health.mjs',

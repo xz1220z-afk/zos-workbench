@@ -1,4 +1,4 @@
-import { pageIdFromHash } from './app/router.mjs';
+import { pageIdFromHash } from './app/router.mjs?v=1.8.1';
 
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
