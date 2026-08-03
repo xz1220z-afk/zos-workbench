@@ -124,7 +124,8 @@ export function renderCalendarHtml(viewModel = {}) {
     </header>
     <div class="calendar-layer-filters"><label><input type="checkbox" data-calendar-layer="countdown" ${viewModel.showCountdowns === false ? '' : 'checked'}>倒数日</label><label><input type="checkbox" data-calendar-layer="focus" ${viewModel.showFocus ? 'checked' : ''}>专注记录</label><span>${viewModel.calendarSyncState === 'loading' ? '正在同步…' : '本地优先 · 云端同步'}</span></div>
     ${conflicts.length ? `<div class="calendar-conflict">发现 ${conflicts.length} 组时间冲突，请优先调整。</div>` : ''}
-    ${events.length ? renderGrid(layout) : emptyState}
+    ${renderGrid(layout)}
+    ${events.length ? '' : emptyState}
     ${renderCalendarPanel(viewModel)}
   </div>`;
 }

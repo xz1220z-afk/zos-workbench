@@ -61,7 +61,7 @@ test('rich task editor covers planning, business linkage and focus metadata on a
 });
 
 test('v1.8 PWA cache and manifest include every execution and smart-calendar module', () => {
-  assert.match(serviceWorker, /zos-workbench-v1\.8\.0/);
+  assert.match(serviceWorker, /zos-workbench-v1\.8\.1/);
   for (const asset of [
     'src/app/task-center.mjs', 'src/app/focus-center.mjs', 'src/app/countdown-center.mjs',
     'src/app/availability-center.mjs', 'src/app/merchant-center.mjs',
@@ -71,7 +71,7 @@ test('v1.8 PWA cache and manifest include every execution and smart-calendar mod
     'src/app/calendar-range.mjs', 'src/app/calendar-event.mjs',
     'src/app/calendar-recurrence.mjs', 'src/app/views/calendar-view.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.equal(manifest.version, '1.8.0');
+  assert.equal(manifest.version, '1.8.1');
   assert.ok(manifest.shortcuts.some((item) => item.url === './#focus'));
 });
 

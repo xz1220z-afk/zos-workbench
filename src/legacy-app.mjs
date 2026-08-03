@@ -1,3 +1,5 @@
+import { pageIdFromHash } from './app/router.mjs';
+
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
   function syncRequired(value, name) {
@@ -122,7 +124,7 @@
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.8.0';
+  const APP_VERSION = '1.8.1';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
   const APP_RELEASE_DATE = '2026-08-03';
 
@@ -2219,6 +2221,10 @@
     pageTitle.textContent = pageTitles[pageId] || pageId;
     currentPage = pageId;
 
+    if (!options.fromLocation && window.location.hash !== '#' + pageId) {
+      window.history.pushState(null, '', '#' + pageId);
+    }
+
     if (window.innerWidth <= 1024) closeSidebar();
     document.getElementById('content').scrollTop = 0;
 
@@ -2228,6 +2234,16 @@
   }
 
   window.navigateTo = navigateTo;
+
+  function navigateFromLocation() {
+    const pageId = pageIdFromHash(window.location.hash, function(candidate) {
+      return Boolean(document.getElementById('page-' + candidate));
+    });
+    if (pageId) navigateTo(pageId, { fromLocation: true });
+  }
+
+  window.addEventListener('popstate', navigateFromLocation);
+  window.addEventListener('hashchange', navigateFromLocation);
 
   document.querySelectorAll('.sidebar-nav .nav-item, .sidebar-footer .nav-item').forEach(el => {
     el.addEventListener('click', function() { navigateTo(this.dataset.page); });
@@ -2244,6 +2260,8 @@
   document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') closeMobileMoreMenu(true);
   });
+
+  navigateFromLocation();
 
   // ==================== FILTER TABS ====================
   document.querySelectorAll('.filter-tabs').forEach(tabs => {

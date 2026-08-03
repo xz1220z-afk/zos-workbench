@@ -66,3 +66,14 @@ test('recurring event mutations require a visible scope choice', () => {
     assert.match(html, new RegExp(`data-calendar-series-scope="${scope}"`));
   }
 });
+
+test('empty calendar keeps the selected period grid visible alongside configuration guidance', () => {
+  const html = renderCalendarHtml({
+    calendar: [], calendarView: 'month', calendarAnchor: '2026-08-03',
+    externalCalendarState: 'pending_configuration',
+  });
+
+  assert.match(html, /calendar-month-grid/);
+  assert.match(html, /calendar-day-empty/);
+  assert.match(html, /外部日历尚未配置/);
+});

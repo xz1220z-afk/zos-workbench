@@ -7,6 +7,12 @@ const DEFAULT_TITLES = Object.freeze({
   search: '全局搜索', relations: '关系与跟进', reviews: '复盘中心',
 });
 
+export function pageIdFromHash(hash, hasPage = () => true) {
+  const raw = String(hash || '').replace(/^#/, '').trim();
+  if (!/^[a-z0-9-]+$/i.test(raw)) return '';
+  return hasPage(raw) ? raw : '';
+}
+
 export function createRouter({ document, onEnter = {}, titles = DEFAULT_TITLES } = {}) {
   if (!document?.querySelectorAll) throw new Error('document is required');
   let current = document.querySelector('.page.active')?.id?.replace('page-', '') || 'dashboard';
