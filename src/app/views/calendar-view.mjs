@@ -46,7 +46,7 @@ function renderDetail(viewModel) {
   const event = (viewModel.calendar || []).find((row) => row.id === viewModel.selectedCalendarId);
   if (!event) return '';
   const capabilities = calendarEventCapabilities(event);
-  return `<aside class="calendar-drawer" data-calendar-panel="detail" aria-label="日程详情">
+  return `<aside class="calendar-drawer calendar-detail-drawer" data-calendar-panel="detail" aria-label="日程详情">
     <header><div><small>${escapeHtml(SOURCE_LABELS[event.source] || event.source || '本地')}</small><h2>${escapeHtml(event.title)}</h2></div><button data-calendar-close aria-label="关闭">×</button></header>
     <dl><dt>开始</dt><dd>${escapeHtml(localDateTime(event.startAt).replace('T', ' '))}</dd><dt>结束</dt><dd>${escapeHtml(localDateTime(event.endAt).replace('T', ' '))}</dd><dt>归属</dt><dd>${escapeHtml(COMPANY_LABELS[event.company] || event.company || 'CEO')}</dd></dl>
     ${event.notes ? `<p class="calendar-notes">${escapeHtml(event.notes)}</p>` : ''}
@@ -69,7 +69,7 @@ function renderEditor(viewModel) {
   const startAt = localDateTime(draft.startAt) || `${anchor}T09:00`;
   const endAt = localDateTime(draft.endAt) || `${anchor}T10:00`;
   const frequency = draft.recurrenceRule?.frequency || 'none';
-  return `<aside class="calendar-drawer" data-calendar-panel="editor" aria-label="编辑日程">
+  return `<aside class="calendar-drawer calendar-editor-drawer" data-calendar-panel="editor" aria-label="编辑日程">
     <header><h2>${draft.id ? '编辑日程' : '新建日程'}</h2><button data-calendar-close aria-label="关闭">×</button></header>
     <form data-calendar-form>
       ${draft.id ? `<input type="hidden" name="id" value="${escapeHtml(draft.id)}">` : ''}
@@ -88,7 +88,7 @@ function renderEditor(viewModel) {
 
 function renderTrash(viewModel) {
   const rows = (viewModel.calendarTrash || []).filter((row) => row.entity === 'calendar');
-  return `<aside class="calendar-drawer" data-calendar-panel="trash" aria-label="日程回收站"><header><h2>回收站</h2><button data-calendar-close aria-label="关闭">×</button></header><div class="calendar-trash-list">${rows.length ? rows.map((row) => `<article><div><strong>${escapeHtml(row.title || '未命名日程')}</strong><small>${escapeHtml(row.deletedAt || '')}</small></div><button data-calendar-restore="${escapeHtml(row.id)}">恢复</button></article>`).join('') : '<p>回收站为空</p>'}</div></aside>`;
+  return `<aside class="calendar-drawer calendar-trash-drawer" data-calendar-panel="trash" aria-label="日程回收站"><header><h2>回收站</h2><button data-calendar-close aria-label="关闭">×</button></header><div class="calendar-trash-list">${rows.length ? rows.map((row) => `<article><div><strong>${escapeHtml(row.title || '未命名日程')}</strong><small>${escapeHtml(row.deletedAt || '')}</small></div><button data-calendar-restore="${escapeHtml(row.id)}">恢复</button></article>`).join('') : '<p>回收站为空</p>'}</div></aside>`;
 }
 
 function renderSeriesScope(viewModel) {

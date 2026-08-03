@@ -1,4 +1,4 @@
-import { createStateStore } from './app/state-store.mjs?v=1.7.5';
+import { createStateStore } from './app/state-store.mjs?v=1.8.0';
 import { render as renderDashboard } from './app/views/dashboard-view.mjs';
 import { render as renderDecisions } from './app/views/decision-view.mjs';
 import { render as renderTargets } from './app/views/targets-view.mjs';
@@ -37,7 +37,7 @@ import { buildTodayTop3 } from './app/priority-engine.mjs';
 import { buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs';
 import { runCompanyAgent } from './app/company-agent-hub.mjs';
 
-export const APP_VERSION = '1.7.5';
+export const APP_VERSION = '1.8.0';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
@@ -816,13 +816,24 @@ export function createCeoOsApplication(config = {}) {
       if (card && event.dataTransfer) event.dataTransfer.setData('text/calendar-id', card.dataset.calendarEvent);
     });
     document.addEventListener('dragover', (event) => {
-      if (event.target?.closest?.('[data-calendar-drop-date]')) event.preventDefault();
+      const target = event.target?.closest?.('[data-calendar-drop-date]');
+      if (!target) return;
+      event.preventDefault();
+      document.querySelectorAll?.('.calendar-drop-target')?.forEach?.((node) => {
+        if (node !== target) node.classList?.remove?.('calendar-drop-target');
+      });
+      target.classList?.add?.('calendar-drop-target');
+    });
+    document.addEventListener('dragleave', (event) => {
+      const target = event.target?.closest?.('[data-calendar-drop-date]');
+      if (target && !target.contains?.(event.relatedTarget)) target.classList?.remove?.('calendar-drop-target');
     });
     document.addEventListener('drop', (event) => {
       const target = event.target?.closest?.('[data-calendar-drop-date]');
       const id = event.dataTransfer?.getData?.('text/calendar-id');
       if (!target || !id) return;
       event.preventDefault();
+      target.classList?.remove?.('calendar-drop-target');
       const existing = store.load().collections.calendar.find((record) => record.id === id);
       if (!existing) return;
       const start = new Date(existing.startAt);

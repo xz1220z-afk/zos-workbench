@@ -60,15 +60,32 @@ test('rich task editor covers planning, business linkage and focus metadata on a
   });
 });
 
-test('v1.7 PWA cache and manifest include every new offline execution module', () => {
-  assert.match(serviceWorker, /zos-workbench-v1\.7\.5/);
+test('v1.8 PWA cache and manifest include every execution and smart-calendar module', () => {
+  assert.match(serviceWorker, /zos-workbench-v1\.8\.0/);
   for (const asset of [
     'src/app/task-center.mjs', 'src/app/focus-center.mjs', 'src/app/countdown-center.mjs',
     'src/app/availability-center.mjs', 'src/app/merchant-center.mjs',
     'src/app/views/task-view.mjs', 'src/app/views/focus-view.mjs',
     'src/app/views/today-execution-view.mjs', 'src/app/views/availability-view.mjs',
     'src/app/views/merchant-view.mjs',
+    'src/app/calendar-range.mjs', 'src/app/calendar-event.mjs',
+    'src/app/calendar-recurrence.mjs', 'src/app/views/calendar-view.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.equal(manifest.version, '1.7.5');
+  assert.equal(manifest.version, '1.8.0');
   assert.ok(manifest.shortcuts.some((item) => item.url === './#focus'));
+});
+
+test('smart calendar has responsive touch controls, source-safe drawers and drag feedback', async () => {
+  const calendarView = await readFile(new URL('src/app/views/calendar-view.mjs', root), 'utf8');
+  for (const marker of [
+    'calendar-commandbar', 'calendar-editor-drawer', 'calendar-detail-drawer',
+    'calendar-trash-drawer', 'calendar-form-row', 'calendar-scope-dialog',
+  ]) assert.match(calendarView, new RegExp(marker), `${marker} must be rendered`);
+  assert.match(css, /\.calendar-commandbar[^{]*\{[^}]*display:\s*(?:flex|grid)/);
+  assert.match(css, /\.calendar-drawer[^{]*\{[^}]*position:\s*fixed/);
+  assert.match(css, /\.calendar-event\[draggable="true"\]/);
+  assert.match(css, /\.calendar-drop-target/);
+  assert.match(css, /@media \(max-width:\s*767px\)[\s\S]*\.calendar-drawer[^{]*\{[^}]*width:\s*100%/);
+  assert.match(css, /\.calendar-commandbar button[^{]*\{[^}]*min-height:\s*44px/,
+    'calendar actions must meet the mobile touch target baseline');
 });
