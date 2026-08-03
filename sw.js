@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zos-workbench-v1.7.2';
+const CACHE_NAME = 'zos-workbench-v1.7.3';
 // Resolve from the service worker scope so the PWA works both at a domain root
 // and from a GitHub Pages project path such as /zos-workbench/.
 const ASSETS_TO_CACHE = [
@@ -77,7 +77,12 @@ self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(function(cache) {
-        return cache.addAll(ASSETS_TO_CACHE);
+        return Promise.all(ASSETS_TO_CACHE.map(function(assetUrl) {
+          return fetch(assetUrl, { cache: 'reload' }).then(function(response) {
+            if (!response.ok) throw new Error(`Failed to refresh ${assetUrl}: ${response.status}`);
+            return cache.put(assetUrl, response);
+          });
+        }));
       })
       .then(function() {
         return self.skipWaiting();

@@ -10,8 +10,10 @@ const [shellHtml, legacySource, appCss, serviceWorker, manifest] = await Promise
 ]);
 const indexHtml = `${shellHtml}\n${legacySource}\n${appCss}`;
 
-assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.7\.2';/,
+assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v1\.7\.3';/,
   'A command-center UI release must receive a new Service Worker cache revision');
+assert.match(serviceWorker, /fetch\(assetUrl, \{ cache: 'reload' \}\)/,
+  'A new Service Worker must bypass the browser HTTP cache while building its release cache');
 for (const asset of [
   'assets/app.css', 'src/app.mjs', 'src/legacy-app.mjs', 'src/app/operating-loop.mjs',
   'src/app/decision-center.mjs', 'src/app/targets.mjs', 'src/app/source-health.mjs',
@@ -30,9 +32,9 @@ assert.match(indexHtml, /refreshSession\(session\.refreshToken\)/,
   'Sync must refresh an existing Supabase session before pulling data');
 assert.match(indexHtml, /const PUBLIC_APP_URL = 'https:\/\/xz1220z-afk\.github\.io\/zos-workbench\/'/,
   'The public app URL must be explicit so auth callbacks stay on the GitHub Pages subpath');
-assert.match(indexHtml, /const APP_VERSION = '1\.7\.2'/,
+assert.match(indexHtml, /const APP_VERSION = '1\.7\.3'/,
   'The inline application version must match the current release');
-assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v1\.7\.2/,
+assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v1\.7\.3/,
   'The settings page version label must match the current release');
 assert.doesNotMatch(legacySource, /controllerchange[\s\S]{0,180}window\.location\.reload\(\)/,
   'Service Worker updates must not force a second page load');

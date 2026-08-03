@@ -61,7 +61,7 @@ test('rich task editor covers planning, business linkage and focus metadata on a
 });
 
 test('v1.7 PWA cache and manifest include every new offline execution module', () => {
-  assert.match(serviceWorker, /zos-workbench-v1\.7\.2/);
+  assert.match(serviceWorker, /zos-workbench-v1\.7\.3/);
   for (const asset of [
     'src/app/task-center.mjs', 'src/app/focus-center.mjs', 'src/app/countdown-center.mjs',
     'src/app/availability-center.mjs', 'src/app/merchant-center.mjs',
@@ -69,6 +69,6 @@ test('v1.7 PWA cache and manifest include every new offline execution module', (
     'src/app/views/today-execution-view.mjs', 'src/app/views/availability-view.mjs',
     'src/app/views/merchant-view.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.equal(manifest.version, '1.7.2');
+  assert.equal(manifest.version, '1.7.3');
   assert.ok(manifest.shortcuts.some((item) => item.url === './#focus'));
 });
