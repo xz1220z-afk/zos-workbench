@@ -39,6 +39,7 @@ test('responsive CSS preserves dark tokens, safe areas and four-device touch con
   assert.match(css, /@media\s*\(max-width:\s*375px\)/);
   assert.match(css, /@media\s*\(min-width:\s*768px\)/);
   assert.match(css, /@media\s*\(min-width:\s*1280px\)/);
+  assert.doesNotMatch(css, /\.v13-mobile-dashboard\s*\{\s*display:\s*block/, 'mobile must not duplicate the responsive CEO dashboard');
 });
 
 test('mobile dashboard follows the action-first order and never embeds sample KPIs', async () => {

@@ -1496,7 +1496,6 @@
 @media (max-width: 767px) {
   .v13-grid { grid-template-columns: 1fr; }
   .v13-desktop-only { display: none; }
-  .v13-mobile-dashboard { display: block; }
   .v13-panel { padding: 15px; }
   .v13-before-after { grid-template-columns: 1fr; }
   .v13-before-after-arrow { transform: rotate(90deg); justify-self: center; }
