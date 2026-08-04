@@ -67,7 +67,7 @@ export function buildCalendar({
   const showFocus = options.showFocus === true;
   return [
     ...calendar.map((item) => normalizeEvent(item, { source: 'user_calendar' })),
-    ...tasks.map((item) => normalizeEvent(item, { source: 'local_task' })),
+    ...tasks.filter((item) => item.occupyCalendar !== false).map((item) => normalizeEvent(item, { source: 'local_task' })),
     ...projects.map((item) => normalizeEvent(item, { source: 'business_project' })),
     ...life.map((item) => normalizeEvent(item, { source: 'life', company: 'life', privacy: 'private' })),
     ...intelligence.filter((item) => item.followUpAt).map((item) => normalizeEvent({ ...item, startAt: item.followUpAt }, { source: 'intelligence' })),

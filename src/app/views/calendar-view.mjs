@@ -35,6 +35,7 @@ function renderGrid(layout, selection = {}) {
     return `<div class="calendar-list">${layout.groups.map((group) => `<section><h3>${escapeHtml(group.date)}</h3>${group.events.map(eventCard).join('')}</section>`).join('')}</div>`;
   }
   const className = layout.view === 'month' ? 'calendar-month-grid' : `calendar-${layout.view}-timeline`;
+  selection ||= {};
   const startDate = selection.startDate || '';
   const endDate = selection.endDate || startDate;
   return `<div class="${className}">${layout.days.map((day, index) => {
@@ -89,7 +90,7 @@ function renderEditor(viewModel) {
         <label>说明<textarea name="description" rows="3" maxlength="2000">${escapeHtml(draft.description || '')}</textarea></label>
         <div class="calendar-form-row"><label>开始<input type="datetime-local" name="startAt" required value="${escapeHtml(startAt)}"></label><label>截止<input type="datetime-local" name="dueAt" required value="${escapeHtml(dueAt)}"></label></div>
         <label class="calendar-check"><input type="checkbox" name="allDay" ${draft.allDay === false ? '' : 'checked'}>全天任务</label>
-        <div class="calendar-form-row"><label>归属<select name="company">${option('ceo', draft.company || 'ceo', 'CEO')}${option('wanjia', draft.company, '万嘉')}${option('huahuo', draft.company, '花火')}${option('lingli', draft.company, '玲丽')}${option('life', draft.company, '个人')}</select></label><label>优先级<select name="priority">${option('1', String(draft.priority || '2'), '低')}${option('2', String(draft.priority || '2'), '普通')}${option('3', String(draft.priority || '2'), '高')}${option('4', String(draft.priority || '2'), '紧急')}</select></label></div>
+        <div class="calendar-form-row"><label>归属<select name="company">${option('ceo', draft.company || 'ceo', 'CEO')}${option('wanjia', draft.company, '万嘉')}${option('huahuo', draft.company, '花火')}${option('lingli', draft.company, '玲丽')}${option('life', draft.company, '个人')}</select></label><label>优先级<select name="priority">${option('0', String(draft.priority ?? '2'), '无')}${option('1', String(draft.priority ?? '2'), '低')}${option('2', String(draft.priority ?? '2'), '普通')}${option('3', String(draft.priority ?? '2'), '高')}</select></label></div>
         <div class="calendar-form-row"><label>项目<input name="projectId" value="${escapeHtml(draft.projectId || '')}" placeholder="可选"></label><label>负责人<input name="assigneeIds" value="${escapeHtml((draft.assigneeIds || []).join(','))}" placeholder="多人用逗号分隔"></label></div>
         <div class="calendar-form-row"><label>提醒时间<input type="datetime-local" name="reminderAt" value="${escapeHtml(localDateTime(draft.reminderAt))}"></label><label>重复<input name="recurrence" value="${escapeHtml(draft.recurrence || '')}" placeholder="例如 weekly"></label></div>
         <label>子任务（每行一项）<textarea name="subtasks" rows="3">${escapeHtml((draft.subtasks || []).map((item) => item.title || item).join('\n'))}</textarea></label>
