@@ -48,6 +48,7 @@ export function buildDurableReminderSchedule(items = [], options = {}) {
         entityId: id,
         scheduledAt: moment.scheduledAt,
         title: item?.privacy === 'private' ? '个人安排' : String(item?.title || 'ZOS 提醒').trim(),
+        body: item?.privacy === 'private' ? '个人安排' : String(item?.body || item?.title || '有一项安排需要处理').trim().slice(0, 240),
         privacy: item?.privacy === 'private' ? 'private' : 'work',
         status: 'pending',
         createdAt: new Date(Number.isFinite(nowMs) ? nowMs : Date.now()).toISOString(),

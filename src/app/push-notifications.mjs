@@ -20,6 +20,7 @@ export function createPushClient({ url, anonKey, accessToken, fetchImpl = global
     status: () => request({ action: 'status' }),
     register: (subscription) => request({ action: 'subscribe', subscription }),
     unregister: (subscription) => request({ action: 'unsubscribe', subscription }),
+    schedule: (jobs) => request({ action: 'schedule', jobs }),
   };
 }
 

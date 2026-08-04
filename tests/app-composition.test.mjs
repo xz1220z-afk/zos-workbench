@@ -225,7 +225,39 @@ test('service worker caches the complete transitive browser module graph', async
     'src/app/browser-runtime.mjs', 'src/business-data-client.mjs', 'src/supabase-auth.mjs',
     'src/supabase-transport.mjs', 'src/sync-engine.mjs', 'src/data-model.mjs',
     'src/app/auto-refresh-controller.mjs',
+    'src/app/daily-digest.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
+});
+
+test('enabled closed-app reminders synchronize current tasks calendar deadlines and daily digests', async () => {
+  const scheduled = [];
+  const store = fakeStore();
+  store.saveEntity('tasks', {
+    id: 'task-1', title: '确认回款', status: 'todo', reminderAt: '2026-08-05T09:00:00+08:00',
+  });
+  store.saveEntity('calendar', {
+    id: 'calendar-1', title: '团队周会', status: 'scheduled', source: 'user_calendar', privacy: 'work',
+    startAt: '2026-08-05T10:00:00+08:00', endAt: '2026-08-05T11:00:00+08:00', reminders: [30],
+  });
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} },
+    storage: { getItem: () => 'device-1', setItem() {} }, store,
+    now: () => '2026-08-04T00:00:00.000Z',
+    operatingRuntime: {
+      session: { userId: 'owner-1' },
+      pushClient: {
+        async status() { return { state: 'enabled', publicKey: 'AQID' }; },
+        async schedule(jobs) { scheduled.push(structuredClone(jobs)); return { state: 'enabled', scheduled: jobs.length }; },
+      },
+    },
+    autoRefreshFactory: () => ({ start() {}, stop() {}, async refresh() {} }),
+  });
+  await app.start();
+  await app.whenIdle();
+  assert.equal(app.runtime.reminderScheduleState, 'synced');
+  assert.ok(scheduled.at(-1).some((item) => item.entityType === 'task' && item.entityId === 'task-1'));
+  assert.ok(scheduled.at(-1).some((item) => item.entityType === 'calendar' && item.entityId === 'calendar-1'));
+  assert.ok(scheduled.at(-1).some((item) => item.entityType === 'evening_digest'));
 });
 
 test('calendar creation and review generation stay in private synchronized collections', () => {

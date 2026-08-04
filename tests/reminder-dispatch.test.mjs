@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 import {
+  normalizeScheduledJobs,
   safeNotificationPayload,
   selectSingleSubscription,
 } from '../supabase/functions/_shared/reminder-dispatch.mjs';
@@ -14,6 +15,25 @@ test('private reminders never expose their title in a push payload', () => {
   }), {
     title: 'ZOS 提醒', body: '个人安排', tag: 'owner:calendar:1', url: './#calendar',
   });
+});
+
+test('server normalizes authenticated schedules and never trusts a client owner id', () => {
+  const jobs = normalizeScheduledJobs([
+    {
+      dedupeKey: 'fake-owner:task:1:explicit:2026-08-10T01:00:00.000Z', ownerId: 'fake-owner',
+      entityType: 'task', entityId: '1', scheduledAt: '2026-08-10T01:00:00.000Z',
+      title: '核对回款', body: '今日需确认回款', privacy: 'work',
+    },
+    {
+      dedupeKey: 'fake-owner:calendar:private:before_30m:2026-08-10T02:00:00.000Z',
+      entityType: 'calendar', entityId: 'private', scheduledAt: '2026-08-10T02:00:00.000Z',
+      title: '私人标题', body: '私人正文', privacy: 'private',
+    },
+  ], { userId: 'real-owner', now: '2026-08-04T00:00:00.000Z' });
+  assert.equal(jobs.length, 2);
+  assert.ok(jobs.every((item) => item.user_id === 'real-owner'));
+  assert.equal(jobs[1].title, '个人安排');
+  assert.equal(jobs[1].body, '个人安排');
 });
 
 test('one owner reminder chooses only the newest enabled device subscription', () => {
@@ -40,6 +60,9 @@ test('notification storage is owner-isolated and the dispatcher is cron-secret p
   assert.match(edge, /requireUser\(req\)/);
   assert.match(edge, /safeNotificationPayload/);
   assert.match(edge, /selectSingleSubscription/);
+  assert.match(edge, /action === 'schedule'/);
+  assert.match(edge, /normalizeScheduledJobs/);
+  assert.match(edge, /zos_reminder_jobs/);
   assert.doesNotMatch(edge, /console\.log\([^\n]*(?:endpoint|p256dh|auth)/i);
   assert.match(config, /\[functions\.zos-reminder-dispatch\][\s\S]*verify_jwt\s*=\s*false/);
 });
@@ -92,6 +115,7 @@ test('push client uses the protected function and never reads subscription table
   });
   assert.equal((await client.status()).state, 'permission_required');
   assert.equal((await client.register({ endpoint: 'https://push.example/1', keys: { p256dh: 'p', auth: 'a' } })).state, 'enabled');
+  assert.equal((await client.schedule([{ dedupeKey: 'job-1' }])).state, 'enabled');
   assert.ok(requests.every((item) => item.url.endsWith('/functions/v1/zos-reminder-dispatch')));
   assert.ok(requests.every((item) => item.init.headers.Authorization === 'Bearer jwt'));
 });

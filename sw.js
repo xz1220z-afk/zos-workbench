@@ -24,6 +24,7 @@ const ASSETS_TO_CACHE = [
   'src/app/company-operating-contract.mjs',
   'src/app/priority-engine.mjs',
   'src/app/reminder-center.mjs',
+  'src/app/daily-digest.mjs',
   'src/app/push-notifications.mjs',
   'src/app/company-agent-hub.mjs',
   'src/app/ics-calendar.mjs',

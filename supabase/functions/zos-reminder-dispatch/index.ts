@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
 import { AuthError, requireUser } from '../_shared/auth.ts';
-import { safeNotificationPayload, selectSingleSubscription } from '../_shared/reminder-dispatch.mjs';
+import { normalizeScheduledJobs, safeNotificationPayload, selectSingleSubscription } from '../_shared/reminder-dispatch.mjs';
 
 const HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -49,6 +49,20 @@ async function manageSubscription(req: Request) {
     const { data } = await supabase.from('zos_push_subscriptions').select('enabled,last_seen_at')
       .eq('user_id', user.id).eq('enabled', true).order('last_seen_at', { ascending: false }).limit(1).maybeSingle();
     return response({ state: data ? 'enabled' : publicKey ? 'permission_required' : 'pending_configuration', publicKey });
+  }
+  if (action === 'schedule') {
+    const { data: subscription } = await supabase.from('zos_push_subscriptions').select('id')
+      .eq('user_id', user.id).eq('enabled', true).limit(1).maybeSingle();
+    if (!subscription) return response({ state: 'permission_required', scheduled: 0 });
+    const jobs = normalizeScheduledJobs(body.jobs, { userId: user.id });
+    const { error: skipError } = await supabase.from('zos_reminder_jobs').update({ status: 'skipped' })
+      .eq('user_id', user.id).eq('status', 'pending');
+    if (skipError) return response({ error: 'reminder_write_failed' }, 502);
+    if (jobs.length) {
+      const { error: writeError } = await supabase.from('zos_reminder_jobs').upsert(jobs, { onConflict: 'user_id,dedupe_key' });
+      if (writeError) return response({ error: 'reminder_write_failed' }, 502);
+    }
+    return response({ state: 'enabled', scheduled: jobs.length });
   }
   const raw = body.subscription && typeof body.subscription === 'object'
     ? body.subscription as Record<string, unknown> : {};

@@ -19,6 +19,7 @@ create table if not exists public.zos_reminder_jobs (
   entity_id text not null,
   scheduled_at timestamptz not null,
   title text not null,
+  body text not null default '',
   privacy text not null default 'work' check (privacy in ('work', 'private')),
   status text not null default 'pending' check (status in ('pending', 'sent', 'skipped')),
   created_at timestamptz not null default now(),

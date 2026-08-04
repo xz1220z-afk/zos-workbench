@@ -46,6 +46,16 @@ test('durable schedule converts explicit and relative reminders into stable UTC 
   assert.ok(jobs.every((item) => item.ownerId === 'owner-1' && item.status === 'pending'));
 });
 
+test('durable schedule preserves a bounded digest body for server delivery', () => {
+  const [job] = buildDurableReminderSchedule([
+    {
+      id: 'digest:morning:2026-08-05', entityType: 'morning_digest', title: 'ZOS 晨间简报',
+      body: '今日 3 项重点；1 组冲突；2 个关键期限', reminderAt: '2026-08-05T07:30:00+08:00',
+    },
+  ], { ownerId: 'owner-1', now: '2026-08-04T00:00:00Z' });
+  assert.equal(job.body, '今日 3 项重点；1 组冲突；2 个关键期限');
+});
+
 test('durable schedule suppresses completed items, acknowledged keys and private titles', () => {
   const pending = buildDurableReminderSchedule([
     { id: 'done', entityType: 'task', title: '已完成', status: 'done', reminderAt: '2026-08-10T09:00:00Z' },

@@ -36,7 +36,8 @@ import { render as renderMerchant } from './app/views/merchant-view.mjs';
 import { createAutoRefreshController } from './app/auto-refresh-controller.mjs';
 import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs';
 import { buildTodayTop3 } from './app/priority-engine.mjs';
-import { buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs';
+import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs';
+import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs';
 import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs';
 import { runCompanyAgent } from './app/company-agent-hub.mjs';
 
@@ -62,6 +63,7 @@ export function createCeoOsApplication(config = {}) {
     calendarPendingMutation: null, calendarFormError: null, calendarSyncState: 'idle',
     externalCalendar: [], externalCalendarState: 'pending_configuration', externalCalendarRange: null, externalCalendarFetchedAt: null,
     notificationState: 'pending_configuration', notificationPublicKey: null, inAppNotificationState: 'permission_required',
+    reminderScheduleState: 'disabled', reminderScheduleCount: 0,
     showFocus: false, importantDatesPanel: null, searchQuery: '', searchResults: [],
     taskDrawerOpen: false, taskDraft: null, focusDuration: 25, focusTaskId: null,
     availabilityDate: now().slice(0, 10), merchantQuery: '', selectedMerchantId: null,
@@ -78,10 +80,13 @@ export function createCeoOsApplication(config = {}) {
   let actionsBound = false;
   let started = false;
   let startupWork = Promise.resolve();
+  let reminderScheduleWork = Promise.resolve();
+  let reminderScheduleFingerprint = '';
   const notifiedReminderIds = new Set();
 
   function signalLocalChange() {
     try { (config.eventTarget || globalThis).dispatchEvent(new Event('zos:local-change')); } catch { /* Optional outside browsers. */ }
+    queueReminderSchedule();
   }
 
   function viewModel() {
@@ -111,6 +116,8 @@ export function createCeoOsApplication(config = {}) {
     }, { showFocus: runtime.showFocus })
       .map((item) => item.company === 'life' ? redactLifeEventForWork(item) : item);
     const calendarConflicts = detectCalendarConflicts(calendar);
+    const importantDates = buildImportantDates(countdowns, { now: now() });
+    const digestInput = { tasks, calendar, conflicts: calendarConflicts, importantDates };
     const todayTop3 = buildTodayTop3({
       tasks,
       decisions,
@@ -154,7 +161,9 @@ export function createCeoOsApplication(config = {}) {
       relations: buildRelations(businessRecords),
       life,
       lifeSummary: summarizeLife(life),
-      importantDates: buildImportantDates(countdowns, { now: now() }),
+      importantDates,
+      morningDigest: buildMorningDigest(digestInput, { date: now().slice(0, 10), timeZone: 'Asia/Shanghai' }),
+      eveningDigest: buildEveningDigest(digestInput, { date: now().slice(0, 10), timeZone: 'Asia/Shanghai' }),
       searchResults: searchWorkspace(searchIndex, runtime.searchQuery),
       today: now().slice(0, 10),
       agendaDate: now().slice(0, 10),
@@ -249,6 +258,7 @@ export function createCeoOsApplication(config = {}) {
     }
     renderAll();
     notifyCurrentReminders();
+    await scheduleDurableReminders();
     return {
       succeeded: results.filter((item) => item.ok).map((item) => item.source),
       failed: results.filter((item) => !item.ok).map(({ source, safeCode }) => ({ source, safeCode })),
@@ -261,6 +271,70 @@ export function createCeoOsApplication(config = {}) {
     if (result.state === 'sent') pending.forEach((item) => notifiedReminderIds.add(item.id));
     runtime.inAppNotificationState = result.state;
     return result;
+  }
+
+  function importantDateReminderItems(countdowns = []) {
+    return countdowns.map((item) => {
+      const distance = countdownDistance(item, { now: now(), timeZone: 'Asia/Shanghai' });
+      return {
+        ...item,
+        entityType: 'important_date',
+        startAt: `${distance.occurrence}T09:00:00+08:00`,
+        reminders: [43_200, 10_080, 4_320, 0],
+        status: distance.state === 'expired' ? 'completed' : 'pending',
+      };
+    });
+  }
+
+  function currentDurableReminderJobs() {
+    const state = store.load();
+    const model = viewModel();
+    const sourceItems = [
+      ...(state.collections.tasks || []).map((item) => ({ ...item, entityType: 'task' })),
+      ...(state.collections.calendar || []).map((item) => ({ ...item, entityType: 'calendar' })),
+      ...importantDateReminderItems(state.collections.countdowns || []),
+      ...buildDailyDigestItems({
+        tasks: state.collections.tasks || [], calendar: model.calendar,
+        conflicts: model.calendarConflicts, importantDates: model.importantDates,
+      }, {
+        date: now().slice(0, 10), timeZone: 'Asia/Shanghai',
+        morningTime: '07:30', eveningTime: '21:30', includeTomorrowMorning: true,
+      }),
+    ];
+    return buildDurableReminderSchedule(sourceItems, {
+      ownerId: operatingRuntime?.session?.userId,
+      now: now(),
+    });
+  }
+
+  async function scheduleDurableReminders({ force = false } = {}) {
+    if (runtime.notificationState !== 'enabled' || !operatingRuntime?.pushClient?.schedule || !operatingRuntime?.session?.userId) {
+      runtime.reminderScheduleState = 'disabled';
+      return { state: 'disabled', scheduled: 0 };
+    }
+    const jobs = currentDurableReminderJobs();
+    const fingerprint = JSON.stringify(jobs);
+    if (!force && fingerprint === reminderScheduleFingerprint) {
+      return { state: 'synced', scheduled: jobs.length };
+    }
+    runtime.reminderScheduleState = 'syncing';
+    try {
+      const result = await operatingRuntime.pushClient.schedule(jobs);
+      reminderScheduleFingerprint = fingerprint;
+      runtime.reminderScheduleState = result?.state === 'enabled' ? 'synced' : (result?.state || 'schedule_failed');
+      runtime.reminderScheduleCount = Number(result?.scheduled) || 0;
+      return result;
+    } catch {
+      runtime.reminderScheduleState = 'schedule_failed';
+      return { state: 'schedule_failed', scheduled: 0 };
+    }
+  }
+
+  function queueReminderSchedule() {
+    if (runtime.notificationState !== 'enabled') return;
+    reminderScheduleWork = reminderScheduleWork
+      .then(() => scheduleDurableReminders())
+      .catch(() => ({ state: 'schedule_failed' }));
   }
 
   function confirmTarget(input = {}) {
@@ -361,6 +435,7 @@ export function createCeoOsApplication(config = {}) {
         registerSubscription: (subscription) => pushClient.register(subscription),
       });
       runtime.notificationState = result.state;
+      if (result.state === 'enabled') await scheduleDurableReminders({ force: true });
       renderAll();
       return result;
     } catch {
@@ -1206,6 +1281,7 @@ export function createCeoOsApplication(config = {}) {
     if (config.autoRefreshFactory || document?.visibilityState != null) autoRefreshController.start();
     await autoRefreshController.refresh('startup');
     config.ensureDailyBrief && Object.assign(runtime, { briefs: await config.ensureDailyBrief(viewModel()) });
+    await scheduleDurableReminders({ force: true });
     renderAll();
     return viewModel();
   }
@@ -1247,14 +1323,14 @@ export function createCeoOsApplication(config = {}) {
   }
 
   return {
-    start, stop, whenIdle: () => startupWork, render: renderAll, store, runtime, viewModel,
+    start, stop, whenIdle: () => Promise.all([startupWork, reminderScheduleWork]).then(() => viewModel()), render: renderAll, store, runtime, viewModel,
     refreshSource, refreshAllSources, notifyCurrentReminders, confirmTarget, previewDecision, executeApproval,
     quickCapture, captureCalendar, saveCalendar, deleteCalendar, restoreCalendar, copyCalendar, moveCalendar,
     setCalendarView, navigateCalendar, goToCalendarToday, refreshCalendarRange,
     selectCalendar, openCalendarEditor, closeCalendarPanel, requestCalendarMutation, applyCalendarSeriesScope,
     beginCalendarSelection, extendCalendarSelection, commitCalendarSelection, setCalendarDraftKind,
     saveCalendarArrangement,
-    saveTask, convertIntelligenceToTask, saveCountdown, enableClosedAppReminders,
+    saveTask, convertIntelligenceToTask, saveCountdown, enableClosedAppReminders, scheduleDurableReminders,
     createFocus, transitionCurrentFocus, queryMerchant, queryHuahuoAvailability,
     openTaskEditor, closeTaskEditor, generateReview, generateAgentDraft,
     get operatingRuntime() { return operatingRuntime; },
