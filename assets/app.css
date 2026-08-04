@@ -1751,6 +1751,8 @@ body { overflow-x: hidden; }
 .calendar-layer-filters { align-items: center; margin-bottom: 14px; padding: 0 4px; }
 .calendar-layer-filters label { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; cursor: pointer; }
 .calendar-layer-filters > span { margin-left: auto; }
+.calendar-reminder-state { display: inline-flex; align-items: center; gap: 7px; }
+.calendar-reminder-state button { min-height: 38px; padding: 7px 10px; border: 1px solid rgba(216,180,106,.5); border-radius: 9px; background: rgba(216,180,106,.1); color: var(--cc-accent-gold); cursor: pointer; }
 .calendar-event { position: relative; margin-bottom: 7px; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
 .calendar-event:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.18); box-shadow: 0 8px 22px rgba(0,0,0,.18); }
 .calendar-event[draggable="true"] { cursor: grab; }

@@ -37,6 +37,7 @@ import { createAutoRefreshController } from './app/auto-refresh-controller.mjs';
 import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs';
 import { buildTodayTop3 } from './app/priority-engine.mjs';
 import { buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs';
+import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs';
 import { runCompanyAgent } from './app/company-agent-hub.mjs';
 
 export const APP_VERSION = '1.8.1';
@@ -60,6 +61,7 @@ export function createCeoOsApplication(config = {}) {
     calendarSelection: null, calendarSelecting: false, calendarTouchPending: null, calendarMutationScope: 'single',
     calendarPendingMutation: null, calendarFormError: null, calendarSyncState: 'idle',
     externalCalendar: [], externalCalendarState: 'pending_configuration', externalCalendarRange: null,
+    notificationState: 'pending_configuration', notificationPublicKey: null, inAppNotificationState: 'permission_required',
     showFocus: false, importantDatesPanel: null, searchQuery: '', searchResults: [],
     taskDrawerOpen: false, taskDraft: null, focusDuration: 25, focusTaskId: null,
     availabilityDate: now().slice(0, 10), merchantQuery: '', selectedMerchantId: null,
@@ -257,7 +259,7 @@ export function createCeoOsApplication(config = {}) {
     const pending = viewModel().reminderQueue.filter((item) => !notifiedReminderIds.has(item.id));
     const result = notifyGrantedReminders(pending, config.notificationEnvironment || globalThis);
     if (result.state === 'sent') pending.forEach((item) => notifiedReminderIds.add(item.id));
-    runtime.notificationState = result.state;
+    runtime.inAppNotificationState = result.state;
     return result;
   }
 
@@ -343,6 +345,29 @@ export function createCeoOsApplication(config = {}) {
     const item = store.saveEntity('countdowns', normalizeCountdown(input));
     signalLocalChange(); renderAll();
     return item;
+  }
+
+  async function enableClosedAppReminders() {
+    const pushClient = operatingRuntime?.pushClient;
+    if (!pushClient) {
+      runtime.notificationState = 'authentication_required';
+      renderAll();
+      return { state: runtime.notificationState };
+    }
+    try {
+      const result = await enablePushNotifications({
+        environment: document?.defaultView || globalThis,
+        publicKey: runtime.notificationPublicKey,
+        registerSubscription: (subscription) => pushClient.register(subscription),
+      });
+      runtime.notificationState = result.state;
+      renderAll();
+      return result;
+    } catch {
+      runtime.notificationState = 'subscription_failed';
+      renderAll();
+      return { state: runtime.notificationState };
+    }
   }
 
   function createFocus(input = {}, options = {}) {
@@ -721,6 +746,7 @@ export function createCeoOsApplication(config = {}) {
       const countdownCapture = event.target?.closest?.('[data-countdown-capture]');
       const importantDatesOpen = event.target?.closest?.('[data-important-dates-open]');
       const importantDatesClose = event.target?.closest?.('[data-important-dates-close]');
+      const enableReminders = event.target?.closest?.('[data-enable-reminders]');
       const calendarLayer = event.target?.closest?.('[data-calendar-layer]');
       const calendarNav = event.target?.closest?.('[data-calendar-nav]');
       const calendarToday = event.target?.closest?.('[data-calendar-today]');
@@ -796,6 +822,8 @@ export function createCeoOsApplication(config = {}) {
         } else if (importantDatesClose) {
           runtime.importantDatesPanel = null;
           renderAll();
+        } else if (enableReminders) {
+          await enableClosedAppReminders();
         } else if (countdownCapture) {
           const ask = config.prompt || globalThis.prompt;
           const title = ask?.('倒数日名称');
@@ -1144,6 +1172,15 @@ export function createCeoOsApplication(config = {}) {
       renderAll();
       return viewModel();
     }
+    if (operatingRuntime.pushClient) {
+      try {
+        const status = await operatingRuntime.pushClient.status();
+        runtime.notificationPublicKey = status.publicKey || null;
+        runtime.notificationState = status.state || pushCapabilityState(document?.defaultView || globalThis);
+      } catch {
+        runtime.notificationState = 'pending_configuration';
+      }
+    }
     const syncController = operatingRuntime?.syncController || config.syncController;
     syncController?.start?.();
     const factory = config.autoRefreshFactory || createAutoRefreshController;
@@ -1215,7 +1252,7 @@ export function createCeoOsApplication(config = {}) {
     selectCalendar, openCalendarEditor, closeCalendarPanel, requestCalendarMutation, applyCalendarSeriesScope,
     beginCalendarSelection, extendCalendarSelection, commitCalendarSelection, setCalendarDraftKind,
     saveCalendarArrangement,
-    saveTask, convertIntelligenceToTask, saveCountdown,
+    saveTask, convertIntelligenceToTask, saveCountdown, enableClosedAppReminders,
     createFocus, transitionCurrentFocus, queryMerchant, queryHuahuoAvailability,
     openTaskEditor, closeTaskEditor, generateReview, generateAgentDraft,
     get operatingRuntime() { return operatingRuntime; },

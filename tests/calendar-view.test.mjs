@@ -110,3 +110,18 @@ test('new arrangement drawer switches between task and schedule without dropping
   assert.match(html, /name="priority"/);
   assert.match(html, /保存任务/);
 });
+
+test('calendar exposes truthful closed-app reminder setup state', () => {
+  const html = renderCalendarHtml({
+    calendar: [], calendarView: 'month', calendarAnchor: '2026-08-04',
+    externalCalendarState: 'pending_configuration', notificationState: 'permission_required',
+  });
+  assert.match(html, /data-enable-reminders/);
+  assert.match(html, /开启关闭页面提醒/);
+  const unavailable = renderCalendarHtml({
+    calendar: [], calendarView: 'month', calendarAnchor: '2026-08-04',
+    notificationState: 'pending_configuration',
+  });
+  assert.match(unavailable, /推送服务待配置/);
+  assert.doesNotMatch(unavailable, /data-enable-reminders/);
+});

@@ -24,6 +24,7 @@ const ASSETS_TO_CACHE = [
   'src/app/company-operating-contract.mjs',
   'src/app/priority-engine.mjs',
   'src/app/reminder-center.mjs',
+  'src/app/push-notifications.mjs',
   'src/app/company-agent-hub.mjs',
   'src/app/ics-calendar.mjs',
   'src/app/operating-loop.mjs',
@@ -171,6 +172,31 @@ self.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'skip-waiting') {
     self.skipWaiting();
   }
+});
+
+self.addEventListener('push', function(event) {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch { payload = {}; }
+  const title = typeof payload.title === 'string' ? payload.title.slice(0, 80) : 'ZOS 提醒';
+  const body = typeof payload.body === 'string' ? payload.body.slice(0, 160) : '有一项安排需要处理';
+  const tag = typeof payload.tag === 'string' ? payload.tag.slice(0, 200) : 'zos-reminder';
+  const url = typeof payload.url === 'string' ? payload.url : './#today';
+  event.waitUntil(self.registration.showNotification(title, {
+    body, tag, renotify: false, icon: 'icons/icon-192x192.png', badge: 'icons/icon-192x192.png', data: { url },
+  }));
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  const requestedUrl = event.notification?.data?.url || './#today';
+  const scopeUrl = new URL(self.registration.scope);
+  const targetUrl = new URL(requestedUrl, self.registration.scope);
+  const safeUrl = targetUrl.origin === scopeUrl.origin ? targetUrl.href : new URL('./#today', self.registration.scope).href;
+  event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windows) {
+    const existing = windows.find(function(client) { return new URL(client.url).origin === scopeUrl.origin; });
+    if (existing) return existing.navigate(safeUrl).then(function() { return existing.focus(); });
+    return clients.openWindow(safeUrl);
+  }));
 });
 
 function offlineResponse() {

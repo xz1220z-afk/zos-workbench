@@ -4,6 +4,7 @@ import { createSupabaseTransport } from '../supabase-transport.mjs';
 import { createFeishuApprovalClient } from './feishu-approvals.mjs';
 import { createOperatingLoop } from './operating-loop.mjs';
 import { createSyncController } from './sync-controller.mjs';
+import { createPushClient } from './push-notifications.mjs';
 
 const DEFAULT_CONFIG = Object.freeze({
   url: 'https://dtwvyramgbwtlyhmkhkd.supabase.co',
@@ -125,6 +126,7 @@ export async function createBrowserOperatingRuntime({
 
   return {
     operatingLoop, syncController, session,
+    pushClient: createPushClient({ ...config, accessToken: session.accessToken, fetchImpl }),
     loadIntelligence: (options) => loadIntelligenceRows(fetchImpl, config, session.accessToken, options),
     loadExternalCalendar: (options) => loadExternalCalendar(fetchImpl, config, session.accessToken, options),
   };
