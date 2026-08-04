@@ -30,12 +30,19 @@ function eventCard(event) {
   </article>`;
 }
 
-function renderGrid(layout) {
+function renderGrid(layout, selection = {}) {
   if (layout.view === 'list') {
     return `<div class="calendar-list">${layout.groups.map((group) => `<section><h3>${escapeHtml(group.date)}</h3>${group.events.map(eventCard).join('')}</section>`).join('')}</div>`;
   }
   const className = layout.view === 'month' ? 'calendar-month-grid' : `calendar-${layout.view}-timeline`;
-  return `<div class="${className}">${layout.days.map((day, index) => `<section class="calendar-day ${day.inMonth === false ? 'outside-month' : ''}" data-calendar-drop-date="${escapeHtml(day.date)}"><header><span>${layout.view === 'week' ? `周${WEEK_LABELS[index]}` : ''}</span><strong>${escapeHtml(day.date.slice(5))}</strong></header><div>${day.events.map(eventCard).join('') || '<span class="calendar-day-empty">无安排</span>'}</div></section>`).join('')}</div>`;
+  const startDate = selection.startDate || '';
+  const endDate = selection.endDate || startDate;
+  return `<div class="${className}">${layout.days.map((day, index) => {
+    const selected = startDate && day.date >= (startDate < endDate ? startDate : endDate)
+      && day.date <= (startDate < endDate ? endDate : startDate);
+    const dayClass = ['calendar-day', selected ? 'is-selected' : '', day.inMonth === false ? 'outside-month' : ''].filter(Boolean).join(' ');
+    return `<section class="${dayClass}" data-calendar-select-date="${escapeHtml(day.date)}" tabindex="0" data-calendar-drop-date="${escapeHtml(day.date)}"><header><span>${layout.view === 'week' ? `周${WEEK_LABELS[index]}` : ''}</span><strong>${escapeHtml(day.date.slice(5))}</strong></header><div>${day.events.map(eventCard).join('') || '<span class="calendar-day-empty">无安排</span>'}</div></section>`;
+  }).join('')}</div>`;
 }
 
 function renderViewSwitch(currentView) {
@@ -66,12 +73,37 @@ function option(value, selected, label) {
 function renderEditor(viewModel) {
   const draft = viewModel.calendarDraft || {};
   const anchor = viewModel.calendarAnchor || new Date().toISOString().slice(0, 10);
+  const kind = draft.id ? 'calendar' : (viewModel.calendarDraftKind || draft.kind || 'calendar');
   const startAt = localDateTime(draft.startAt) || `${anchor}T09:00`;
   const endAt = localDateTime(draft.endAt) || `${anchor}T10:00`;
+  const dueAt = localDateTime(draft.dueAt) || endAt;
   const frequency = draft.recurrenceRule?.frequency || 'none';
-  return `<aside class="calendar-drawer calendar-editor-drawer" data-calendar-panel="editor" aria-label="编辑日程">
-    <header><h2>${draft.id ? '编辑日程' : '新建日程'}</h2><button data-calendar-close aria-label="关闭">×</button></header>
+  const kindSwitch = draft.id ? '' : `<div class="calendar-kind-switch" role="group" aria-label="安排类型"><button type="button" data-calendar-kind="task" class="${kind === 'task' ? 'active' : ''}">任务</button><button type="button" data-calendar-kind="calendar" class="${kind === 'calendar' ? 'active' : ''}">日程</button></div>`;
+  if (kind === 'task') {
+    return `<aside class="calendar-drawer calendar-editor-drawer" data-calendar-panel="editor" aria-label="新增安排">
+      <header><div><small>所选日期 ${escapeHtml(startAt.slice(0, 10))} — ${escapeHtml(dueAt.slice(0, 10))}</small><h2>新增安排</h2></div><button data-calendar-close aria-label="关闭">×</button></header>
+      ${kindSwitch}
+      <form data-calendar-form>
+        <input type="hidden" name="scheduleKind" value="task">
+        <label>标题<input name="title" required maxlength="120" value="${escapeHtml(draft.title || '')}"></label>
+        <label>说明<textarea name="description" rows="3" maxlength="2000">${escapeHtml(draft.description || '')}</textarea></label>
+        <div class="calendar-form-row"><label>开始<input type="datetime-local" name="startAt" required value="${escapeHtml(startAt)}"></label><label>截止<input type="datetime-local" name="dueAt" required value="${escapeHtml(dueAt)}"></label></div>
+        <label class="calendar-check"><input type="checkbox" name="allDay" ${draft.allDay === false ? '' : 'checked'}>全天任务</label>
+        <div class="calendar-form-row"><label>归属<select name="company">${option('ceo', draft.company || 'ceo', 'CEO')}${option('wanjia', draft.company, '万嘉')}${option('huahuo', draft.company, '花火')}${option('lingli', draft.company, '玲丽')}${option('life', draft.company, '个人')}</select></label><label>优先级<select name="priority">${option('1', String(draft.priority || '2'), '低')}${option('2', String(draft.priority || '2'), '普通')}${option('3', String(draft.priority || '2'), '高')}${option('4', String(draft.priority || '2'), '紧急')}</select></label></div>
+        <div class="calendar-form-row"><label>项目<input name="projectId" value="${escapeHtml(draft.projectId || '')}" placeholder="可选"></label><label>负责人<input name="assigneeIds" value="${escapeHtml((draft.assigneeIds || []).join(','))}" placeholder="多人用逗号分隔"></label></div>
+        <div class="calendar-form-row"><label>提醒时间<input type="datetime-local" name="reminderAt" value="${escapeHtml(localDateTime(draft.reminderAt))}"></label><label>重复<input name="recurrence" value="${escapeHtml(draft.recurrence || '')}" placeholder="例如 weekly"></label></div>
+        <label>子任务（每行一项）<textarea name="subtasks" rows="3">${escapeHtml((draft.subtasks || []).map((item) => item.title || item).join('\n'))}</textarea></label>
+        <label class="calendar-check"><input type="checkbox" name="occupyCalendar" ${draft.occupyCalendar === false ? '' : 'checked'}>在日历中占位</label>
+        <p class="calendar-form-error" data-calendar-form-error role="alert">${escapeHtml(viewModel.calendarFormError || '')}</p>
+        <footer><button type="button" data-calendar-close>取消</button><button class="primary" type="submit">保存任务</button></footer>
+      </form>
+    </aside>`;
+  }
+  return `<aside class="calendar-drawer calendar-editor-drawer" data-calendar-panel="editor" aria-label="${draft.id ? '编辑日程' : '新增安排'}">
+    <header><h2>${draft.id ? '编辑日程' : '新增安排'}</h2><button data-calendar-close aria-label="关闭">×</button></header>
+    ${kindSwitch}
     <form data-calendar-form>
+      <input type="hidden" name="scheduleKind" value="calendar">
       ${draft.id ? `<input type="hidden" name="id" value="${escapeHtml(draft.id)}">` : ''}
       <label>标题<input name="title" required maxlength="120" value="${escapeHtml(draft.title || '')}"></label>
       <div class="calendar-form-row"><label>开始<input type="datetime-local" name="startAt" required value="${escapeHtml(startAt)}"></label><label>结束<input type="datetime-local" name="endAt" required value="${escapeHtml(endAt)}"></label></div>
@@ -120,11 +152,11 @@ export function renderCalendarHtml(viewModel = {}) {
     <header class="calendar-commandbar">
       <div class="calendar-navigation"><button data-calendar-today>今天</button><button data-calendar-nav="prev" aria-label="上一周期">‹</button><button data-calendar-nav="next" aria-label="下一周期">›</button><input type="date" data-calendar-anchor value="${escapeHtml(viewModel.calendarAnchor || '')}"></div>
       ${renderViewSwitch(currentView)}
-      <div class="calendar-command-actions"><button data-calendar-sync>同步当前范围</button><button data-calendar-trash>回收站</button><button class="primary" data-calendar-capture>＋ 新建日程</button></div>
+      <div class="calendar-command-actions"><button data-calendar-sync>同步当前范围</button><button data-calendar-trash>回收站</button><button class="primary" data-calendar-capture>＋ 新增安排</button></div>
     </header>
     <div class="calendar-layer-filters"><label><input type="checkbox" data-calendar-layer="countdown" ${viewModel.showCountdowns === false ? '' : 'checked'}>倒数日</label><label><input type="checkbox" data-calendar-layer="focus" ${viewModel.showFocus ? 'checked' : ''}>专注记录</label><span>${viewModel.calendarSyncState === 'loading' ? '正在同步…' : '本地优先 · 云端同步'}</span></div>
     ${conflicts.length ? `<div class="calendar-conflict">发现 ${conflicts.length} 组时间冲突，请优先调整。</div>` : ''}
-    ${renderGrid(layout)}
+    ${renderGrid(layout, viewModel.calendarSelection)}
     ${events.length ? '' : emptyState}
     ${renderCalendarPanel(viewModel)}
   </div>`;

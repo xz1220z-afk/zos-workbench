@@ -77,3 +77,35 @@ test('empty calendar keeps the selected period grid visible alongside configurat
   assert.match(html, /calendar-day-empty/);
   assert.match(html, /外部日历尚未配置/);
 });
+
+test('month grid exposes selectable days and highlights every day in the active drag range', () => {
+  const html = renderCalendarHtml({
+    calendar: [], calendarView: 'month', calendarAnchor: '2026-08-10',
+    calendarSelection: { startDate: '2026-08-10', endDate: '2026-08-12' },
+  });
+
+  for (const date of ['2026-08-10', '2026-08-11', '2026-08-12']) {
+    assert.match(html, new RegExp(`calendar-day[^>]*is-selected[^>]*data-calendar-select-date="${date}"`));
+  }
+  assert.match(html, /data-calendar-select-date="2026-08-13" tabindex="0"/);
+});
+
+test('new arrangement drawer switches between task and schedule without dropping the selected range', () => {
+  const html = renderCalendarHtml({
+    calendar: [], calendarView: 'month', calendarAnchor: '2026-08-10',
+    calendarPanel: 'editor', calendarDraftKind: 'task',
+    calendarDraft: {
+      startAt: '2026-08-10T00:00', dueAt: '2026-08-12T23:59', allDay: true,
+      company: 'wanjia', priority: 2,
+    },
+  });
+
+  assert.match(html, /新增安排/);
+  assert.match(html, /data-calendar-kind="task"[^>]*class="active"/);
+  assert.match(html, /data-calendar-kind="calendar"/);
+  assert.match(html, /name="scheduleKind" value="task"/);
+  assert.match(html, /name="startAt"[^>]*value="2026-08-10T00:00"/);
+  assert.match(html, /name="dueAt"[^>]*value="2026-08-12T23:59"/);
+  assert.match(html, /name="priority"/);
+  assert.match(html, /保存任务/);
+});
