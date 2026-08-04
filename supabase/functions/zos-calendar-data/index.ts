@@ -3,6 +3,7 @@ import { getTenantAccessToken } from '../_shared/feishu.ts';
 import {
   calendarIdsFromList,
   normalizeFeishuCalendarEvents,
+  nextCalendarPageToken,
   primaryCalendarId,
   userIdForEmail,
   userIdForName,
@@ -136,8 +137,9 @@ async function readFeishuCalendar(email: string, range: CalendarRange) {
         'read_events',
       );
       if (Array.isArray(data.items)) items.push(...data.items);
-      if (!data.has_more || typeof data.page_token !== 'string' || !data.page_token) break;
-      pageToken = data.page_token;
+      const nextToken = nextCalendarPageToken(data, pageToken);
+      if (!nextToken) break;
+      pageToken = nextToken;
     }
   }
   const normalized = normalizeFeishuCalendarEvents(items).filter((item) => {

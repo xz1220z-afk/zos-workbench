@@ -50,7 +50,19 @@ async function loadExternalCalendar(fetchImpl, config, token, { start, end } = {
   if (start) endpoint.searchParams.set('start', start);
   if (end) endpoint.searchParams.set('end', end);
   const response = await fetchImpl(endpoint, { headers: { apikey: config.anonKey, Authorization: `Bearer ${token}` } });
-  if (!response.ok) throw new Error('calendar_read_failed');
+  if (!response.ok) {
+    let safeCode = 'calendar_read_failed';
+    try {
+      const payload = await response.json();
+      const allowed = new Set([
+        'calendar_feishu_auth_failed', 'calendar_feishu_permission_denied',
+        'calendar_feishu_failed_stage', 'calendar_configuration_invalid',
+        'calendar_read_failed', 'calendar_too_large', 'range_invalid',
+      ]);
+      if (allowed.has(payload?.error)) safeCode = payload.error;
+    } catch { /* Keep the generic safe code. */ }
+    throw new Error(safeCode);
+  }
   const payload = await response.json();
   if (!Array.isArray(payload.items)) throw new Error('calendar_contract_invalid');
   return {

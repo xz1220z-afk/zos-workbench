@@ -125,3 +125,15 @@ test('calendar exposes truthful closed-app reminder setup state', () => {
   assert.match(unavailable, /推送服务待配置/);
   assert.doesNotMatch(unavailable, /data-enable-reminders/);
 });
+
+test('calendar source rail distinguishes synced cached permission and configuration states', () => {
+  for (const [state, label] of [
+    ['synced', '外部日历已同步'],
+    ['cached', '外部日历暂用缓存'],
+    ['feishu_permission_denied', '飞书日历权限待检查'],
+    ['pending_configuration', '外部日历待配置'],
+  ]) {
+    const html = renderCalendarHtml({ calendar: [], calendarView: 'week', calendarAnchor: '2026-08-04', externalCalendarState: state });
+    assert.match(html, new RegExp(label));
+  }
+});

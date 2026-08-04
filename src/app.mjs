@@ -60,7 +60,7 @@ export function createCeoOsApplication(config = {}) {
     selectedCalendarId: null, calendarDraft: null, calendarDraftKind: 'calendar',
     calendarSelection: null, calendarSelecting: false, calendarTouchPending: null, calendarMutationScope: 'single',
     calendarPendingMutation: null, calendarFormError: null, calendarSyncState: 'idle',
-    externalCalendar: [], externalCalendarState: 'pending_configuration', externalCalendarRange: null,
+    externalCalendar: [], externalCalendarState: 'pending_configuration', externalCalendarRange: null, externalCalendarFetchedAt: null,
     notificationState: 'pending_configuration', notificationPublicKey: null, inAppNotificationState: 'permission_required',
     showFocus: false, importantDatesPanel: null, searchQuery: '', searchResults: [],
     taskDrawerOpen: false, taskDraft: null, focusDuration: 25, focusTaskId: null,
@@ -1100,6 +1100,7 @@ export function createCeoOsApplication(config = {}) {
   function applyExternalCalendarResult(result) {
     runtime.externalCalendar = Array.isArray(result) ? result : (result?.items || []);
     runtime.externalCalendarState = Array.isArray(result) ? 'synced' : (result?.state || 'pending_configuration');
+    if (!Array.isArray(result)) runtime.externalCalendarFetchedAt = result?.fetchedAt || runtime.externalCalendarFetchedAt;
   }
 
   async function refreshCalendarRange({ force = false, render = true } = {}) {
@@ -1121,6 +1122,7 @@ export function createCeoOsApplication(config = {}) {
       return runtime.externalCalendar;
     } catch (error) {
       runtime.calendarSyncState = safeRefreshCode(error);
+      runtime.externalCalendarState = runtime.externalCalendar.length ? 'cached' : runtime.calendarSyncState;
       throw error;
     } finally {
       if (render) renderAll();

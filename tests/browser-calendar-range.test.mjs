@@ -44,3 +44,19 @@ test('browser runtime sends encoded calendar range boundaries', async () => {
   assert.match(urls.at(-1), /end=2026-08-10T00%3A00%3A00%2B08%3A00/);
   assert.deepEqual(result.range, { start: 'x', end: 'y' });
 });
+
+test('browser runtime preserves only safe calendar permission diagnostics', async () => {
+  const store = {
+    load: () => ({ collections: { tasks: [], decisions: [], targets: [], inbox: [] }, tombstones: [] }),
+    loadBaseRevisions: () => ({}), saveBaseRevisions() {}, replaceSnapshot() {},
+  };
+  const runtime = await createBrowserOperatingRuntime({
+    storage: signedInStorage(), store, deviceId: 'd1',
+    fetchImpl: async (url) => String(url).includes('zos-calendar-data')
+      ? jsonResponse({ error: 'calendar_feishu_permission_denied', secret: 'must-not-surface' }, 502)
+      : jsonResponse([]),
+  });
+  await assert.rejects(runtime.loadExternalCalendar({
+    start: '2026-08-03T00:00:00+08:00', end: '2026-08-10T00:00:00+08:00',
+  }), /calendar_feishu_permission_denied/);
+});

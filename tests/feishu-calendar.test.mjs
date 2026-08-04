@@ -4,6 +4,7 @@ import {
   calendarIdsFromList,
   feishuTimeToIso,
   normalizeFeishuCalendarEvents,
+  nextCalendarPageToken,
   primaryCalendarId,
   userIdForEmail,
   userIdForName,
@@ -74,4 +75,10 @@ test('converts timestamp and all-day date values without inventing time', () => 
   assert.equal(feishuTimeToIso({ timestamp: '1785722400' }).allDay, false);
   assert.equal(feishuTimeToIso({ date: '2026-08-04' }).iso, '2026-08-04T00:00:00.000Z');
   assert.equal(feishuTimeToIso({}).iso, null);
+});
+
+test('pagination advances only with a new non-empty token', () => {
+  assert.equal(nextCalendarPageToken({ has_more: true, page_token: 'next' }, ''), 'next');
+  assert.equal(nextCalendarPageToken({ has_more: true, page_token: 'same' }, 'same'), null);
+  assert.equal(nextCalendarPageToken({ has_more: false, page_token: 'next' }, ''), null);
 });

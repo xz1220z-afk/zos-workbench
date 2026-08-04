@@ -50,6 +50,34 @@ function renderViewSwitch(currentView) {
   return `<div class="workspace-switch calendar-view-switch" role="group" aria-label="日历视图">${['day', 'week', 'month', 'list'].map((view) => `<button class="${currentView === view ? 'active' : ''}" data-calendar-view="${view}">${{ day: '日', week: '周', month: '月', list: '列表' }[view]}</button>`).join('')}</div>`;
 }
 
+function reminderStatus(state) {
+  const labels = {
+    enabled: '关闭页面提醒已开启',
+    permission_required: '关闭页面提醒未开启',
+    denied: '浏览器通知已拒绝',
+    unsupported: '当前设备不支持关闭页面提醒',
+    pending_configuration: '推送服务待配置',
+  };
+  const action = state === 'permission_required'
+    ? '<button data-enable-reminders>开启关闭页面提醒</button>'
+    : '';
+  return `<span class="calendar-reminder-state" data-state="${escapeHtml(state || 'pending_configuration')}">${escapeHtml(labels[state] || labels.pending_configuration)}${action}</span>`;
+}
+
+function externalSourceStatus(state, fetchedAt) {
+  const labels = {
+    synced: '外部日历已同步',
+    cached: '外部日历暂用缓存',
+    pending_configuration: '外部日历待配置',
+    feishu_permission_denied: '飞书日历权限待检查',
+    authentication_required: '登录后同步外部日历',
+    source_timeout: '外部日历连接超时',
+    source_refresh_failed: '外部日历读取失败',
+  };
+  const updated = fetchedAt ? ` · ${String(fetchedAt).slice(0, 16).replace('T', ' ')}` : '';
+  return `<span class="calendar-source-state" data-state="${escapeHtml(state || 'pending_configuration')}">${escapeHtml(labels[state] || labels.source_refresh_failed)}${escapeHtml(updated)}</span>`;
+}
+
 function renderDetail(viewModel) {
   const event = (viewModel.calendar || []).find((row) => row.id === viewModel.selectedCalendarId);
   if (!event) return '';
@@ -155,7 +183,7 @@ export function renderCalendarHtml(viewModel = {}) {
       ${renderViewSwitch(currentView)}
       <div class="calendar-command-actions"><button data-calendar-sync>同步当前范围</button><button data-calendar-trash>回收站</button><button class="primary" data-calendar-capture>＋ 新增安排</button></div>
     </header>
-    <div class="calendar-layer-filters"><label><input type="checkbox" data-calendar-layer="focus" ${viewModel.showFocus ? 'checked' : ''}>专注记录</label><span>重要日期已移至工作首页与生活首页</span><span>${viewModel.calendarSyncState === 'loading' ? '正在同步…' : '本地优先 · 云端同步'}</span></div>
+    <div class="calendar-layer-filters"><label><input type="checkbox" data-calendar-layer="focus" ${viewModel.showFocus ? 'checked' : ''}>专注记录</label><span>重要日期已移至工作首页与生活首页</span>${externalSourceStatus(externalCalendarState, viewModel.externalCalendarFetchedAt)}${reminderStatus(viewModel.notificationState)}<span>${viewModel.calendarSyncState === 'loading' ? '正在同步…' : '本地优先 · 云端同步'}</span></div>
     ${conflicts.length ? `<div class="calendar-conflict">发现 ${conflicts.length} 组时间冲突，请优先调整。</div>` : ''}
     ${renderGrid(layout, viewModel.calendarSelection)}
     ${events.length ? '' : emptyState}

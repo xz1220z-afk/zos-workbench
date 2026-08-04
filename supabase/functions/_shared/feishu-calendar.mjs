@@ -38,6 +38,11 @@ export function calendarIdsFromList(data) {
     .filter(Boolean);
 }
 
+export function nextCalendarPageToken(data, currentToken = '') {
+  const next = data?.has_more === true ? text(data?.page_token) : '';
+  return next && next !== currentToken ? next : null;
+}
+
 export function primaryCalendarId(data, userId) {
   const calendars = Array.isArray(data?.calendars) ? data.calendars : [];
   const exact = calendars.find((item) => !userId || text(item?.user_id) === userId);
