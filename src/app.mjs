@@ -1072,7 +1072,7 @@ export function createCeoOsApplication(config = {}) {
       }, 350);
       runtime.calendarTouchPending = pending;
     });
-    document.addEventListener('pointerover', (event) => {
+    document.addEventListener('pointermove', (event) => {
       if (!runtime.calendarSelecting) return;
       const target = event.target?.closest?.('[data-calendar-select-date]');
       if (target) extendCalendarSelection(target.dataset.calendarSelectDate);

@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import { createCeoOsApplication } from '../src/app.mjs';
+
+const appSource = await readFile(new URL('../src/app.mjs', import.meta.url), 'utf8');
 
 function memoryStore() {
   const state = {
@@ -44,6 +47,11 @@ test('dragging backwards opens one task draft for the complete inclusive month r
   assert.equal(app.runtime.calendarDraftKind, 'task');
   assert.equal(draft.startAt, '2026-08-10T00:00');
   assert.equal(draft.dueAt, '2026-08-12T23:59');
+});
+
+test('real pointer drags extend selection on pointermove instead of relying on pointerover', () => {
+  assert.match(appSource, /addEventListener\('pointermove',[\s\S]*?extendCalendarSelection/);
+  assert.doesNotMatch(appSource, /addEventListener\('pointerover'/);
 });
 
 test('switching a selected range to schedule preserves both boundary dates', () => {
