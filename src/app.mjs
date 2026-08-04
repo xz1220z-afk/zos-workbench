@@ -1,4 +1,4 @@
-import { createStateStore } from './app/state-store.mjs?v=1.8.1';
+import { createStateStore } from './app/state-store.mjs?v=1.9.0';
 import { render as renderDashboard } from './app/views/dashboard-view.mjs';
 import { render as renderDecisions } from './app/views/decision-view.mjs';
 import { render as renderTargets } from './app/views/targets-view.mjs';
@@ -41,7 +41,7 @@ import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from '.
 import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs';
 import { runCompanyAgent } from './app/company-agent-hub.mjs';
 
-export const APP_VERSION = '1.8.1';
+export const APP_VERSION = '1.9.0';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
