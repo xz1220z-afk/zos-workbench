@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildReminderQueue, notifyGrantedReminders } from '../src/app/reminder-center.mjs';
+import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from '../src/app/reminder-center.mjs';
 
 test('builds an idempotent in-app reminder queue from actionable Top 3 items', () => {
   const queue = buildReminderQueue([
@@ -29,4 +29,31 @@ test('browser notification adapter never prompts and sends only after permission
   assert.deepEqual(notifyGrantedReminders(queue, { Notification: FakeNotification }), { sent: 1, state: 'sent' });
   assert.equal(calls[0].title, 'ZOS 今日提醒');
   assert.equal(calls[0].options.tag, queue[0].id);
+});
+
+test('durable schedule converts explicit and relative reminders into stable UTC jobs', () => {
+  const jobs = buildDurableReminderSchedule([
+    { id: 'task-1', entityType: 'task', title: '核对回款', reminderAt: '2026-08-10T09:00:00+08:00' },
+    { id: 'event-1', entityType: 'calendar', title: '团队周会', startAt: '2026-08-10T10:00:00+08:00', reminders: [15, 60] },
+  ], { ownerId: 'owner-1', now: '2026-08-04T00:00:00.000Z' });
+
+  assert.deepEqual(jobs.map((item) => item.scheduledAt), [
+    '2026-08-10T01:00:00.000Z',
+    '2026-08-10T01:00:00.000Z',
+    '2026-08-10T01:45:00.000Z',
+  ]);
+  assert.equal(new Set(jobs.map((item) => item.dedupeKey)).size, 3);
+  assert.ok(jobs.every((item) => item.ownerId === 'owner-1' && item.status === 'pending'));
+});
+
+test('durable schedule suppresses completed items, acknowledged keys and private titles', () => {
+  const pending = buildDurableReminderSchedule([
+    { id: 'done', entityType: 'task', title: '已完成', status: 'done', reminderAt: '2026-08-10T09:00:00Z' },
+    { id: 'private', entityType: 'calendar', title: '私人标题', privacy: 'private', startAt: '2026-08-10T10:00:00Z', reminders: [30] },
+  ], { ownerId: 'owner-1', now: '2026-08-04T00:00:00Z' });
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0].title, '个人安排');
+  assert.equal(buildDurableReminderSchedule([
+    { id: 'private', entityType: 'calendar', title: '私人标题', privacy: 'private', startAt: '2026-08-10T10:00:00Z', reminders: [30] },
+  ], { ownerId: 'owner-1', now: '2026-08-04T00:00:00Z', acknowledged: [pending[0].dedupeKey] }).length, 0);
 });

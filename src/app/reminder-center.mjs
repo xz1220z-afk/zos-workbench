@@ -3,6 +3,60 @@ function optional(value) {
   return normalized || null;
 }
 
+const COMPLETE_STATES = new Set(['done', 'completed', 'cancelled']);
+
+function isoTimestamp(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function reminderMoments(item) {
+  const moments = [];
+  const explicit = isoTimestamp(item?.reminderAt);
+  if (explicit) moments.push({ node: 'explicit', scheduledAt: explicit });
+  const start = new Date(item?.startAt || '');
+  if (!Number.isNaN(start.getTime())) {
+    const minutes = Array.isArray(item?.reminders) ? item.reminders : [];
+    for (const raw of minutes) {
+      const offset = Number(raw);
+      if (!Number.isInteger(offset) || offset < 0 || offset > 43_200) continue;
+      moments.push({ node: `before_${offset}m`, scheduledAt: new Date(start.getTime() - offset * 60_000).toISOString() });
+    }
+  }
+  return moments;
+}
+
+export function buildDurableReminderSchedule(items = [], options = {}) {
+  const ownerId = String(options.ownerId || '').trim();
+  if (!ownerId) throw new Error('reminder_owner_required');
+  const nowMs = new Date(options.now || Date.now()).getTime();
+  const acknowledged = new Set(Array.isArray(options.acknowledged) ? options.acknowledged : []);
+  const scheduled = [];
+  for (const item of Array.isArray(items) ? items : []) {
+    const id = String(item?.id || '').trim();
+    if (!id || COMPLETE_STATES.has(String(item?.status || '').toLowerCase())) continue;
+    const entityType = String(item?.entityType || item?.sourceType || 'schedule').trim();
+    for (const moment of reminderMoments(item)) {
+      if (new Date(moment.scheduledAt).getTime() < nowMs) continue;
+      const dedupeKey = `${ownerId}:${entityType}:${id}:${moment.node}:${moment.scheduledAt}`;
+      if (acknowledged.has(dedupeKey)) continue;
+      scheduled.push({
+        id: `scheduled:${dedupeKey}`,
+        dedupeKey,
+        ownerId,
+        entityType,
+        entityId: id,
+        scheduledAt: moment.scheduledAt,
+        title: item?.privacy === 'private' ? '个人安排' : String(item?.title || 'ZOS 提醒').trim(),
+        privacy: item?.privacy === 'private' ? 'private' : 'work',
+        status: 'pending',
+        createdAt: new Date(Number.isFinite(nowMs) ? nowMs : Date.now()).toISOString(),
+      });
+    }
+  }
+  return scheduled.sort((left, right) => left.scheduledAt.localeCompare(right.scheduledAt) || left.dedupeKey.localeCompare(right.dedupeKey));
+}
+
 export function buildReminderQueue(actions = [], options = {}) {
   const now = String(options.now || new Date().toISOString());
   const date = now.slice(0, 10);
