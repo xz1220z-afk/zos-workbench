@@ -40,7 +40,7 @@ test('calendar includes private user-created events and supports day week month 
   assert.deepEqual(calendarPeriod(calendar, { view: 'month', anchor: '2026-08-02T12:00:00+08:00' }).map((item) => item.id), ['manual-1', 'manual-2']);
 });
 
-test('calendar keeps countdown and focus layers optional', () => {
+test('calendar excludes countdowns while keeping completed focus records optional', () => {
   const source = {
     countdowns: [{ id: 'c1', title: '交付倒数', date: '2026-08-10' }],
     focusSessions: [{
@@ -50,7 +50,7 @@ test('calendar keeps countdown and focus layers optional', () => {
   };
   assert.deepEqual(
     buildCalendar(source, { showCountdowns: true, showFocus: false }).map((item) => item.source),
-    ['countdown'],
+    [],
   );
   assert.deepEqual(
     buildCalendar(source, { showCountdowns: false, showFocus: true }).map((item) => item.source),

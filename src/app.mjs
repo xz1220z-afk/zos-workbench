@@ -13,6 +13,7 @@ import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recur
 import { normalizeTask, groupAgenda } from './app/task-center.mjs';
 import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs';
 import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs';
+import { buildImportantDates } from './app/important-dates.mjs';
 import { queryAvailability } from './app/availability-center.mjs';
 import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs';
 import { normalizeIntelligenceItem, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs';
@@ -59,7 +60,7 @@ export function createCeoOsApplication(config = {}) {
     calendarSelection: null, calendarSelecting: false, calendarMutationScope: 'single',
     calendarPendingMutation: null, calendarFormError: null, calendarSyncState: 'idle',
     externalCalendar: [], externalCalendarState: 'pending_configuration', externalCalendarRange: null,
-    showCountdowns: true, showFocus: false, searchQuery: '', searchResults: [],
+    showFocus: false, importantDatesPanel: null, searchQuery: '', searchResults: [],
     taskDrawerOpen: false, taskDraft: null, focusDuration: 25, focusTaskId: null,
     availabilityDate: now().slice(0, 10), merchantQuery: '', selectedMerchantId: null,
     syncStatus: '等待首次同步', loopConnected: false,
@@ -105,7 +106,7 @@ export function createCeoOsApplication(config = {}) {
       intelligence,
       countdowns,
       focusSessions,
-    }, { showCountdowns: runtime.showCountdowns, showFocus: runtime.showFocus })
+    }, { showFocus: runtime.showFocus })
       .map((item) => item.company === 'life' ? redactLifeEventForWork(item) : item);
     const calendarConflicts = detectCalendarConflicts(calendar);
     const todayTop3 = buildTodayTop3({
@@ -146,12 +147,12 @@ export function createCeoOsApplication(config = {}) {
       calendarAnchor: runtime.calendarAnchor,
       calendarLayout: calendarLayout(calendar, { view: runtime.calendarView, anchor: runtime.calendarAnchor }),
       calendarTrash: state.tombstones || [],
-      showCountdowns: runtime.showCountdowns,
       showFocus: runtime.showFocus,
       calendarConflicts,
       relations: buildRelations(businessRecords),
       life,
       lifeSummary: summarizeLife(life),
+      importantDates: buildImportantDates(countdowns, { now: now() }),
       searchResults: searchWorkspace(searchIndex, runtime.searchQuery),
       today: now().slice(0, 10),
       agendaDate: now().slice(0, 10),
@@ -712,6 +713,8 @@ export function createCeoOsApplication(config = {}) {
       const focusAction = event.target?.closest?.('[data-focus-action]');
       const focusDuration = event.target?.closest?.('[data-focus-duration]');
       const countdownCapture = event.target?.closest?.('[data-countdown-capture]');
+      const importantDatesOpen = event.target?.closest?.('[data-important-dates-open]');
+      const importantDatesClose = event.target?.closest?.('[data-important-dates-close]');
       const calendarLayer = event.target?.closest?.('[data-calendar-layer]');
       const calendarNav = event.target?.closest?.('[data-calendar-nav]');
       const calendarToday = event.target?.closest?.('[data-calendar-today]');
@@ -779,14 +782,23 @@ export function createCeoOsApplication(config = {}) {
         } else if (calendarSeriesScope) {
           applyCalendarSeriesScope(calendarSeriesScope.dataset.calendarSeriesScope);
         } else if (calendarLayer) {
-          if (calendarLayer.dataset.calendarLayer === 'countdown') runtime.showCountdowns = !runtime.showCountdowns;
           if (calendarLayer.dataset.calendarLayer === 'focus') runtime.showFocus = !runtime.showFocus;
+          renderAll();
+        } else if (importantDatesOpen) {
+          runtime.importantDatesPanel = importantDatesOpen.dataset.importantDatesOpen;
+          renderAll();
+        } else if (importantDatesClose) {
+          runtime.importantDatesPanel = null;
           renderAll();
         } else if (countdownCapture) {
           const ask = config.prompt || globalThis.prompt;
           const title = ask?.('倒数日名称');
           const date = title && ask?.('日期（YYYY-MM-DD）', now().slice(0, 10));
-          if (title && date) saveCountdown({ title, date });
+          if (title && date) saveCountdown({
+            title, date,
+            company: runtime.importantDatesPanel === 'life' ? 'life' : 'ceo',
+            privacy: runtime.importantDatesPanel === 'work' ? 'work' : 'private',
+          });
         } else if (calendarCapture) {
           runtime.calendarSelection = normalizeCalendarSelection(runtime.calendarAnchor, runtime.calendarAnchor);
           commitCalendarSelection();

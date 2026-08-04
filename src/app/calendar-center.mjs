@@ -61,9 +61,8 @@ function normalizeEvent(input, fallback = {}) {
 
 export function buildCalendar({
   tasks = [], projects = [], life = [], intelligence = [], calendar = [],
-  countdowns = [], focusSessions = [],
+  countdowns: _countdowns = [], focusSessions = [],
 } = {}, options = {}) {
-  const showCountdowns = options.showCountdowns !== false;
   const showFocus = options.showFocus === true;
   return [
     ...calendar.map((item) => normalizeEvent(item, { source: 'user_calendar' })),
@@ -71,7 +70,6 @@ export function buildCalendar({
     ...projects.map((item) => normalizeEvent(item, { source: 'business_project' })),
     ...life.map((item) => normalizeEvent(item, { source: 'life', company: 'life', privacy: 'private' })),
     ...intelligence.filter((item) => item.followUpAt).map((item) => normalizeEvent({ ...item, startAt: item.followUpAt }, { source: 'intelligence' })),
-    ...(showCountdowns ? countdowns.map((item) => normalizeEvent({ ...item, startAt: item.date }, { source: 'countdown' })) : []),
     ...(showFocus ? focusSessions.filter((item) => item.state === 'completed' && item.startedAt).map((item) => normalizeEvent({
       ...item, startAt: item.startedAt, endAt: item.endedAt,
       title: item.title || '专注时段', company: 'ceo', privacy: 'private',

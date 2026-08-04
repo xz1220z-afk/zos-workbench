@@ -76,6 +76,7 @@ test('empty calendar keeps the selected period grid visible alongside configurat
   assert.match(html, /calendar-month-grid/);
   assert.match(html, /calendar-day-empty/);
   assert.match(html, /外部日历尚未配置/);
+  assert.doesNotMatch(html, /data-calendar-layer="countdown"/);
 });
 
 test('month grid exposes selectable days and highlights every day in the active drag range', () => {

@@ -155,7 +155,7 @@ export function renderCalendarHtml(viewModel = {}) {
       ${renderViewSwitch(currentView)}
       <div class="calendar-command-actions"><button data-calendar-sync>同步当前范围</button><button data-calendar-trash>回收站</button><button class="primary" data-calendar-capture>＋ 新增安排</button></div>
     </header>
-    <div class="calendar-layer-filters"><label><input type="checkbox" data-calendar-layer="countdown" ${viewModel.showCountdowns === false ? '' : 'checked'}>倒数日</label><label><input type="checkbox" data-calendar-layer="focus" ${viewModel.showFocus ? 'checked' : ''}>专注记录</label><span>${viewModel.calendarSyncState === 'loading' ? '正在同步…' : '本地优先 · 云端同步'}</span></div>
+    <div class="calendar-layer-filters"><label><input type="checkbox" data-calendar-layer="focus" ${viewModel.showFocus ? 'checked' : ''}>专注记录</label><span>重要日期已移至工作首页与生活首页</span><span>${viewModel.calendarSyncState === 'loading' ? '正在同步…' : '本地优先 · 云端同步'}</span></div>
     ${conflicts.length ? `<div class="calendar-conflict">发现 ${conflicts.length} 组时间冲突，请优先调整。</div>` : ''}
     ${renderGrid(layout, viewModel.calendarSelection)}
     ${events.length ? '' : emptyState}
