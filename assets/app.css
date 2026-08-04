@@ -1539,8 +1539,12 @@ body { overflow-x: hidden; }
 .v15-health-summary { margin-bottom: 16px; }
 @media (max-width: 760px) {
   .v15-sync-rail { grid-template-columns: 1fr auto; }
-  .v15-sync-sources { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; }
-  .v15-sync-source { white-space: nowrap; }
+  .v15-sync-sources {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-column: 1 / -1; grid-row: 2; justify-content: stretch;
+    overflow-x: visible;
+  }
+  .v15-sync-source { min-width: 0; padding-inline: 5px; text-align: center; white-space: normal; font-size: 11px; }
 }
 .v14-hero { min-height: 205px; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding: 30px; border: 1px solid var(--cc-border); border-radius: 20px; background: radial-gradient(circle at 70% 20%, rgba(71, 94, 125, .58), transparent 36%), linear-gradient(118deg, rgba(13,23,39,.98), rgba(53,45,43,.86)), #111a2b; overflow: hidden; position: relative; }
 .v14-hero::after { content: ''; position: absolute; right: 8%; top: 16%; width: 210px; height: 100px; border-radius: 50%; background: rgba(216,180,106,.15); filter: blur(45px); }
@@ -1629,6 +1633,9 @@ body { overflow-x: hidden; }
   .life-area-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .review-lanes { grid-template-columns: 1fr; }
   .intelligence-daily-brief { grid-template-columns: 1fr; }
+}
+@media (min-width: 768px) and (max-width: 1199px) {
+  .v14-today-panel { grid-column: auto; }
 }
 @media (max-width: 767px) {
   .v14-hero { min-height: auto; padding: 21px; align-items: flex-start; }

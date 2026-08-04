@@ -54,6 +54,20 @@ test('mobile dashboard follows the action-first order and never embeds sample KP
   assert.doesNotMatch(source, /(?:GMV|营业额|回款)[^\n]{0,40}(?:482600|243700|183700)/);
 });
 
+test('dashboard responsive layout avoids mobile status scrolling and tablet orphan cards', async () => {
+  const [css, dashboard] = await Promise.all([
+    readFile(new URL('assets/app.css', root), 'utf8'),
+    readFile(new URL('src/app/views/dashboard-view.mjs', root), 'utf8'),
+  ]);
+
+  assert.match(dashboard, /v14-today-panel/,
+    'the main action panel needs a stable responsive-layout hook');
+  assert.match(css, /@media \(min-width:\s*768px\) and \(max-width:\s*1199px\)[\s\S]*?\.v14-today-panel\s*\{[^}]*grid-column:\s*auto/,
+    'tablet should place Today Top 3 beside Decisions instead of leaving a half-row gap');
+  assert.match(css, /@media \(max-width:\s*760px\)[\s\S]*?\.v15-sync-sources\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)[^}]*overflow-x:\s*visible/,
+    'mobile source health should wrap into readable columns without a horizontal scrollbar');
+});
+
 test('views render explicit loading, empty, stale, failed and conflict states', async () => {
   const files = ['view-utils.mjs', 'dashboard-view.mjs', 'decision-view.mjs', 'targets-view.mjs', 'health-view.mjs', 'business-view.mjs'];
   const source = (await Promise.all(files.map((file) => readFile(new URL(`src/app/views/${file}`, root), 'utf8')))).join('\n');
