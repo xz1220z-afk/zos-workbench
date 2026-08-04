@@ -69,7 +69,8 @@ test('v1.8 PWA cache and manifest include every execution and smart-calendar mod
     'src/app/views/today-execution-view.mjs', 'src/app/views/availability-view.mjs',
     'src/app/views/merchant-view.mjs',
     'src/app/calendar-range.mjs', 'src/app/calendar-event.mjs',
-    'src/app/calendar-recurrence.mjs', 'src/app/views/calendar-view.mjs',
+    'src/app/calendar-selection.mjs', 'src/app/calendar-recurrence.mjs',
+    'src/app/important-dates.mjs', 'src/app/views/calendar-view.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
   assert.equal(manifest.version, '1.8.1');
   assert.ok(manifest.shortcuts.some((item) => item.url === './#focus'));
@@ -85,6 +86,12 @@ test('smart calendar has responsive touch controls, source-safe drawers and drag
   assert.match(css, /\.calendar-drawer[^{]*\{[^}]*position:\s*fixed/);
   assert.match(css, /\.calendar-event\[draggable="true"\]/);
   assert.match(css, /\.calendar-drop-target/);
+  assert.match(css, /\.calendar-day\.is-selected/);
+  assert.match(css, /\.calendar-day\.is-selecting/);
+  assert.match(css, /\.calendar-month-grid[^{]*\{[^}]*touch-action:\s*pan-y/,
+    'touch users must be able to scroll vertically until a deliberate long press begins selection');
+  assert.match(css, /\.calendar-kind-switch/);
+  assert.match(css, /\.important-dates-drawer/);
   assert.match(css, /@media \(max-width:\s*767px\)[\s\S]*\.calendar-drawer[^{]*\{[^}]*width:\s*100%/);
   assert.match(css, /\.calendar-commandbar button[^{]*\{[^}]*min-height:\s*44px/,
     'calendar actions must meet the mobile touch target baseline');

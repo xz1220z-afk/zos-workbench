@@ -8,7 +8,7 @@ import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs';
 import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs';
 import { calendarEventCapabilities, normalizeCalendarDraft } from './app/calendar-event.mjs';
 import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs';
-import { calendarSelectionDraft, normalizeCalendarSelection } from './app/calendar-selection.mjs';
+import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs';
 import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs';
 import { normalizeTask, groupAgenda } from './app/task-center.mjs';
 import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs';
@@ -57,7 +57,7 @@ export function createCeoOsApplication(config = {}) {
     intelligenceSources: {}, intelligenceFetchedAt: null,
     calendarView: 'week', calendarAnchor: now().slice(0, 10), calendarPanel: null,
     selectedCalendarId: null, calendarDraft: null, calendarDraftKind: 'calendar',
-    calendarSelection: null, calendarSelecting: false, calendarMutationScope: 'single',
+    calendarSelection: null, calendarSelecting: false, calendarTouchPending: null, calendarMutationScope: 'single',
     calendarPendingMutation: null, calendarFormError: null, calendarSyncState: 'idle',
     externalCalendar: [], externalCalendarState: 'pending_configuration', externalCalendarRange: null,
     showFocus: false, importantDatesPanel: null, searchQuery: '', searchResults: [],
@@ -528,6 +528,12 @@ export function createCeoOsApplication(config = {}) {
     });
   }
 
+  function clearCalendarTouchPending() {
+    const pending = runtime.calendarTouchPending;
+    if (pending?.timer != null) (document?.defaultView || globalThis).clearTimeout?.(pending.timer);
+    runtime.calendarTouchPending = null;
+  }
+
   function beginCalendarSelection(date) {
     runtime.calendarSelection = normalizeCalendarSelection(date, date);
     runtime.calendarSelecting = true;
@@ -943,19 +949,41 @@ export function createCeoOsApplication(config = {}) {
       const target = event.target?.closest?.('[data-calendar-select-date]');
       if (!target || event.target?.closest?.('[data-calendar-event], button, input, select, textarea, a')) return;
       if (event.button != null && event.button !== 0) return;
-      event.preventDefault?.();
-      target.setPointerCapture?.(event.pointerId);
-      beginCalendarSelection(target.dataset.calendarSelectDate);
+      const pointerType = event.pointerType || 'mouse';
+      if (shouldBeginCalendarSelection({ pointerType, elapsedMs: 0 })) {
+        event.preventDefault?.();
+        beginCalendarSelection(target.dataset.calendarSelectDate);
+        return;
+      }
+      clearCalendarTouchPending();
+      const timerHost = document?.defaultView || globalThis;
+      const pending = {
+        date: target.dataset.calendarSelectDate,
+        pointerId: event.pointerId,
+        timer: null,
+      };
+      pending.timer = timerHost.setTimeout?.(() => {
+        if (runtime.calendarTouchPending !== pending) return;
+        runtime.calendarTouchPending = null;
+        beginCalendarSelection(pending.date);
+      }, 350);
+      runtime.calendarTouchPending = pending;
     });
     document.addEventListener('pointerover', (event) => {
       if (!runtime.calendarSelecting) return;
       const target = event.target?.closest?.('[data-calendar-select-date]');
       if (target) extendCalendarSelection(target.dataset.calendarSelectDate);
     });
-    document.addEventListener('pointerup', () => {
+    document.addEventListener('pointerup', (event) => {
+      const pending = runtime.calendarTouchPending;
+      if (pending && (event.pointerId == null || pending.pointerId === event.pointerId)) {
+        clearCalendarTouchPending();
+        beginCalendarSelection(pending.date);
+      }
       if (runtime.calendarSelecting) commitCalendarSelection();
     });
     document.addEventListener('pointercancel', () => {
+      clearCalendarTouchPending();
       runtime.calendarSelecting = false;
       runtime.calendarSelection = null;
       paintCalendarSelection();
@@ -1150,6 +1178,7 @@ export function createCeoOsApplication(config = {}) {
     bindActions();
     renderAll();
     const browserWindow = document?.defaultView;
+    clearCalendarTouchPending();
     if (browserWindow?.setInterval && !focusTicker) {
       focusTicker = browserWindow.setInterval(() => {
         const model = viewModel();
@@ -1168,6 +1197,7 @@ export function createCeoOsApplication(config = {}) {
 
   function stop() {
     const browserWindow = document?.defaultView;
+    clearCalendarTouchPending();
     if (focusTicker && browserWindow?.clearInterval) browserWindow.clearInterval(focusTicker);
     focusTicker = null;
     unsubscribeStore?.();

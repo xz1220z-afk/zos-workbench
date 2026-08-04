@@ -17,6 +17,10 @@ export function normalizeCalendarSelection(startDate, endDate = startDate) {
     : { startDate: endDate, endDate: startDate };
 }
 
+export function shouldBeginCalendarSelection({ pointerType = 'mouse', elapsedMs = 0 } = {}) {
+  return pointerType !== 'touch' || elapsedMs >= 350;
+}
+
 function addMinutes(time, minutes) {
   const [hour, minute] = String(time || '09:00').split(':').map(Number);
   if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {

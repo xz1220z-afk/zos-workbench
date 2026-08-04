@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   calendarSelectionDraft,
   normalizeCalendarSelection,
+  shouldBeginCalendarSelection,
 } from '../src/app/calendar-selection.mjs';
 
 test('reverse drag produces one inclusive date range in chronological order', () => {
@@ -42,4 +43,11 @@ test('invalid date selections are rejected before an editor opens', () => {
     () => normalizeCalendarSelection('2026-02-30', '2026-08-10'),
     /calendar_selection_invalid/,
   );
+});
+
+test('mouse selection starts immediately while touch waits for a deliberate long press', () => {
+  assert.equal(shouldBeginCalendarSelection({ pointerType: 'mouse', elapsedMs: 0 }), true);
+  assert.equal(shouldBeginCalendarSelection({ pointerType: 'pen', elapsedMs: 0 }), true);
+  assert.equal(shouldBeginCalendarSelection({ pointerType: 'touch', elapsedMs: 200 }), false);
+  assert.equal(shouldBeginCalendarSelection({ pointerType: 'touch', elapsedMs: 350 }), true);
 });
