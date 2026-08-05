@@ -57,6 +57,62 @@ test('external event detail is read-only and opens only a safe source URL', () =
   assert.match(html, /data-calendar-open-source/);
 });
 
+test('local task detail exposes execution actions, sync state and safe deletion confirmation', () => {
+  const html = renderCalendarHtml({
+    calendar: [{
+      id: 'task-1', title: '确认回款', startAt: '2026-08-10T09:00:00.000Z',
+      endAt: '2026-08-10T10:00:00.000Z', company: 'wanjia', source: 'local_task',
+      status: 'todo', revision: 2,
+    }],
+    calendarView: 'week', calendarAnchor: '2026-08-10',
+    calendarPanel: 'detail', selectedCalendarId: 'task-1',
+    calendarSyncStates: { 'task-1': 'pending' },
+  });
+  for (const marker of [
+    'data-calendar-task-toggle="task-1"', 'data-calendar-task-edit="task-1"',
+    'data-calendar-task-copy="task-1"', 'data-calendar-task-reschedule="task-1"',
+    'data-calendar-task-delete="task-1"', 'data-sync-state="pending"',
+  ]) assert.match(html, new RegExp(marker));
+
+  const confirm = renderCalendarHtml({
+    calendar: [], calendarView: 'week', calendarAnchor: '2026-08-10',
+    calendarPanel: 'delete-confirm', calendarPendingDelete: {
+      entity: 'tasks', id: 'task-1', title: '确认回款',
+    },
+  });
+  assert.match(confirm, /确认删除任务/);
+  assert.match(confirm, /data-calendar-confirm-delete/);
+  assert.match(confirm, /删除会同步到其他设备/);
+});
+
+test('unified recycle bin restores tasks and schedules and deletion offers undo', () => {
+  const html = renderCalendarHtml({
+    calendar: [], calendarView: 'month', calendarAnchor: '2026-08-10',
+    calendarPanel: 'trash',
+    calendarTrash: [
+      { id: 'task-old', title: '旧任务', entity: 'tasks', deletedAt: '2026-08-09T08:00:00.000Z' },
+      { id: 'calendar-old', title: '旧日程', entity: 'calendar', deletedAt: '2026-08-09T09:00:00.000Z' },
+    ],
+    calendarUndoDelete: { id: 'task-old', entity: 'tasks', title: '旧任务' },
+  });
+  assert.match(html, /任务 · 旧任务/);
+  assert.match(html, /日程 · 旧日程/);
+  assert.match(html, /data-calendar-restore="task-old"[^>]*data-calendar-restore-entity="tasks"/);
+  assert.match(html, /data-calendar-restore="calendar-old"[^>]*data-calendar-restore-entity="calendar"/);
+  assert.match(html, /data-calendar-undo-delete/);
+});
+
+test('calendar exposes practical source and company filters', () => {
+  const html = renderCalendarHtml({
+    calendar: [], calendarView: 'month', calendarAnchor: '2026-08-10',
+    calendarFilter: 'wanjia',
+  });
+  for (const filter of ['all', 'task', 'schedule', 'wanjia', 'huahuo', 'lingli', 'life']) {
+    assert.match(html, new RegExp(`data-calendar-filter="${filter}"`));
+  }
+  assert.match(html, /data-calendar-filter="wanjia"[^>]*class="active"/);
+});
+
 test('recurring event mutations require a visible scope choice', () => {
   const html = renderCalendarHtml({
     calendar: [], calendarView: 'week', calendarAnchor: '2026-08-03',

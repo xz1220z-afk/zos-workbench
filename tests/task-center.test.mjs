@@ -7,6 +7,7 @@ import {
   taskCompletion,
   toggleSubtask,
 } from '../src/app/task-center.mjs';
+import { render as renderTaskCenter } from '../src/app/views/task-view.mjs';
 
 test('normalizeTask preserves legacy dueDate and applies rich defaults', () => {
   const task = normalizeTask({
@@ -74,4 +75,18 @@ test('agenda separates timed, all-day, overdue and unscheduled tasks', () => {
   assert.deepEqual(groups.allDay.map((item) => item.id), ['b']);
   assert.deepEqual(groups.overdue.map((item) => item.id), ['f']);
   assert.deepEqual(groups.unscheduled.map((item) => item.id), ['c']);
+});
+
+test('task center exposes an explicit delete action only for an existing task', () => {
+  const container = { innerHTML: '' };
+  renderTaskCenter(container, {
+    tasks: [{ id: 'task-1', title: '待删除任务', status: 'todo', priority: 2 }],
+    taskDrawerOpen: true,
+    taskDraft: { id: 'task-1', title: '待删除任务', status: 'todo', priority: 2 },
+  });
+  assert.match(container.innerHTML, /data-task-delete="task-1"/);
+  assert.match(container.innerHTML, /删除任务/);
+
+  renderTaskCenter(container, { tasks: [], taskDrawerOpen: true, taskDraft: {} });
+  assert.doesNotMatch(container.innerHTML, /data-task-delete=/);
 });

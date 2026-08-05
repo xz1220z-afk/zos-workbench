@@ -40,7 +40,7 @@ export function render(container, viewModel = {}) {
       <label class="task-field">提醒时间<input id="task-reminder" name="reminderAt" type="datetime-local" value="${escapeHtml((draft.reminderAt || '').slice(0, 16))}"></label>
       <label class="task-field">重复<select id="task-recurrence" name="recurrence">${[['','不重复'],['daily','每天'],['weekly','每周'],['monthly','每月'],['yearly','每年']].map(([value,label]) => option(value,label,draft.recurrence || '')).join('')}</select></label>
       <label class="task-field task-field-wide">子任务（每行一项）<textarea id="task-subtasks" name="subtasks" rows="4" placeholder="联系负责人&#10;核对数据&#10;提交结果">${escapeHtml((draft.subtasks || []).map((item) => item.title).join('\n'))}</textarea></label>
-      <footer><button type="button" class="v13-action" data-task-close>取消</button><button class="v13-action v13-action-primary" type="submit">保存任务</button></footer>
+      <footer>${draft.id ? `<button type="button" class="v13-action task-delete-action" data-task-delete="${escapeHtml(draft.id)}">删除任务</button>` : ''}<button type="button" class="v13-action" data-task-close>取消</button><button class="v13-action v13-action-primary" type="submit">保存任务</button></footer>
     </form>
   </aside><div class="task-drawer-backdrop" data-task-close></div>` : '';
   container.innerHTML = `<section class="task-center-shell"><div class="v14-section-head"><div><span class="v14-kicker">TASK CENTER · 跨端同步</span><h3>执行任务</h3><p>任务可绑定公司、项目、商家、提醒与专注记录。</p></div><button class="v13-action v13-action-primary" data-task-capture>＋ 新建任务</button></div><div class="task-center-list">${tasks.map(taskCard).join('') || '<div class="v13-state" data-state="empty">暂无任务，先建立一个明确的下一步动作。</div>'}</div>${drawer}</section>`;

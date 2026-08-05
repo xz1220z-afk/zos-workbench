@@ -1,7 +1,7 @@
 {
   "name": "ZOS CEO OS",
   "short_name": "CEO OS",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "ZOS CEO OS · 工作与生活双首页、万嘉网络、花火影像、玲丽教育、日历、情报与企业大脑",
   "start_url": "./",
   "scope": "./",

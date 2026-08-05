@@ -17,22 +17,23 @@ function localDateTime(value) {
   return local.toISOString().slice(0, 16);
 }
 
-function eventCard(event) {
+function eventCard(event, syncStates = {}) {
   const time = event.allDay ? '全天' : String(event.startAt || '').slice(11, 16);
   const capabilities = calendarEventCapabilities(event);
+  const syncState = syncStates[event.id] || (capabilities.kind === 'external' ? 'readonly' : 'pending');
   return `<article class="calendar-event" data-company="${escapeHtml(event.company || 'ceo')}" data-source="${escapeHtml(event.source || 'local')}" data-calendar-event="${escapeHtml(event.id)}" ${capabilities.drag ? 'draggable="true"' : ''}>
     <button type="button" class="calendar-event-open" data-calendar-select="${escapeHtml(event.id)}">
       <time>${escapeHtml(time)}</time>
       <strong>${escapeHtml(event.title)}</strong>
-      <span>${escapeHtml(COMPANY_LABELS[event.company] || event.company || 'CEO')} · ${escapeHtml(SOURCE_LABELS[event.source] || event.source || '本地')}</span>
+      <span>${escapeHtml(COMPANY_LABELS[event.company] || event.company || 'CEO')} · ${escapeHtml(SOURCE_LABELS[event.source] || event.source || '本地')} · <i data-sync-state="${escapeHtml(syncState)}">${escapeHtml({ pending: '待同步', synced: '已同步', conflict: '有冲突', readonly: '只读' }[syncState] || '待同步')}</i></span>
     </button>
     ${capabilities.drag ? `<button type="button" class="calendar-reschedule" data-calendar-reschedule="${escapeHtml(event.id)}">改期</button>` : ''}
   </article>`;
 }
 
-function renderGrid(layout, selection = {}) {
+function renderGrid(layout, selection = {}, syncStates = {}) {
   if (layout.view === 'list') {
-    return `<div class="calendar-list">${layout.groups.map((group) => `<section><h3>${escapeHtml(group.date)}</h3>${group.events.map(eventCard).join('')}</section>`).join('')}</div>`;
+    return `<div class="calendar-list">${layout.groups.map((group) => `<section><h3>${escapeHtml(group.date)}</h3>${group.events.map((event) => eventCard(event, syncStates)).join('')}</section>`).join('')}</div>`;
   }
   const className = layout.view === 'month' ? 'calendar-month-grid' : `calendar-${layout.view}-timeline`;
   selection ||= {};
@@ -42,7 +43,7 @@ function renderGrid(layout, selection = {}) {
     const selected = startDate && day.date >= (startDate < endDate ? startDate : endDate)
       && day.date <= (startDate < endDate ? endDate : startDate);
     const dayClass = ['calendar-day', selected ? 'is-selected' : '', day.inMonth === false ? 'outside-month' : ''].filter(Boolean).join(' ');
-    return `<section class="${dayClass}" data-calendar-select-date="${escapeHtml(day.date)}" tabindex="0" data-calendar-drop-date="${escapeHtml(day.date)}"><header><span>${layout.view === 'week' ? `周${WEEK_LABELS[index]}` : ''}</span><strong>${escapeHtml(day.date.slice(5))}</strong></header><div>${day.events.map(eventCard).join('') || '<span class="calendar-day-empty">无安排</span>'}</div></section>`;
+    return `<section class="${dayClass}" data-calendar-select-date="${escapeHtml(day.date)}" tabindex="0" data-calendar-drop-date="${escapeHtml(day.date)}"><header><span>${layout.view === 'week' ? `周${WEEK_LABELS[index]}` : ''}</span><strong>${escapeHtml(day.date.slice(5))}</strong></header><div>${day.events.map((event) => eventCard(event, syncStates)).join('') || '<span class="calendar-day-empty">无安排</span>'}</div></section>`;
   }).join('')}</div>`;
 }
 
@@ -82,14 +83,16 @@ function renderDetail(viewModel) {
   const event = (viewModel.calendar || []).find((row) => row.id === viewModel.selectedCalendarId);
   if (!event) return '';
   const capabilities = calendarEventCapabilities(event);
+  const syncState = viewModel.calendarSyncStates?.[event.id] || (capabilities.kind === 'external' ? 'readonly' : 'pending');
   return `<aside class="calendar-drawer calendar-detail-drawer" data-calendar-panel="detail" aria-label="日程详情">
-    <header><div><small>${escapeHtml(SOURCE_LABELS[event.source] || event.source || '本地')}</small><h2>${escapeHtml(event.title)}</h2></div><button data-calendar-close aria-label="关闭">×</button></header>
+    <header><div><small>${escapeHtml(SOURCE_LABELS[event.source] || event.source || '本地')} · <span data-sync-state="${escapeHtml(syncState)}">${escapeHtml({ pending: '待同步', synced: '已同步', conflict: '同步冲突', readonly: '只读来源' }[syncState] || '待同步')}</span></small><h2>${escapeHtml(event.title)}</h2></div><button data-calendar-close aria-label="关闭">×</button></header>
     <dl><dt>开始</dt><dd>${escapeHtml(localDateTime(event.startAt).replace('T', ' '))}</dd><dt>结束</dt><dd>${escapeHtml(localDateTime(event.endAt).replace('T', ' '))}</dd><dt>归属</dt><dd>${escapeHtml(COMPANY_LABELS[event.company] || event.company || 'CEO')}</dd></dl>
     ${event.notes ? `<p class="calendar-notes">${escapeHtml(event.notes)}</p>` : ''}
     <footer>
-      ${capabilities.edit ? `<button data-calendar-edit="${escapeHtml(event.id)}">编辑</button>` : ''}
-      ${capabilities.remove ? `<button class="danger" data-calendar-delete="${escapeHtml(event.id)}">删除</button>` : ''}
-      ${capabilities.copy ? `<button data-calendar-copy="${escapeHtml(event.id)}">复制</button>` : ''}
+      ${capabilities.kind === 'task' ? `<button data-calendar-task-toggle="${escapeHtml(event.id)}">${['done', 'completed'].includes(event.status) ? '设为待办' : '完成任务'}</button><button data-calendar-task-edit="${escapeHtml(event.id)}">编辑</button><button data-calendar-task-copy="${escapeHtml(event.id)}">复制</button><button data-calendar-task-reschedule="${escapeHtml(event.id)}">改期</button><button class="danger" data-calendar-task-delete="${escapeHtml(event.id)}">删除</button>` : ''}
+      ${capabilities.kind === 'calendar' && capabilities.edit ? `<button data-calendar-edit="${escapeHtml(event.id)}">编辑</button>` : ''}
+      ${capabilities.kind === 'calendar' && capabilities.remove ? `<button class="danger" data-calendar-delete="${escapeHtml(event.id)}">删除</button>` : ''}
+      ${capabilities.kind !== 'task' && capabilities.copy ? `<button data-calendar-copy="${escapeHtml(event.id)}">复制</button>` : ''}
       ${capabilities.openSource ? `<a data-calendar-open-source href="${escapeHtml(event.sourceUrl)}" target="_blank" rel="noopener noreferrer">打开来源</a>` : ''}
     </footer>
   </aside>`;
@@ -102,18 +105,19 @@ function option(value, selected, label) {
 function renderEditor(viewModel) {
   const draft = viewModel.calendarDraft || {};
   const anchor = viewModel.calendarAnchor || new Date().toISOString().slice(0, 10);
-  const kind = draft.id ? 'calendar' : (viewModel.calendarDraftKind || draft.kind || 'calendar');
+  const kind = viewModel.calendarDraftKind || draft.kind || (draft.source === 'local_task' ? 'task' : 'calendar');
   const startAt = localDateTime(draft.startAt) || `${anchor}T09:00`;
   const endAt = localDateTime(draft.endAt) || `${anchor}T10:00`;
   const dueAt = localDateTime(draft.dueAt) || endAt;
   const frequency = draft.recurrenceRule?.frequency || 'none';
   const kindSwitch = draft.id ? '' : `<div class="calendar-kind-switch" role="group" aria-label="安排类型"><button type="button" data-calendar-kind="task" class="${kind === 'task' ? 'active' : ''}">任务</button><button type="button" data-calendar-kind="calendar" class="${kind === 'calendar' ? 'active' : ''}">日程</button></div>`;
   if (kind === 'task') {
-    return `<aside class="calendar-drawer calendar-editor-drawer" data-calendar-panel="editor" aria-label="新增安排">
-      <header><div><small>所选日期 ${escapeHtml(startAt.slice(0, 10))} — ${escapeHtml(dueAt.slice(0, 10))}</small><h2>新增安排</h2></div><button data-calendar-close aria-label="关闭">×</button></header>
+    return `<aside class="calendar-drawer calendar-editor-drawer" data-calendar-panel="editor" aria-label="${draft.id ? '编辑任务' : '新增安排'}">
+      <header><div><small>所选日期 ${escapeHtml(startAt.slice(0, 10))} — ${escapeHtml(dueAt.slice(0, 10))}</small><h2>${draft.id ? '编辑任务' : '新增安排'}</h2></div><button data-calendar-close aria-label="关闭">×</button></header>
       ${kindSwitch}
       <form data-calendar-form>
         <input type="hidden" name="scheduleKind" value="task">
+        ${draft.id ? `<input type="hidden" name="id" value="${escapeHtml(draft.id)}">` : ''}
         <label>标题<input name="title" required maxlength="120" value="${escapeHtml(draft.title || '')}"></label>
         <label>说明<textarea name="description" rows="3" maxlength="2000">${escapeHtml(draft.description || '')}</textarea></label>
         <div class="calendar-form-row"><label>开始<input type="datetime-local" name="startAt" required value="${escapeHtml(startAt)}"></label><label>截止<input type="datetime-local" name="dueAt" required value="${escapeHtml(dueAt)}"></label></div>
@@ -148,8 +152,15 @@ function renderEditor(viewModel) {
 }
 
 function renderTrash(viewModel) {
-  const rows = (viewModel.calendarTrash || []).filter((row) => row.entity === 'calendar');
-  return `<aside class="calendar-drawer calendar-trash-drawer" data-calendar-panel="trash" aria-label="日程回收站"><header><h2>回收站</h2><button data-calendar-close aria-label="关闭">×</button></header><div class="calendar-trash-list">${rows.length ? rows.map((row) => `<article><div><strong>${escapeHtml(row.title || '未命名日程')}</strong><small>${escapeHtml(row.deletedAt || '')}</small></div><button data-calendar-restore="${escapeHtml(row.id)}">恢复</button></article>`).join('') : '<p>回收站为空</p>'}</div></aside>`;
+  const rows = (viewModel.calendarTrash || []).filter((row) => ['calendar', 'tasks'].includes(row.entity));
+  return `<aside class="calendar-drawer calendar-trash-drawer" data-calendar-panel="trash" aria-label="日历回收站"><header><div><small>保留删除记录，恢复后自动同步</small><h2>任务与日程回收站</h2></div><button data-calendar-close aria-label="关闭">×</button></header><div class="calendar-trash-list">${rows.length ? rows.map((row) => `<article><div><strong>${row.entity === 'tasks' ? '任务' : '日程'} · ${escapeHtml(row.title || '未命名')}</strong><small>${escapeHtml(row.deletedAt || '')}</small></div><button data-calendar-restore="${escapeHtml(row.id)}" data-calendar-restore-entity="${escapeHtml(row.entity)}">恢复</button></article>`).join('') : '<p>回收站为空</p>'}</div></aside>`;
+}
+
+function renderDeleteConfirm(viewModel) {
+  const pending = viewModel.calendarPendingDelete;
+  if (!pending) return '';
+  const isTask = pending.entity === 'tasks';
+  return `<aside class="calendar-drawer calendar-delete-confirm" data-calendar-panel="delete-confirm" role="alertdialog" aria-label="确认删除${isTask ? '任务' : '日程'}"><header><div><small>可在回收站恢复</small><h2>确认删除${isTask ? '任务' : '日程'}？</h2></div><button data-calendar-close aria-label="关闭">×</button></header><p>“${escapeHtml(pending.title || '未命名')}”将从当前设备移除，删除会同步到其他设备。</p><footer><button data-calendar-close>取消</button><button class="danger" data-calendar-confirm-delete>确认删除</button></footer></aside>`;
 }
 
 function renderSeriesScope(viewModel) {
@@ -161,12 +172,13 @@ function renderCalendarPanel(viewModel) {
   if (viewModel.calendarPanel === 'detail') return renderDetail(viewModel);
   if (viewModel.calendarPanel === 'editor') return renderEditor(viewModel);
   if (viewModel.calendarPanel === 'trash') return renderTrash(viewModel);
+  if (viewModel.calendarPanel === 'delete-confirm') return renderDeleteConfirm(viewModel);
   if (viewModel.calendarPanel === 'series') return renderSeriesScope(viewModel);
   return '';
 }
 
 export function renderCalendarHtml(viewModel = {}) {
-  const events = viewModel.calendar || [];
+  const events = viewModel.calendarFiltered || viewModel.calendar || [];
   const conflicts = viewModel.calendarConflicts || [];
   const currentView = viewModel.calendarView || 'week';
   const externalCalendarState = viewModel.externalCalendarState || 'pending_configuration';
@@ -178,14 +190,16 @@ export function renderCalendarHtml(viewModel = {}) {
     ? '<div class="v13-state" data-state="empty">当前时间范围没有日程。</div>'
     : '<div class="v13-state" data-state="pending_configuration">外部日历尚未配置；ZOS 本地日程仍可正常使用。</div>';
   return `<div class="calendar-shell">
+    ${viewModel.calendarUndoDelete ? `<div class="calendar-undo-banner"><span>已删除：${escapeHtml(viewModel.calendarUndoDelete.title || '未命名')}</span><button data-calendar-undo-delete>撤销</button></div>` : ''}
     <header class="calendar-commandbar">
       <div class="calendar-navigation"><button data-calendar-today>今天</button><button data-calendar-nav="prev" aria-label="上一周期">‹</button><button data-calendar-nav="next" aria-label="下一周期">›</button><input type="date" data-calendar-anchor value="${escapeHtml(viewModel.calendarAnchor || '')}"></div>
       ${renderViewSwitch(currentView)}
       <div class="calendar-command-actions"><button data-calendar-sync>同步当前范围</button><button data-calendar-trash>回收站</button><button class="primary" data-calendar-capture>＋ 新增安排</button></div>
     </header>
+    <nav class="calendar-quick-filters" aria-label="日历筛选">${[['all','全部'],['task','任务'],['schedule','日程'],['wanjia','万嘉'],['huahuo','花火'],['lingli','玲丽'],['life','个人']].map(([value, label]) => `<button data-calendar-filter="${value}" class="${(viewModel.calendarFilter || 'all') === value ? 'active' : ''}">${label}</button>`).join('')}</nav>
     <div class="calendar-layer-filters"><label><input type="checkbox" data-calendar-layer="focus" ${viewModel.showFocus ? 'checked' : ''}>专注记录</label><span>重要日期已移至工作首页与生活首页</span>${externalSourceStatus(externalCalendarState, viewModel.externalCalendarFetchedAt)}${reminderStatus(viewModel.notificationState)}<span>${viewModel.calendarSyncState === 'loading' ? '正在同步…' : '本地优先 · 云端同步'}</span></div>
     ${conflicts.length ? `<div class="calendar-conflict">发现 ${conflicts.length} 组时间冲突，请优先调整。</div>` : ''}
-    ${renderGrid(layout, viewModel.calendarSelection)}
+    ${renderGrid(layout, viewModel.calendarSelection, viewModel.calendarSyncStates || {})}
     ${events.length ? '' : emptyState}
     ${renderCalendarPanel(viewModel)}
   </div>`;

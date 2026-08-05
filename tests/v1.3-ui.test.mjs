@@ -25,7 +25,7 @@ test('desktop and mobile navigation expose the approved CEO OS information archi
 
 test('HTML is a modular shell with external design and application entrypoints', () => {
   assert.match(indexHtml, /<link rel="stylesheet" href="assets\/app\.css"\s*\/?>/);
-  assert.match(indexHtml, /<script type="module" src="src\/app\.mjs\?v=1\.9\.0"><\/script>/);
+  assert.match(indexHtml, /<script type="module" src="src\/app\.mjs\?v=1\.10\.0"><\/script>/);
   assert.doesNotMatch(indexHtml, /<style>/);
   assert.doesNotMatch(indexHtml, /<script type="module">[\s\S]*?\/functions\/v1\/zos-business-data/);
 });
@@ -35,6 +35,7 @@ test('responsive CSS preserves dark tokens, safe areas and four-device touch con
   ['--cc-background', '--cc-panel', '--cc-border', '--cc-text', '--cc-accent-gold', '--cc-success', '--cc-warning', '--cc-risk']
     .forEach((token) => assert.match(css, new RegExp(token)));
   assert.match(css, /min-height:\s*44px/);
+  assert.match(css, /\.calendar-quick-filters button\s*\{[^}]*min-height:\s*44px/s);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(css, /@media\s*\(max-width:\s*375px\)/);
   assert.match(css, /@media\s*\(min-width:\s*768px\)/);

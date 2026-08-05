@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   calendarEventCapabilities,
+  calendarRecordSyncState,
   normalizeCalendarDraft,
   validateCalendarDraft,
 } from '../src/app/calendar-event.mjs';
@@ -59,14 +60,28 @@ test('recurrence and synchronized exception identity survive normalization', () 
   assert.equal(exception.exceptionType, 'modified');
 });
 
-test('only ZOS local events expose destructive calendar actions', () => {
+test('calendar capabilities distinguish local tasks, local schedules and read-only sources', () => {
   assert.deepEqual(
     calendarEventCapabilities({ source: 'user_calendar' }),
-    { edit: true, remove: true, drag: true, openSource: false, copy: true },
+    { kind: 'calendar', edit: true, remove: true, drag: true, openSource: false, copy: true, complete: false },
+  );
+  assert.deepEqual(
+    calendarEventCapabilities({ source: 'local_task' }),
+    { kind: 'task', edit: true, remove: true, drag: true, openSource: false, copy: true, complete: true },
   );
   assert.deepEqual(
     calendarEventCapabilities({ source: 'feishu_calendar', sourceUrl: 'https://open.feishu.cn/' }),
-    { edit: false, remove: false, drag: false, openSource: true, copy: true },
+    { kind: 'external', edit: false, remove: false, drag: false, openSource: true, copy: true, complete: false },
   );
   assert.equal(calendarEventCapabilities({ source: 'feishu_calendar', sourceUrl: 'javascript:alert(1)' }).openSource, false);
+});
+
+test('local calendar records expose truthful pending synced and conflict states', () => {
+  const task = { id: 'task-1', source: 'local_task', revision: 3 };
+  const calendar = { id: 'calendar-1', source: 'user_calendar', revision: 2 };
+  assert.equal(calendarRecordSyncState(task), 'pending');
+  assert.equal(calendarRecordSyncState(task, { baseRevisions: { 'tasks:task-1': 3 } }), 'synced');
+  assert.equal(calendarRecordSyncState(calendar, { baseRevisions: { 'calendar:calendar-1': 1 } }), 'pending');
+  assert.equal(calendarRecordSyncState(task, { conflicts: [{ id: 'tasks:task-1' }] }), 'conflict');
+  assert.equal(calendarRecordSyncState({ id: 'feishu-1', source: 'feishu_calendar' }), 'readonly');
 });

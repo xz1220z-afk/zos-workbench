@@ -46,7 +46,8 @@ function normalizeEvent(input, fallback = {}) {
     ? input.allDay
     : !String(input.startAt || input.dueAt || '').includes('T');
   const startAt = dateOnlyIso(rawStart) || iso(rawStart);
-  const endAt = iso(input.endAt) || (startAt && !allDay ? new Date(new Date(startAt).getTime() + 3_600_000).toISOString() : startAt);
+  const endAt = iso(input.endAt || (input.startAt ? input.dueAt : null))
+    || (startAt && !allDay ? new Date(new Date(startAt).getTime() + 3_600_000).toISOString() : startAt);
   return {
     id: String(input.id), title: String(input.title || input.name || '未命名事项'),
     startAt, endAt, allDay, company: input.company || fallback.company || 'ceo',
@@ -54,6 +55,7 @@ function normalizeEvent(input, fallback = {}) {
     owner: input.owner || null, sourceUpdatedAt: input.sourceUpdatedAt || input.updatedAt || null,
     notes: input.notes || '', reminders: Array.isArray(input.reminders) ? input.reminders : [],
     sourceUrl: input.sourceUrl || null, status: input.status || 'scheduled',
+    revision: Number(input.revision) || 0,
     recurrenceRule: input.recurrenceRule || null, seriesId: input.seriesId || null,
     originalStartAt: input.originalStartAt || null, exceptionType: input.exceptionType || null,
   };

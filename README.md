@@ -9,12 +9,14 @@ ZOS 是朱帅个人使用的 CEO OS，当前以深色 PWA 形式发布。它把�
 
 注意：`https://xz1220z-afk.github.io/` 是用户主页根域名，目前没有配置 Pages，因此会显示 404。日常只使用上面的 `/zos-workbench/` 地址。
 
-## 当前能力（v1.9.0）
+## 当前能力（v1.10.0）
 
 - CEO 指挥中心与独立 Life OS；工作端只显示私人日程的忙碌占位
 - 今日行动、待我决策、经营目标、数据健康和每日 CEO 简报
 - TickTick 风格执行中心：富任务、子任务、优先级、开始/截止时间、提醒、重复、公司/项目/业务对象绑定
 - 智能日历：日/周/月/列表视图、跨多日显示、日期跳转、桌面鼠标拖选与手机长按拖选日期范围、拖拽改期、冲突检测、私有生活忙碌占位和番茄专注记录
+- 日历任务可直接完成、编辑、复制、改期或删除；删除以跨端软删除同步，可立即撤销，也可在任务与日程统一回收站恢复
+- 日历支持任务/日程和万嘉/花火/玲丽/个人快捷筛选，并明确显示待同步、已同步、冲突或只读状态
 - 统一新增安排：选定单日或连续多日后直接创建任务或日程；月视图默认任务，日/周视图默认日程
 - 关键日期分区：首页展示工作关键期限，Life OS 展示私人重要日子；倒数日不再挤占日历网格
 - 本地日程可新建、编辑、复制、删除与回收站恢复；支持每天/每周/每月/每年重复，并可选择仅本次、本次及以后或整个系列
@@ -74,7 +76,7 @@ curl -fsSI https://xz1220z-afk.github.io/zos-workbench/sw.js
 
 ## Supabase 配置
 
-数据库迁移文件位于 `supabase/migrations/`；v1.9 在 v1.8 智能日历上增加连续日期选择、统一新增安排、可靠提醒和早晚简报，本地记录继续使用本人私有 RLS 同步，外部日历保持只读。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，v1.9 设计与实施见 [`docs/superpowers/specs/2026-08-04-zos-v1.9-reliable-schedule-design.md`](docs/superpowers/specs/2026-08-04-zos-v1.9-reliable-schedule-design.md)。
+数据库迁移文件位于 `supabase/migrations/`；v1.10 在可靠日程基础上增加任务删除同步、撤销恢复、统一回收站、任务详情动作和快捷筛选。本地记录继续使用本人私有 RLS 同步，外部日历保持只读。本次不新增数据库表或服务端权限。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，v1.10 设计见 [`docs/superpowers/specs/2026-08-06-zos-calendar-v1.10-design.md`](docs/superpowers/specs/2026-08-06-zos-calendar-v1.10-design.md)。
 
 邮箱登录链接必须回调到：
 

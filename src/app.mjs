@@ -1,4 +1,4 @@
-import { createStateStore } from './app/state-store.mjs?v=1.9.0';
+import { createStateStore } from './app/state-store.mjs?v=1.10.0';
 import { render as renderDashboard } from './app/views/dashboard-view.mjs';
 import { render as renderDecisions } from './app/views/decision-view.mjs';
 import { render as renderTargets } from './app/views/targets-view.mjs';
@@ -6,7 +6,7 @@ import { render as renderHealth } from './app/views/health-view.mjs';
 import { render as renderMobile } from './app/views/mobile-view.mjs';
 import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs';
 import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs';
-import { calendarEventCapabilities, normalizeCalendarDraft } from './app/calendar-event.mjs';
+import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs';
 import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs';
 import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs';
 import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs';
@@ -41,7 +41,7 @@ import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from '.
 import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs';
 import { runCompanyAgent } from './app/company-agent-hub.mjs';
 
-export const APP_VERSION = '1.9.0';
+export const APP_VERSION = '1.10.0';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
@@ -59,6 +59,7 @@ export function createCeoOsApplication(config = {}) {
     intelligenceSources: {}, intelligenceFetchedAt: null,
     calendarView: 'week', calendarAnchor: now().slice(0, 10), calendarPanel: null,
     selectedCalendarId: null, calendarDraft: null, calendarDraftKind: 'calendar',
+    calendarFilter: 'all', calendarPendingDelete: null, calendarUndoDelete: null,
     calendarSelection: null, calendarSelecting: false, calendarTouchPending: null, calendarMutationScope: 'single',
     calendarPendingMutation: null, calendarFormError: null, calendarSyncState: 'idle',
     externalCalendar: [], externalCalendarState: 'pending_configuration', externalCalendarRange: null, externalCalendarFetchedAt: null,
@@ -116,6 +117,19 @@ export function createCeoOsApplication(config = {}) {
     }, { showFocus: runtime.showFocus })
       .map((item) => item.company === 'life' ? redactLifeEventForWork(item) : item);
     const calendarConflicts = detectCalendarConflicts(calendar);
+    const baseRevisions = store.loadBaseRevisions?.() || {};
+    const syncConflicts = operatingRuntime?.syncController?.getConflicts?.() || runtime.conflicts || [];
+    const calendarSyncStates = Object.fromEntries(calendar.map((record) => [
+      record.id,
+      calendarRecordSyncState(record, { baseRevisions, conflicts: syncConflicts }),
+    ]));
+    const calendarFiltered = calendar.filter((record) => {
+      const filter = runtime.calendarFilter;
+      if (filter === 'all') return true;
+      if (filter === 'task') return record.source === 'local_task';
+      if (filter === 'schedule') return record.source !== 'local_task';
+      return record.company === filter;
+    });
     const importantDates = buildImportantDates(countdowns, { now: now() });
     const digestInput = { tasks, calendar, conflicts: calendarConflicts, importantDates };
     const todayTop3 = buildTodayTop3({
@@ -152,9 +166,11 @@ export function createCeoOsApplication(config = {}) {
       intelligenceCompany: runtime.intelligenceCompany,
       mustRead: todayMustRead(intelligence, { now: now() }),
       calendar,
+      calendarFiltered,
+      calendarSyncStates,
       calendarView: runtime.calendarView,
       calendarAnchor: runtime.calendarAnchor,
-      calendarLayout: calendarLayout(calendar, { view: runtime.calendarView, anchor: runtime.calendarAnchor }),
+      calendarLayout: calendarLayout(calendarFiltered, { view: runtime.calendarView, anchor: runtime.calendarAnchor }),
       calendarTrash: state.tombstones || [],
       showFocus: runtime.showFocus,
       calendarConflicts,
@@ -402,6 +418,62 @@ export function createCeoOsApplication(config = {}) {
     return item;
   }
 
+  function taskById(id) {
+    return store.load().collections.tasks.find((record) => record.id === id) || null;
+  }
+
+  function deleteTask(id) {
+    const existing = taskById(id);
+    if (!existing) throw new Error('task_required');
+    const result = store.deleteEntity('tasks', id);
+    runtime.calendarUndoDelete = { entity: 'tasks', id, title: existing.title };
+    runtime.calendarPendingDelete = null;
+    runtime.selectedCalendarId = null;
+    runtime.calendarPanel = null;
+    signalLocalChange();
+    renderAll();
+    return result;
+  }
+
+  function restoreTask(id) {
+    const tombstone = store.load().tombstones.find((record) => record.entity === 'tasks' && record.id === id);
+    if (!tombstone) throw new Error('task_tombstone_required');
+    const result = store.restoreEntity('tasks', id);
+    if (runtime.calendarUndoDelete?.entity === 'tasks' && runtime.calendarUndoDelete.id === id) {
+      runtime.calendarUndoDelete = null;
+    }
+    signalLocalChange();
+    renderAll();
+    return result;
+  }
+
+  function toggleTask(id) {
+    const task = taskById(id);
+    if (!task) throw new Error('task_required');
+    return saveTask({ ...task, status: ['done', 'completed'].includes(task.status) ? 'todo' : 'done' });
+  }
+
+  function copyTask(id) {
+    const existing = taskById(id);
+    if (!existing) throw new Error('task_required');
+    const {
+      id: _id, revision: _revision, createdAt: _createdAt, updatedAt: _updatedAt,
+      deletedAt: _deletedAt, deviceId: _deviceId, ...copy
+    } = existing;
+    return saveTask({ ...copy, title: `${existing.title}（副本）` });
+  }
+
+  function moveTask(id, patch = {}) {
+    const existing = taskById(id);
+    if (!existing) throw new Error('task_required');
+    let dueAt = patch.dueAt === undefined ? existing.dueAt : patch.dueAt;
+    if (patch.startAt && patch.dueAt === undefined && existing.startAt && existing.dueAt) {
+      const duration = Math.max(0, new Date(existing.dueAt) - new Date(existing.startAt));
+      dueAt = new Date(new Date(patch.startAt).getTime() + duration).toISOString();
+    }
+    return saveTask({ ...existing, ...patch, dueAt });
+  }
+
   function convertIntelligenceToTask(item = {}) {
     const externalId = item.externalId || item.id;
     return saveTask({
@@ -544,6 +616,8 @@ export function createCeoOsApplication(config = {}) {
     const existing = store.load().collections.calendar.find((record) => record.id === id);
     if (!existing || !calendarEventCapabilities(existing).remove) throw new Error('calendar_local_event_required');
     const result = store.deleteEntity('calendar', id);
+    runtime.calendarUndoDelete = { entity: 'calendar', id, title: existing.title };
+    runtime.calendarPendingDelete = null;
     signalLocalChange();
     renderAll();
     return result;
@@ -553,6 +627,9 @@ export function createCeoOsApplication(config = {}) {
     const tombstone = store.load().tombstones.find((record) => record.entity === 'calendar' && record.id === id);
     if (!tombstone || !calendarEventCapabilities(tombstone).edit) throw new Error('calendar_local_event_required');
     const result = store.restoreEntity('calendar', id);
+    if (runtime.calendarUndoDelete?.entity === 'calendar' && runtime.calendarUndoDelete.id === id) {
+      runtime.calendarUndoDelete = null;
+    }
     signalLocalChange();
     renderAll();
     return result;
@@ -595,8 +672,9 @@ export function createCeoOsApplication(config = {}) {
     const event = id ? selectedCalendarEvent(id) : null;
     if (event && !calendarEventCapabilities(event).edit) throw new Error('calendar_local_event_required');
     runtime.selectedCalendarId = id;
-    runtime.calendarDraftKind = event ? 'calendar' : (inputKind || (runtime.calendarView === 'month' ? 'task' : 'calendar'));
-    runtime.calendarDraft = event ? { ...event } : inputDraft ? { ...inputDraft } : {
+    runtime.calendarDraftKind = event ? calendarEventCapabilities(event).kind : (inputKind || (runtime.calendarView === 'month' ? 'task' : 'calendar'));
+    const sourceRecord = event?.source === 'local_task' ? taskById(id) : event;
+    runtime.calendarDraft = sourceRecord ? { ...sourceRecord } : inputDraft ? { ...inputDraft } : {
       startAt: `${runtime.calendarAnchor}T09:00:00+08:00`,
       endAt: `${runtime.calendarAnchor}T10:00:00+08:00`,
       company: 'ceo', privacy: 'work', reminders: [],
@@ -614,6 +692,7 @@ export function createCeoOsApplication(config = {}) {
     runtime.calendarSelecting = false;
     runtime.selectedCalendarId = null;
     runtime.calendarPendingMutation = null;
+    runtime.calendarPendingDelete = null;
     runtime.calendarFormError = null;
     renderAll();
   }
@@ -707,9 +786,10 @@ export function createCeoOsApplication(config = {}) {
     if (!event || !calendarEventCapabilities(event)[action === 'delete' ? 'remove' : 'edit']) {
       throw new Error('calendar_local_event_required');
     }
-    const recurring = Boolean(event.recurrenceRule || event.originalStartAt || event.seriesId);
+    const recurring = calendarEventCapabilities(event).kind === 'calendar'
+      && Boolean(event.recurrenceRule || event.originalStartAt || event.seriesId);
     if (!recurring) {
-      if (action === 'delete') return deleteCalendar(id);
+      if (action === 'delete') return requestCalendarDeletion(id);
       openCalendarEditor(id);
       return event;
     }
@@ -717,6 +797,46 @@ export function createCeoOsApplication(config = {}) {
     runtime.calendarPanel = 'series';
     renderAll();
     return event;
+  }
+
+  function requestCalendarDeletion(id) {
+    const event = selectedCalendarEvent(id);
+    const capabilities = calendarEventCapabilities(event || {});
+    if (!event || !capabilities.remove) throw new Error('calendar_local_event_required');
+    runtime.calendarPendingDelete = {
+      entity: capabilities.kind === 'task' ? 'tasks' : 'calendar',
+      id,
+      title: event.title,
+    };
+    runtime.calendarPanel = 'delete-confirm';
+    renderAll();
+    return runtime.calendarPendingDelete;
+  }
+
+  function confirmCalendarDeletion() {
+    const pending = runtime.calendarPendingDelete;
+    if (!pending) throw new Error('calendar_delete_confirmation_required');
+    return pending.entity === 'tasks' ? deleteTask(pending.id) : deleteCalendar(pending.id);
+  }
+
+  function restoreCalendarEntity(entity, id) {
+    if (entity === 'tasks') return restoreTask(id);
+    if (entity === 'calendar') return restoreCalendar(id);
+    throw new Error('calendar_restore_entity_invalid');
+  }
+
+  function undoCalendarDelete() {
+    const pending = runtime.calendarUndoDelete;
+    if (!pending) return null;
+    return restoreCalendarEntity(pending.entity, pending.id);
+  }
+
+  function setCalendarFilter(filter) {
+    const allowed = new Set(['all', 'task', 'schedule', 'wanjia', 'huahuo', 'lingli', 'life']);
+    if (!allowed.has(filter)) throw new Error('calendar_filter_invalid');
+    runtime.calendarFilter = filter;
+    renderAll();
+    return filter;
   }
 
   function seriesContext(id) {
@@ -816,6 +936,7 @@ export function createCeoOsApplication(config = {}) {
       const taskEdit = event.target?.closest?.('[data-task-edit]');
       const taskClose = event.target?.closest?.('[data-task-close]');
       const taskToggle = event.target?.closest?.('[data-task-toggle]');
+      const taskDelete = event.target?.closest?.('[data-task-delete]');
       const focusAction = event.target?.closest?.('[data-focus-action]');
       const focusDuration = event.target?.closest?.('[data-focus-duration]');
       const countdownCapture = event.target?.closest?.('[data-countdown-capture]');
@@ -835,6 +956,14 @@ export function createCeoOsApplication(config = {}) {
       const calendarClose = event.target?.closest?.('[data-calendar-close]');
       const calendarReschedule = event.target?.closest?.('[data-calendar-reschedule]');
       const calendarSeriesScope = event.target?.closest?.('[data-calendar-series-scope]');
+      const calendarTaskToggle = event.target?.closest?.('[data-calendar-task-toggle]');
+      const calendarTaskEdit = event.target?.closest?.('[data-calendar-task-edit]');
+      const calendarTaskCopy = event.target?.closest?.('[data-calendar-task-copy]');
+      const calendarTaskReschedule = event.target?.closest?.('[data-calendar-task-reschedule]');
+      const calendarTaskDelete = event.target?.closest?.('[data-calendar-task-delete]');
+      const calendarConfirmDelete = event.target?.closest?.('[data-calendar-confirm-delete]');
+      const calendarUndoDelete = event.target?.closest?.('[data-calendar-undo-delete]');
+      const calendarFilter = event.target?.closest?.('[data-calendar-filter]');
       const merchantSelect = event.target?.closest?.('[data-merchant-select]');
       try {
         if (previewButton) await previewDecision(previewButton.dataset.previewDecision);
@@ -881,7 +1010,25 @@ export function createCeoOsApplication(config = {}) {
           copyCalendar(calendarCopy.dataset.calendarCopy);
           closeCalendarPanel();
         } else if (calendarRestore) {
-          restoreCalendar(calendarRestore.dataset.calendarRestore);
+          restoreCalendarEntity(calendarRestore.dataset.calendarRestoreEntity || 'calendar', calendarRestore.dataset.calendarRestore);
+        } else if (calendarTaskToggle) {
+          toggleTask(calendarTaskToggle.dataset.calendarTaskToggle);
+          closeCalendarPanel();
+        } else if (calendarTaskEdit) {
+          openCalendarEditor(calendarTaskEdit.dataset.calendarTaskEdit);
+        } else if (calendarTaskCopy) {
+          copyTask(calendarTaskCopy.dataset.calendarTaskCopy);
+          closeCalendarPanel();
+        } else if (calendarTaskReschedule) {
+          openCalendarEditor(calendarTaskReschedule.dataset.calendarTaskReschedule);
+        } else if (calendarTaskDelete) {
+          requestCalendarDeletion(calendarTaskDelete.dataset.calendarTaskDelete);
+        } else if (calendarConfirmDelete) {
+          confirmCalendarDeletion();
+        } else if (calendarUndoDelete) {
+          undoCalendarDelete();
+        } else if (calendarFilter) {
+          setCalendarFilter(calendarFilter.dataset.calendarFilter);
         } else if (calendarClose) {
           closeCalendarPanel();
         } else if (calendarReschedule) {
@@ -920,10 +1067,15 @@ export function createCeoOsApplication(config = {}) {
         }
         else if (taskEdit) openTaskEditor(viewModel().tasks.find((item) => item.id === taskEdit.dataset.taskEdit));
         else if (taskClose) closeTaskEditor();
-        else if (taskToggle) {
-          const task = viewModel().tasks.find((item) => item.id === taskToggle.dataset.taskToggle);
-          if (task) saveTask({ ...task, status: ['done', 'completed'].includes(task.status) ? 'todo' : 'done' });
-        } else if (focusDuration) {
+        else if (taskDelete) {
+          const confirmDelete = config.confirm || globalThis.confirm;
+          if (typeof confirmDelete !== 'function' || confirmDelete('删除后会同步到其他设备，可在日历回收站恢复。确认删除？')) {
+            deleteTask(taskDelete.dataset.taskDelete);
+            closeTaskEditor();
+          }
+        }
+        else if (taskToggle) toggleTask(taskToggle.dataset.taskToggle);
+        else if (focusDuration) {
           const value = focusDuration.dataset.focusDuration === 'custom'
             ? Number((config.prompt || globalThis.prompt)?.('专注分钟数', '25'))
             : Number(focusDuration.dataset.focusDuration);
@@ -1124,12 +1276,20 @@ export function createCeoOsApplication(config = {}) {
       if (!target || !id) return;
       event.preventDefault();
       target.classList?.remove?.('calendar-drop-target');
-      const existing = store.load().collections.calendar.find((record) => record.id === id);
+      const model = viewModel();
+      const visible = model.calendar.find((record) => record.id === id);
+      const capabilities = calendarEventCapabilities(visible || {});
+      const existing = capabilities.kind === 'task'
+        ? store.load().collections.tasks.find((record) => record.id === id)
+        : store.load().collections.calendar.find((record) => record.id === id);
       if (!existing) return;
       const start = new Date(existing.startAt);
       const [year, month, day] = target.dataset.calendarDropDate.split('-').map(Number);
       start.setFullYear(year, month - 1, day);
-      try { moveCalendar(id, { startAt: start.toISOString() }); } catch { /* External and recurring rows are not draggable. */ }
+      try {
+        if (capabilities.kind === 'task') moveTask(id, { startAt: start.toISOString() });
+        else moveCalendar(id, { startAt: start.toISOString() });
+      } catch { /* External and recurring rows are not draggable. */ }
     });
   }
 
@@ -1326,8 +1486,10 @@ export function createCeoOsApplication(config = {}) {
     start, stop, whenIdle: () => Promise.all([startupWork, reminderScheduleWork]).then(() => viewModel()), render: renderAll, store, runtime, viewModel,
     refreshSource, refreshAllSources, notifyCurrentReminders, confirmTarget, previewDecision, executeApproval,
     quickCapture, captureCalendar, saveCalendar, deleteCalendar, restoreCalendar, copyCalendar, moveCalendar,
+    deleteTask, restoreTask, toggleTask, copyTask, moveTask,
     setCalendarView, navigateCalendar, goToCalendarToday, refreshCalendarRange,
     selectCalendar, openCalendarEditor, closeCalendarPanel, requestCalendarMutation, applyCalendarSeriesScope,
+    requestCalendarDeletion, confirmCalendarDeletion, restoreCalendarEntity, undoCalendarDelete, setCalendarFilter,
     beginCalendarSelection, extendCalendarSelection, commitCalendarSelection, setCalendarDraftKind,
     saveCalendarArrangement,
     saveTask, convertIntelligenceToTask, saveCountdown, enableClosedAppReminders, scheduleDurableReminders,

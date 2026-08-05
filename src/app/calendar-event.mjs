@@ -106,12 +106,28 @@ export function normalizeCalendarDraft(input = {}, existing = {}) {
 }
 
 export function calendarEventCapabilities(event = {}) {
-  const local = event.source === 'user_calendar';
+  const localCalendar = event.source === 'user_calendar';
+  const localTask = event.source === 'local_task';
+  const local = localCalendar || localTask;
   return {
+    kind: localTask ? 'task' : (localCalendar ? 'calendar' : 'external'),
     edit: local,
     remove: local,
     drag: local && !event.recurrenceRule && !event.seriesId && !event.originalStartAt,
     openSource: !local && Boolean(safeSourceUrl(event.sourceUrl)),
     copy: true,
+    complete: localTask,
   };
+}
+
+export function calendarRecordSyncState(record = {}, options = {}) {
+  if (!['user_calendar', 'local_task'].includes(record.source)) return 'readonly';
+  const entity = record.source === 'local_task' ? 'tasks' : 'calendar';
+  const key = `${entity}:${record.id}`;
+  const conflicts = Array.isArray(options.conflicts) ? options.conflicts : [];
+  if (conflicts.some((conflict) => conflict?.id === key
+    || (conflict?.entity === entity && conflict?.recordId === record.id))) return 'conflict';
+  const revision = Number(record.revision) || 0;
+  const baseRevision = Number(options.baseRevisions?.[key]) || 0;
+  return revision > 0 && baseRevision >= revision ? 'synced' : 'pending';
 }

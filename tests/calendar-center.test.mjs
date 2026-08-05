@@ -19,6 +19,19 @@ test('calendar combines company milestones, local tasks and private busy slots',
   assert.equal(redactLifeEventForWork(calendar.find((entry) => entry.id === 'l1')).title, '个人安排');
 });
 
+test('calendar task projection preserves duration, revision and task status for synced actions', () => {
+  const [task] = buildCalendar({
+    tasks: [{
+      id: 't-sync', title: '跨端任务', startAt: '2026-08-10T09:00:00.000Z',
+      dueAt: '2026-08-10T10:30:00.000Z', company: 'wanjia', status: 'todo', revision: 4,
+    }],
+  });
+  assert.equal(task.source, 'local_task');
+  assert.equal(task.endAt, '2026-08-10T10:30:00.000Z');
+  assert.equal(task.revision, 4);
+  assert.equal(task.status, 'todo');
+});
+
 test('calendar conflict detector finds overlapping timed events', () => {
   const conflicts = detectCalendarConflicts([
     { id: 'a', startAt: '2026-08-02T10:00:00+08:00', endAt: '2026-08-02T11:00:00+08:00' },

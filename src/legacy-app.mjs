@@ -1,4 +1,4 @@
-import { pageIdFromHash } from './app/router.mjs?v=1.9.0';
+import { pageIdFromHash } from './app/router.mjs?v=1.10.0';
 
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
@@ -124,7 +124,7 @@ import { pageIdFromHash } from './app/router.mjs?v=1.9.0';
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.9.0';
+  const APP_VERSION = '1.10.0';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
   const APP_RELEASE_DATE = '2026-08-04';
 
