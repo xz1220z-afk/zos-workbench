@@ -125,7 +125,7 @@ import { pageIdFromHash } from './app/router.mjs?v=2.0.0';
   'use strict';
 
   const APP_VERSION = '2.0.0';
-  const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
+  const PUBLIC_APP_URL = new URL('.', window.location.href).href;
   const APP_RELEASE_DATE = '2026-08-06';
 
   // ==================== DATA LAYER ====================

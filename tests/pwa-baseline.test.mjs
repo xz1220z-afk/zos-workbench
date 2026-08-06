@@ -43,8 +43,8 @@ assert.match(indexHtml, /万嘉网络/,
   'Current UI must expose the 万嘉网络 brand name');
 assert.match(indexHtml, /refreshSession\(session\.refreshToken\)/,
   'Sync must refresh an existing Supabase session before pulling data');
-assert.match(indexHtml, /const PUBLIC_APP_URL = 'https:\/\/xz1220z-afk\.github\.io\/zos-workbench\/'/,
-  'The public app URL must be explicit so auth callbacks stay on the GitHub Pages subpath');
+assert.match(indexHtml, /const PUBLIC_APP_URL = new URL\('\.', window\.location\.href\)\.href/,
+  'The auth callback must follow the current stable host while staying on the app directory');
 assert.match(indexHtml, /const APP_VERSION = '2\.0\.0'/,
   'The inline application version must match the current release');
 assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v2\.0\.0/,
@@ -53,8 +53,8 @@ assert.doesNotMatch(legacySource, /controllerchange[\s\S]{0,180}window\.location
   'Service Worker updates must not force a second page load');
 assert.match(indexHtml, /requestOtp\(email, PUBLIC_APP_URL\)/,
   'Magic-link requests must redirect to the public app subpath');
-assert.doesNotMatch(indexHtml, /requestOtp\(email, window\.location\.origin \+ window\.location\.pathname\)/,
-  'Magic-link requests must not derive redirects from the current page location');
+assert.doesNotMatch(indexHtml, /const PUBLIC_APP_URL = 'https:\/\/xz1220z-afk\.github\.io\/zos-workbench\/'/,
+  'Magic-link callbacks must not be locked to one hosting provider');
 assert.doesNotMatch(indexHtml, /n8p3xbsbky\.coze\.site/i,
   'Current UI must not expose the retired Coze address');
 assert.doesNotMatch(indexHtml, /当前版本（v1\.0\.2）为纯本地工作台/i,
