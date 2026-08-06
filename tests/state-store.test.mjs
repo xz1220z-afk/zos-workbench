@@ -223,3 +223,23 @@ test('startup remains readable when the current v1.7 snapshot already fills stor
   assert.equal(store.load().collections.tasks[0].title, '保留旧任务');
   assert.equal(storage.getItem('zos_ceo_os_state_v1_7'), original);
 });
+
+test('state store records bounded safe operations and preserves them across remote snapshot replacement', () => {
+  let tick = 0;
+  const store = createStateStore({
+    storage: memoryStorage(), deviceId: 'mac-1', createId: () => `id-${tick}`,
+    now: () => `2026-08-06T08:00:${String(tick++).padStart(2, '0')}.000Z`,
+    auditLimit: 3,
+  });
+  const created = store.saveEntity('tasks', { title: '第一项', password: 'never' });
+  store.saveEntity('tasks', { ...created, title: '已完成', done: true }, { action: 'complete' });
+  store.deleteEntity('tasks', created.id);
+  store.restoreEntity('tasks', created.id);
+  const before = store.load();
+  assert.equal(before.auditLog.length, 3);
+  assert.deepEqual(before.auditLog.map((item) => item.action), ['restore', 'delete', 'complete']);
+  assert.doesNotMatch(JSON.stringify(before.auditLog), /password|never/);
+
+  store.replaceSnapshot({ collections: { tasks: [] }, tombstones: [] });
+  assert.deepEqual(store.load().auditLog, before.auditLog);
+});

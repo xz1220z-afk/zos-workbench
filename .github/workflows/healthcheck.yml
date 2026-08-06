@@ -17,14 +17,17 @@ jobs:
         run: |
           set -euo pipefail
           base='https://xz1220z-afk.github.io/zos-workbench'
-          for path in / /manifest.webmanifest /sw.js; do
+          for path in / /manifest.webmanifest /sw.js /src/app.mjs /src/legacy-app.mjs; do
             status=$(curl -L -sS -o /tmp/zos-response -w '%{http_code}' "$base$path")
             test "$status" = 200
           done
           index_body=$(curl -L -fsS "$base/")
           sw_body=$(curl -L -fsS "$base/sw.js")
-          app_version=$(printf '%s' "$index_body" | sed -n "s/.*const APP_VERSION = '\([^']*\)'.*/\1/p" | head -1)
+          app_body=$(curl -L -fsS "$base/src/app.mjs")
+          legacy_body=$(curl -L -fsS "$base/src/legacy-app.mjs")
+          app_version=$(printf '%s' "$app_body" | sed -n "s/.*const APP_VERSION = '\([^']*\)'.*/\1/p" | head -1)
           cache_version=$(printf '%s' "$sw_body" | sed -n "s/.*zos-workbench-v\([^']*\).*/\1/p" | head -1)
           test -n "$app_version"
           test "$app_version" = "$cache_version"
-          printf '%s' "$index_body" | grep -F "requestOtp(email, PUBLIC_APP_URL)"
+          printf '%s' "$index_body" | grep -F "src/app.mjs?v=$app_version"
+          printf '%s' "$legacy_body" | grep -F "requestOtp(email, PUBLIC_APP_URL)"

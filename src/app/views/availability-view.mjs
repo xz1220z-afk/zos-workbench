@@ -1,4 +1,4 @@
-import { escapeHtml } from './view-utils.mjs';
+import { escapeHtml } from './view-utils.mjs?v=1.11.0';
 
 const STATE_LABELS = {
   no_schedule_evidence: '当前日期没有可核验排期，不能据此判断团队空闲',

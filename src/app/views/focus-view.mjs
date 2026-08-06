@@ -1,4 +1,4 @@
-import { escapeHtml } from './view-utils.mjs';
+import { escapeHtml } from './view-utils.mjs?v=1.11.0';
 
 function clock(seconds) {
   const value = Math.max(0, Number(seconds) || 0);

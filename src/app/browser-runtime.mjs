@@ -1,10 +1,11 @@
-import { fetchBusinessData } from '../business-data-client.mjs';
-import { createSupabaseAuth } from '../supabase-auth.mjs';
-import { createSupabaseTransport } from '../supabase-transport.mjs';
-import { createFeishuApprovalClient } from './feishu-approvals.mjs';
-import { createOperatingLoop } from './operating-loop.mjs';
-import { createSyncController } from './sync-controller.mjs';
-import { createPushClient } from './push-notifications.mjs';
+import { fetchBusinessData } from '../business-data-client.mjs?v=1.11.0';
+import { createSupabaseAuth } from '../supabase-auth.mjs?v=1.11.0';
+import { createSupabaseTransport } from '../supabase-transport.mjs?v=1.11.0';
+import { createFeishuApprovalClient } from './feishu-approvals.mjs?v=1.11.0';
+import { createOperatingLoop } from './operating-loop.mjs?v=1.11.0';
+import { createSyncController } from './sync-controller.mjs?v=1.11.0';
+import { createPushClient } from './push-notifications.mjs?v=1.11.0';
+import { buildLocalSyncInput } from '../sync-engine.mjs?v=1.11.0';
 
 const DEFAULT_CONFIG = Object.freeze({
   url: 'https://dtwvyramgbwtlyhmkhkd.supabase.co',
@@ -75,7 +76,7 @@ async function loadExternalCalendar(fetchImpl, config, token, { start, end } = {
 
 export async function createBrowserOperatingRuntime({
   storage, store, deviceId, now = () => new Date().toISOString(), fetchImpl = globalThis.fetch,
-  eventTarget = globalThis, document = globalThis.document,
+  eventTarget = globalThis, document = globalThis.document, onSyncStatus = () => {}, onSyncConflict = () => {},
 } = {}) {
   if (!storage || !store || typeof fetchImpl !== 'function') return null;
   const config = { ...DEFAULT_CONFIG, ...readJson(storage, 'zos_supabase_config') };
@@ -123,6 +124,7 @@ export async function createBrowserOperatingRuntime({
   const syncController = createSyncController({
     userId: session.userId, deviceId, transport,
     readState: () => store.load().collections,
+    readSyncState: () => buildLocalSyncInput(store.load()),
     writeState: (next) => {
       const current = store.load();
       store.replaceSnapshot({
@@ -134,6 +136,8 @@ export async function createBrowserOperatingRuntime({
     loadBaseRevisions: () => store.loadBaseRevisions(),
     saveBaseRevisions: (revisions) => store.saveBaseRevisions(revisions),
     eventTarget, visibility: document,
+    onStatus: onSyncStatus,
+    onConflict: onSyncConflict,
   });
 
   return {

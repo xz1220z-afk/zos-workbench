@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyRemoteSnapshot, CRITICAL_ENTITY_TYPES, fromCloudRow, resolveConflict, toCloudRow } from '../src/sync-engine.mjs';
+import { applyRemoteSnapshot, buildLocalSyncInput, CRITICAL_ENTITY_TYPES, fromCloudRow, resolveConflict, toCloudRow } from '../src/sync-engine.mjs';
 
 test('toCloudRow creates an owner-scoped sync row without credentials', () => {
   const row = toCloudRow({
@@ -42,6 +42,46 @@ test('applyRemoteSnapshot keeps a newer remote tombstone and does not resurrect 
   assert.deepEqual(result.collections.tasks, []);
   assert.equal(result.tombstones[0].id, 'task-1');
   assert.equal(result.tombstones[0].deletedAt, '2026-07-29T10:00:00.000Z');
+});
+
+test('local tombstones are included in sync input and overwrite an older live cloud copy', () => {
+  const deleted = {
+    id: 'task-deleted', title: '已删除任务', entity: 'tasks',
+    createdAt: '2026-08-01T08:00:00.000Z', updatedAt: '2026-08-02T08:00:00.000Z',
+    deletedAt: '2026-08-02T08:00:00.000Z', revision: 2, deviceId: 'mac-1',
+  };
+  const local = buildLocalSyncInput({ collections: { tasks: [] }, tombstones: [deleted] });
+  const result = applyRemoteSnapshot({
+    local,
+    userId: 'user-1',
+    remoteRows: [{
+      entity_type: 'tasks', record_id: deleted.id, payload: { id: deleted.id, title: deleted.title },
+      created_at: deleted.createdAt, updated_at: '2026-08-01T09:00:00.000Z',
+      deleted_at: null, revision: 1, device_id: 'phone-1',
+    }],
+  });
+  assert.equal(result.collections.tasks.length, 0);
+  assert.equal(result.tombstones[0].id, deleted.id);
+  assert.equal(result.uploads[0].deleted_at, deleted.deletedAt);
+});
+
+test('a newer restored live revision wins over an older cloud tombstone and uploads', () => {
+  const restored = {
+    id: 'task-restored', title: '恢复任务', createdAt: '2026-08-01T08:00:00.000Z',
+    updatedAt: '2026-08-03T08:00:00.000Z', deletedAt: null, revision: 3, deviceId: 'mac-1',
+  };
+  const result = applyRemoteSnapshot({
+    local: { tasks: [restored] }, userId: 'user-1',
+    remoteRows: [{
+      entity_type: 'tasks', record_id: restored.id, payload: { id: restored.id, title: restored.title },
+      created_at: restored.createdAt, updated_at: '2026-08-02T08:00:00.000Z',
+      deleted_at: '2026-08-02T08:00:00.000Z', revision: 2, device_id: 'phone-1',
+    }],
+  });
+  assert.equal(result.collections.tasks[0].id, restored.id);
+  assert.equal(result.tombstones.length, 0);
+  assert.equal(result.uploads[0].deleted_at, null);
+  assert.equal(result.uploads[0].revision, 3);
 });
 
 test('applyRemoteSnapshot keeps a newer local record and marks it for upload', () => {
@@ -131,7 +171,26 @@ test('resolved critical conflict creates a fresh revision on the resolving devic
   assert.equal(resolved.revision, 5);
   assert.equal(resolved.deviceId, 'ipad-1');
   assert.equal(resolved.updatedAt, '2026-08-02T10:00:00.000Z');
-  assert.throws(() => resolveConflict(conflict, 'merge', { now: 'x', deviceId: 'ipad-1' }), /choice must be local or remote/);
+  assert.throws(() => resolveConflict(conflict, 'merge', { now: 'x', deviceId: 'ipad-1' }), /merged fields are required/);
+});
+
+test('cloud rows and resolved conflicts strip credential fields before local display or upload', () => {
+  const remote = fromCloudRow({
+    record_id: 'target-secret', payload: { id: 'target-secret', value: 120, privateKey: 'never', sessionToken: 'never' },
+    created_at: '2026-08-01T08:00:00.000Z', updated_at: '2026-08-02T08:00:00.000Z',
+    deleted_at: null, revision: 3, device_id: 'phone-1',
+  });
+  assert.equal(remote.privateKey, undefined);
+  assert.equal(remote.sessionToken, undefined);
+  const resolved = resolveConflict({
+    id: 'targets:target-secret', entityType: 'targets', recordId: 'target-secret',
+    local: { id: 'target-secret', value: 100, createdAt: remote.createdAt, updatedAt: remote.updatedAt, revision: 3, deviceId: 'mac-1' },
+    remote: { ...remote, privateKey: 'never-again' },
+  }, 'merge', {
+    now: '2026-08-03T08:00:00.000Z', deviceId: 'mac-1', merged: { value: 120, credential: 'never-again' },
+  });
+  const row = toCloudRow({ userId: 'user-1', entityType: 'targets', record: resolved });
+  assert.doesNotMatch(JSON.stringify(row), /privateKey|sessionToken|credential|never/);
 });
 
 test('critical conflict comparison detects different nested evidence', () => {

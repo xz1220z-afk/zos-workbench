@@ -1,4 +1,4 @@
-import { escapeHtml } from './view-utils.mjs';
+import { escapeHtml } from './view-utils.mjs?v=1.11.0';
 
 function count(items) { return Array.isArray(items) ? items.length : 0; }
 

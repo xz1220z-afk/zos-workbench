@@ -1,4 +1,5 @@
-import { selectLatestRecord } from './data-model.mjs';
+import { selectLatestRecord } from './data-model.mjs?v=1.11.0';
+import { sanitizeSensitiveFields } from './app/sensitive-fields.mjs?v=1.11.0';
 
 export const CRITICAL_ENTITY_TYPES = new Set(['decisions', 'targets']);
 
@@ -21,12 +22,13 @@ function canonicalMetadata(record) {
 export function toCloudRow({ userId, entityType, record }) {
   required(userId, 'userId');
   required(entityType, 'entityType');
-  const metadata = canonicalMetadata(record);
+  const safeRecord = sanitizeSensitiveFields(record);
+  const metadata = canonicalMetadata(safeRecord);
   return {
     user_id: userId,
     entity_type: entityType,
     record_id: metadata.id,
-    payload: { ...record },
+    payload: { ...safeRecord },
     created_at: metadata.createdAt,
     updated_at: metadata.updatedAt,
     deleted_at: metadata.deletedAt,
@@ -37,7 +39,7 @@ export function toCloudRow({ userId, entityType, record }) {
 
 export function fromCloudRow(row) {
   return {
-    ...(row.payload || {}),
+    ...sanitizeSensitiveFields(row.payload || {}),
     id: required(row.record_id, 'row.record_id'),
     createdAt: required(row.created_at, 'row.created_at'),
     updatedAt: required(row.updated_at, 'row.updated_at'),
@@ -45,6 +47,18 @@ export function fromCloudRow(row) {
     revision: required(row.revision, 'row.revision'),
     deviceId: required(row.device_id, 'row.device_id'),
   };
+}
+
+export function buildLocalSyncInput(snapshot = {}) {
+  const collections = Object.fromEntries(Object.entries(snapshot.collections || {})
+    .map(([entityType, records]) => [entityType, Array.isArray(records) ? records.slice() : []]));
+  for (const tombstone of Array.isArray(snapshot.tombstones) ? snapshot.tombstones : []) {
+    const entityType = String(tombstone?.entity || '').trim();
+    if (!entityType || !tombstone?.id) continue;
+    const records = collections[entityType] || [];
+    collections[entityType] = [...records.filter((record) => record.id !== tombstone.id), tombstone];
+  }
+  return collections;
 }
 
 function indexRecords(records) {
@@ -75,7 +89,9 @@ function payloadsDiffer(left, right) {
 function authoritativeTombstone(left, right) {
   if (!left?.deletedAt && !right?.deletedAt) return null;
   if (left?.deletedAt && right?.deletedAt) return selectLatestRecord(left, right);
-  return left?.deletedAt ? left : right;
+  const deleted = left?.deletedAt ? left : right;
+  const live = left?.deletedAt ? right : left;
+  return (deleted?.revision || 0) >= (live?.revision || 0) ? deleted : null;
 }
 
 export function applyRemoteSnapshot({ local, remoteRows, userId = 'sync-user', baseRevisions = {} }) {
@@ -150,15 +166,22 @@ export function applyRemoteSnapshot({ local, remoteRows, userId = 'sync-user', b
 export const mergeRemoteSnapshot = applyRemoteSnapshot;
 
 export function resolveConflict(conflict, choice, options = {}) {
-  if (!['local', 'remote'].includes(choice)) throw new Error('choice must be local or remote');
+  if (!['local', 'remote', 'merge'].includes(choice)) throw new Error('choice must be local, remote or merge');
   const now = required(options.now, 'now');
   const deviceId = required(options.deviceId, 'deviceId');
-  const selected = conflict?.[choice];
+  let selected = conflict?.[choice];
+  if (choice === 'merge') {
+    const merged = options.merged;
+    if (!merged || typeof merged !== 'object' || Array.isArray(merged)) throw new Error('merged fields are required');
+    const protectedKeys = new Set(['id', 'createdAt', 'updatedAt', 'deletedAt', 'revision', 'deviceId', 'entity']);
+    const businessFields = sanitizeSensitiveFields(Object.fromEntries(Object.entries(merged).filter(([key]) => !protectedKeys.has(key))));
+    selected = { ...conflict.local, ...businessFields };
+  }
   if (!selected) throw new Error(`conflict.${choice} is required`);
-  return {
+  return sanitizeSensitiveFields({
     ...selected,
     updatedAt: now,
     revision: Math.max(conflict.local?.revision || 0, conflict.remote?.revision || 0) + 1,
     deviceId,
-  };
+  });
 }

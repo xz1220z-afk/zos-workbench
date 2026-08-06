@@ -30,4 +30,4 @@ export function displayValue(value, fallback = '—') {
   const text = humanText(value, '');
   return text ? escapeHtml(text) : fallback;
 }
-import { humanText } from '../value-utils.mjs';
+import { humanText } from '../value-utils.mjs?v=1.11.0';

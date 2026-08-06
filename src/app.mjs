@@ -1,47 +1,48 @@
-import { createStateStore } from './app/state-store.mjs?v=1.10.0';
-import { render as renderDashboard } from './app/views/dashboard-view.mjs';
-import { render as renderDecisions } from './app/views/decision-view.mjs';
-import { render as renderTargets } from './app/views/targets-view.mjs';
-import { render as renderHealth } from './app/views/health-view.mjs';
-import { render as renderMobile } from './app/views/mobile-view.mjs';
-import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs';
-import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs';
-import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs';
-import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs';
-import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs';
-import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs';
-import { normalizeTask, groupAgenda } from './app/task-center.mjs';
-import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs';
-import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs';
-import { buildImportantDates } from './app/important-dates.mjs';
-import { queryAvailability } from './app/availability-center.mjs';
-import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs';
-import { normalizeIntelligenceItem, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs';
-import { summarizeLife } from './app/life-os.mjs';
-import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs';
-import { render as renderIntelligence } from './app/views/intelligence-view.mjs';
-import { render as renderCalendar } from './app/views/calendar-view.mjs';
-import { render as renderLife } from './app/views/life-view.mjs';
-import { render as renderSearch } from './app/views/search-view.mjs';
-import { render as renderLingli } from './app/views/lingli-view.mjs';
-import { buildRelations } from './app/relation-center.mjs';
-import { createReviewDraft } from './app/review-center.mjs';
-import { render as renderRelations } from './app/views/relation-view.mjs';
-import { render as renderReviews } from './app/views/review-view.mjs';
-import { render as renderTodayExecution } from './app/views/today-execution-view.mjs';
-import { render as renderTaskCenter } from './app/views/task-view.mjs';
-import { render as renderFocus } from './app/views/focus-view.mjs';
-import { render as renderAvailability } from './app/views/availability-view.mjs';
-import { render as renderMerchant } from './app/views/merchant-view.mjs';
-import { createAutoRefreshController } from './app/auto-refresh-controller.mjs';
-import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs';
-import { buildTodayTop3 } from './app/priority-engine.mjs';
-import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs';
-import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs';
-import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs';
-import { runCompanyAgent } from './app/company-agent-hub.mjs';
+import { createStateStore } from './app/state-store.mjs?v=1.11.0';
+import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=1.11.0';
+import { render as renderDecisions } from './app/views/decision-view.mjs?v=1.11.0';
+import { render as renderTargets } from './app/views/targets-view.mjs?v=1.11.0';
+import { render as renderHealth } from './app/views/health-view.mjs?v=1.11.0';
+import { render as renderMobile } from './app/views/mobile-view.mjs?v=1.11.0';
+import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=1.11.0';
+import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=1.11.0';
+import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=1.11.0';
+import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=1.11.0';
+import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=1.11.0';
+import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=1.11.0';
+import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=1.11.0';
+import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=1.11.0';
+import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=1.11.0';
+import { buildImportantDates } from './app/important-dates.mjs?v=1.11.0';
+import { queryAvailability } from './app/availability-center.mjs?v=1.11.0';
+import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=1.11.0';
+import { normalizeIntelligenceItem, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=1.11.0';
+import { summarizeLife } from './app/life-os.mjs?v=1.11.0';
+import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=1.11.0';
+import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=1.11.0';
+import { render as renderCalendar } from './app/views/calendar-view.mjs?v=1.11.0';
+import { render as renderLife } from './app/views/life-view.mjs?v=1.11.0';
+import { render as renderSearch } from './app/views/search-view.mjs?v=1.11.0';
+import { render as renderLingli } from './app/views/lingli-view.mjs?v=1.11.0';
+import { buildRelations } from './app/relation-center.mjs?v=1.11.0';
+import { createReviewDraft } from './app/review-center.mjs?v=1.11.0';
+import { render as renderRelations } from './app/views/relation-view.mjs?v=1.11.0';
+import { render as renderReviews } from './app/views/review-view.mjs?v=1.11.0';
+import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=1.11.0';
+import { render as renderTaskCenter } from './app/views/task-view.mjs?v=1.11.0';
+import { render as renderFocus } from './app/views/focus-view.mjs?v=1.11.0';
+import { render as renderAvailability } from './app/views/availability-view.mjs?v=1.11.0';
+import { render as renderMerchant } from './app/views/merchant-view.mjs?v=1.11.0';
+import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=1.11.0';
+import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=1.11.0';
+import { buildTodayTop3 } from './app/priority-engine.mjs?v=1.11.0';
+import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=1.11.0';
+import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=1.11.0';
+import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=1.11.0';
+import { runCompanyAgent } from './app/company-agent-hub.mjs?v=1.11.0';
+import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=1.11.0';
 
-export const APP_VERSION = '1.10.0';
+export const APP_VERSION = '1.11.0';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
@@ -68,7 +69,7 @@ export function createCeoOsApplication(config = {}) {
     showFocus: false, importantDatesPanel: null, searchQuery: '', searchResults: [],
     taskDrawerOpen: false, taskDraft: null, focusDuration: 25, focusTaskId: null,
     availabilityDate: now().slice(0, 10), merchantQuery: '', selectedMerchantId: null,
-    syncStatus: '等待首次同步', loopConnected: false,
+    syncStatus: '等待首次同步', loopConnected: false, reminderTestState: 'idle',
     autoRefresh: {
       phase: 'idle', reason: null, lastAttemptAt: null, lastSuccessAt: null,
       succeeded: [], failed: [],
@@ -83,6 +84,11 @@ export function createCeoOsApplication(config = {}) {
   let startupWork = Promise.resolve();
   let reminderScheduleWork = Promise.resolve();
   let reminderScheduleFingerprint = '';
+  let reminderScheduleRetryTimer = null;
+  let reminderScheduleRetryAttempt = 0;
+  const reminderScheduleRetryDelays = Array.isArray(config.reminderScheduleRetryDelays)
+    ? config.reminderScheduleRetryDelays : [5_000, 30_000, 120_000];
+  const reminderClock = config.clock || document?.defaultView || globalThis;
   const notifiedReminderIds = new Set();
 
   function signalLocalChange() {
@@ -119,6 +125,13 @@ export function createCeoOsApplication(config = {}) {
     const calendarConflicts = detectCalendarConflicts(calendar);
     const baseRevisions = store.loadBaseRevisions?.() || {};
     const syncConflicts = operatingRuntime?.syncController?.getConflicts?.() || runtime.conflicts || [];
+    const syncControllerStatus = operatingRuntime?.syncController?.getStatus?.() || {};
+    const online = config.isOnline ? config.isOnline() : document?.defaultView?.navigator?.onLine !== false;
+    const restorableItems = listRestorableItems(state.tombstones || [], { now: now(), retentionDays: 30 });
+    const reliability = buildReliabilityOverview({
+      online, deviceId: state.deviceId || deviceId, syncStatus: syncControllerStatus,
+      conflicts: syncConflicts, tombstones: state.tombstones, auditLog: state.auditLog, now: now(),
+    });
     const calendarSyncStates = Object.fromEntries(calendar.map((record) => [
       record.id,
       calendarRecordSyncState(record, { baseRevisions, conflicts: syncConflicts }),
@@ -158,7 +171,11 @@ export function createCeoOsApplication(config = {}) {
       tasks: state.collections.tasks || [],
       inbox: state.collections.inbox || [],
       todayTop3,
-      reminderQueue: buildReminderQueue(todayTop3, { now: now() }),
+      reminderQueue: buildReminderQueue(todayTop3, { now: now() }).map((item) => ({
+        ...item,
+        actionId: item.sourceType === 'task' ? item.sourceId : item.actionId,
+        snoozable: item.sourceType === 'task' && tasks.some((task) => task.id === item.sourceId),
+      })),
       brief,
       sources,
       companyOperating: buildCompanyOperatingContract(sources),
@@ -172,6 +189,10 @@ export function createCeoOsApplication(config = {}) {
       calendarAnchor: runtime.calendarAnchor,
       calendarLayout: calendarLayout(calendarFiltered, { view: runtime.calendarView, anchor: runtime.calendarAnchor }),
       calendarTrash: state.tombstones || [],
+      syncConflicts,
+      reliability,
+      restorableItems,
+      auditLog: state.auditLog || [],
       showFocus: runtime.showFocus,
       calendarConflicts,
       relations: buildRelations(businessRecords),
@@ -339,11 +360,29 @@ export function createCeoOsApplication(config = {}) {
       reminderScheduleFingerprint = fingerprint;
       runtime.reminderScheduleState = result?.state === 'enabled' ? 'synced' : (result?.state || 'schedule_failed');
       runtime.reminderScheduleCount = Number(result?.scheduled) || 0;
+      if (result?.state === 'enabled') {
+        reminderScheduleRetryAttempt = 0;
+        if (reminderScheduleRetryTimer) reminderClock.clearTimeout?.(reminderScheduleRetryTimer);
+        reminderScheduleRetryTimer = null;
+      }
       return result;
     } catch {
       runtime.reminderScheduleState = 'schedule_failed';
+      queueReminderScheduleRetry();
       return { state: 'schedule_failed', scheduled: 0 };
     }
+  }
+
+  function queueReminderScheduleRetry() {
+    if (!started || reminderScheduleRetryTimer || !reminderClock.setTimeout) return;
+    const delay = reminderScheduleRetryDelays[Math.min(reminderScheduleRetryAttempt, reminderScheduleRetryDelays.length - 1)];
+    reminderScheduleRetryAttempt += 1;
+    reminderScheduleRetryTimer = reminderClock.setTimeout(() => {
+      reminderScheduleRetryTimer = null;
+      reminderScheduleWork = reminderScheduleWork
+        .then(() => scheduleDurableReminders({ force: true }))
+        .catch(() => ({ state: 'schedule_failed' }));
+    }, delay);
   }
 
   function queueReminderSchedule() {
@@ -410,7 +449,12 @@ export function createCeoOsApplication(config = {}) {
   }
 
   function saveTask(input = {}) {
-    const item = store.saveEntity('tasks', normalizeTask(input));
+    const existing = input.id ? taskById(input.id) : null;
+    const normalized = normalizeTask(input);
+    const nextDone = ['done', 'completed'].includes(normalized.status);
+    const wasDone = ['done', 'completed'].includes(existing?.status);
+    const action = existing && nextDone !== wasDone ? (nextDone ? 'complete' : 'reopen') : undefined;
+    const item = store.saveEntity('tasks', normalized, action ? { action } : undefined);
     runtime.taskDrawerOpen = false;
     runtime.taskDraft = null;
     signalLocalChange();
@@ -913,6 +957,78 @@ export function createCeoOsApplication(config = {}) {
     return draft;
   }
 
+  async function syncNow() {
+    const controller = operatingRuntime?.syncController || config.syncController;
+    if (!controller?.sync) throw new Error('sync_not_connected');
+    const result = await controller.sync('manual');
+    renderAll();
+    return result;
+  }
+
+  async function resolveSyncConflict(conflictId, choice, merged = null) {
+    const controller = operatingRuntime?.syncController || config.syncController;
+    if (!controller?.resolve) throw new Error('sync_not_connected');
+    const result = await controller.resolve(conflictId, choice, merged);
+    store.recordAudit?.('conflict_resolved', conflictId.split(':')[0], result);
+    renderAll();
+    return result;
+  }
+
+  async function testReminderDelivery() {
+    if (!operatingRuntime?.pushClient?.test) throw new Error('reminder_not_connected');
+    runtime.reminderTestState = 'testing';
+    renderAll();
+    try {
+      const result = await operatingRuntime.pushClient.test();
+      runtime.reminderTestState = result?.state === 'sent' ? 'sent' : 'failed';
+      return result;
+    } catch (error) {
+      runtime.reminderTestState = 'failed';
+      throw error;
+    } finally {
+      renderAll();
+    }
+  }
+
+  function snoozeReminder(entityType, id, choice) {
+    const type = ['tasks', 'calendar', 'countdowns'].includes(entityType) ? entityType : 'tasks';
+    const existing = store.load().collections[type]?.find((item) => item.id === id);
+    if (!existing) throw new Error('reminder_item_not_found');
+    const result = store.saveEntity(type, {
+      ...existing,
+      reminderAt: reminderSnoozeAt(choice, { now: now(), timeZoneOffsetMinutes: 480 }),
+    }, { action: 'snooze' });
+    signalLocalChange();
+    renderAll();
+    return result;
+  }
+
+  function restoreReliabilityItem(entityType, id) {
+    const restored = store.restoreEntity(entityType, id);
+    signalLocalChange();
+    renderAll();
+    return restored;
+  }
+
+  function exportSafeBackup() {
+    const backup = buildSafeBackup({ state: store.load(), baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() });
+    if (typeof config.downloadBackup === 'function') {
+      config.downloadBackup(backup);
+      return backup;
+    }
+    const browserWindow = document?.defaultView || globalThis;
+    if (document?.createElement && browserWindow?.Blob && browserWindow?.URL?.createObjectURL) {
+      const blob = new browserWindow.Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = browserWindow.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `ZOS-backup-${now().slice(0, 10)}.json`;
+      anchor.click();
+      browserWindow.URL.revokeObjectURL(url);
+    }
+    return backup;
+  }
+
   function bindActions() {
     if (actionsBound || !document?.addEventListener) return;
     actionsBound = true;
@@ -965,8 +1081,20 @@ export function createCeoOsApplication(config = {}) {
       const calendarUndoDelete = event.target?.closest?.('[data-calendar-undo-delete]');
       const calendarFilter = event.target?.closest?.('[data-calendar-filter]');
       const merchantSelect = event.target?.closest?.('[data-merchant-select]');
+      const syncNowButton = event.target?.closest?.('[data-sync-now]');
+      const syncResolution = event.target?.closest?.('[data-sync-resolution]');
+      const reminderTest = event.target?.closest?.('[data-reminder-test]');
+      const reminderSnooze = event.target?.closest?.('[data-reminder-snooze]');
+      const reliabilityRestore = event.target?.closest?.('[data-reliability-restore]');
+      const exportBackup = event.target?.closest?.('[data-export-backup]');
       try {
-        if (previewButton) await previewDecision(previewButton.dataset.previewDecision);
+        if (syncNowButton) await syncNow();
+        else if (syncResolution) await resolveSyncConflict(syncResolution.dataset.syncConflict, syncResolution.dataset.syncResolution);
+        else if (reminderTest) await testReminderDelivery();
+        else if (reminderSnooze) snoozeReminder(reminderSnooze.dataset.reminderEntity, reminderSnooze.dataset.reminderId, reminderSnooze.dataset.reminderSnooze);
+        else if (reliabilityRestore) restoreReliabilityItem(reliabilityRestore.dataset.reliabilityEntity, reliabilityRestore.dataset.reliabilityRestore);
+        else if (exportBackup) exportSafeBackup();
+        else if (previewButton) await previewDecision(previewButton.dataset.previewDecision);
         else if (executeButton) await executeApproval(executeButton.dataset.executeApproval);
         else if (refreshAllButton) await autoRefreshController?.refresh('manual');
         else if (refreshButton) await refreshSource(refreshButton.dataset.refreshSource);
@@ -1093,6 +1221,22 @@ export function createCeoOsApplication(config = {}) {
       } catch { runtime.syncStatus = '操作未完成，请检查登录与数据权限'; renderAll(); }
     });
     document.addEventListener('submit', (event) => {
+      if (event.target?.matches?.('[data-sync-merge-form]')) {
+        event.preventDefault();
+        const conflictId = event.target.dataset.syncMergeForm;
+        const conflict = viewModel().syncConflicts.find((item) => item.id === conflictId);
+        if (!conflict) return;
+        const merged = {};
+        for (const [key, choice] of new FormData(event.target).entries()) {
+          if (!String(key).startsWith('field:')) continue;
+          const field = String(key).slice(6);
+          merged[field] = choice === 'remote' ? conflict.remote?.[field] : conflict.local?.[field];
+        }
+        resolveSyncConflict(conflictId, 'merge', merged).catch(() => {
+          runtime.syncStatus = '冲突合并未完成，请重新选择'; renderAll();
+        });
+        return;
+      }
       if (event.target?.id === 'globalSearchForm') {
         event.preventDefault();
         runtime.searchQuery = String(new FormData(event.target).get('query') || '').trim();
@@ -1401,6 +1545,16 @@ export function createCeoOsApplication(config = {}) {
         fetchImpl: config.fetchImpl || globalThis.fetch,
         eventTarget: config.eventTarget || globalThis,
         document,
+        onSyncStatus: (status) => {
+          runtime.syncStatus = status.phase === 'complete' ? '跨端数据已同步'
+            : status.phase === 'retry-wait' ? '同步暂未完成，系统会自动重试'
+              : status.phase === 'offline' ? '当前离线，联网后自动补同步' : '正在同步';
+          renderAll();
+        },
+        onSyncConflict: (items) => {
+          runtime.conflicts = items;
+          renderAll();
+        },
       });
     }
     if (!operatingRuntime) {
@@ -1479,6 +1633,8 @@ export function createCeoOsApplication(config = {}) {
     unsubscribeStore = null;
     autoRefreshController?.stop?.();
     operatingRuntime?.syncController?.stop?.();
+    if (reminderScheduleRetryTimer) reminderClock.clearTimeout?.(reminderScheduleRetryTimer);
+    reminderScheduleRetryTimer = null;
     started = false;
   }
 
@@ -1493,6 +1649,7 @@ export function createCeoOsApplication(config = {}) {
     beginCalendarSelection, extendCalendarSelection, commitCalendarSelection, setCalendarDraftKind,
     saveCalendarArrangement,
     saveTask, convertIntelligenceToTask, saveCountdown, enableClosedAppReminders, scheduleDurableReminders,
+    syncNow, resolveSyncConflict, testReminderDelivery, snoozeReminder, restoreReliabilityItem, exportSafeBackup,
     createFocus, transitionCurrentFocus, queryMerchant, queryHuahuoAvailability,
     openTaskEditor, closeTaskEditor, generateReview, generateAgentDraft,
     get operatingRuntime() { return operatingRuntime; },

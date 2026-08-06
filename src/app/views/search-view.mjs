@@ -1,4 +1,4 @@
-import { escapeHtml, renderState } from './view-utils.mjs';
+import { escapeHtml, renderState } from './view-utils.mjs?v=1.11.0';
 
 const AUTHORITY = { business_fact: '飞书事实', knowledge_metadata: '知识元数据', intelligence_candidate: '情报候选', user_action: '本人行动', private_life: '个人私有' };
 

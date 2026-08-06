@@ -1,4 +1,5 @@
-import { createRecord, markDeleted, normalizeRecord, touchRecord } from '../data-model.mjs';
+import { createRecord, markDeleted, normalizeRecord, touchRecord } from '../data-model.mjs?v=1.11.0';
+import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=1.11.0';
 
 const STATE_KEY = 'zos_ceo_os_state_v1_7';
 const PREVIOUS_STATE_KEYS = ['zos_ceo_os_state_v1_4', 'zos_ceo_os_state_v1_3'];
@@ -11,7 +12,6 @@ const ENTITY_TYPES = [
   'tasks', 'inbox', 'projects', 'commands', 'decisions', 'targets',
   'intelligence', 'calendar', 'life', 'focus_sessions', 'countdowns',
 ];
-const FORBIDDEN_KEY = /(password|passcode|access[_-]?token|refresh[_-]?token|authorization|api[_-]?key|anon[_-]?key|secret)/i;
 
 function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
@@ -26,22 +26,12 @@ function parse(storage, key, fallback) {
   }
 }
 
-function sanitize(value) {
-  if (Array.isArray(value)) return value.map(sanitize);
-  if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(([key]) => !FORBIDDEN_KEY.test(key))
-      .map(([key, item]) => [key, sanitize(item)]),
-  );
-}
-
 function emptyCollections() {
   return Object.fromEntries(ENTITY_TYPES.map((name) => [name, []]));
 }
 
 function normalizedRecord(record, context) {
-  return normalizeRecord(sanitize(record), {
+  return normalizeRecord(sanitizeSensitiveFields(record), {
     now: context.now(), deviceId: context.deviceId, createId: context.createId,
   });
 }
@@ -63,6 +53,9 @@ function normalizeState(input, context) {
     deviceId: input?.deviceId || context.deviceId,
     collections,
     tombstones,
+    auditLog: (Array.isArray(input?.auditLog) ? input.auditLog : [])
+      .map(sanitizeSensitiveFields)
+      .slice(0, context.auditLimit),
   };
 }
 
@@ -86,6 +79,7 @@ export function createStateStore(config = {}) {
     now: config.now || (() => new Date().toISOString()),
     deviceId: config.deviceId || 'unknown-device',
     createId: config.createId || (() => globalThis.crypto.randomUUID()),
+    auditLimit: Number.isFinite(config.auditLimit) ? config.auditLimit : 200,
   };
   const listeners = new Set();
   let stateStorageKey = STATE_KEY;
@@ -130,11 +124,20 @@ export function createStateStore(config = {}) {
     if (!ENTITY_TYPES.includes(entityType)) throw new Error('unsupported entity type');
   }
 
+  function audit(action, entityType, record) {
+    const entry = sanitizeSensitiveFields({
+      id: context.createId(), action, entityType, recordId: record?.id || '',
+      label: record?.title || record?.name || record?.subject || '',
+      at: context.now(), deviceId: state.deviceId,
+    });
+    return [entry, ...(state.auditLog || [])].slice(0, context.auditLimit);
+  }
+
   return {
     load() { return clone(state); },
-    saveEntity(entityType, fields) {
+    saveEntity(entityType, fields, options = {}) {
       requireEntityType(entityType);
-      const safeFields = sanitize(fields || {});
+      const safeFields = sanitizeSensitiveFields(fields || {});
       const existing = safeFields.id
         ? state.collections[entityType].find((record) => record.id === safeFields.id)
         : null;
@@ -147,6 +150,7 @@ export function createStateStore(config = {}) {
           ...state.collections,
           [entityType]: [...state.collections[entityType].filter((item) => item.id !== record.id), record],
         },
+        auditLog: audit(options.action || (existing ? 'update' : 'create'), entityType, record),
       });
       publish();
       return clone(record);
@@ -163,6 +167,7 @@ export function createStateStore(config = {}) {
           [entityType]: state.collections[entityType].filter((record) => record.id !== id),
         },
         tombstones: [...state.tombstones.filter((record) => !(record.entity === entityType && record.id === id)), tombstone],
+        auditLog: audit('delete', entityType, existing),
       });
       publish();
       return clone(tombstone);
@@ -185,12 +190,22 @@ export function createStateStore(config = {}) {
           ],
         },
         tombstones: state.tombstones.filter((record) => !(record.entity === entityType && record.id === id)),
+        auditLog: audit('restore', entityType, restored),
       });
       publish();
       return clone(state.collections[entityType].find((record) => record.id === id));
     },
-    replaceSnapshot(snapshot) {
-      state = persist({ ...snapshot, deviceId: state.deviceId });
+    recordAudit(action, entityType, record = {}) {
+      state = persist({ ...state, auditLog: audit(action, entityType, record) });
+      publish();
+      return clone(state.auditLog[0]);
+    },
+    replaceSnapshot(snapshot, options = {}) {
+      state = persist({
+        ...snapshot,
+        deviceId: state.deviceId,
+        auditLog: options.preserveAudit === false ? snapshot?.auditLog : state.auditLog,
+      });
       publish();
       return clone(state);
     },

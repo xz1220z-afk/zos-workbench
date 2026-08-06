@@ -9,7 +9,7 @@ ZOS 是朱帅个人使用的 CEO OS，当前以深色 PWA 形式发布。它把�
 
 注意：`https://xz1220z-afk.github.io/` 是用户主页根域名，目前没有配置 Pages，因此会显示 404。日常只使用上面的 `/zos-workbench/` 地址。
 
-## 当前能力（v1.10.0）
+## 当前能力（v1.11.0）
 
 - CEO 指挥中心与独立 Life OS；工作端只显示私人日程的忙碌占位
 - 今日行动、待我决策、经营目标、数据健康和每日 CEO 简报
@@ -28,6 +28,12 @@ ZOS 是朱帅个人使用的 CEO OS，当前以深色 PWA 形式发布。它把�
 - 万嘉 / 花火 / 玲丽真实飞书事实只读聚合；三家公司统一区分业务量、合同额、实收与待回款
 - 企业大脑仅同步 Obsidian 元数据，不上传正文
 - localStorage 本地持久化与自动四端同步；关键决策和目标并发修改必须人工解冲突
+- 统一同步中心：显示当前设备、待同步数量、最近成功、自动重试、来源状态与需要人工处理的冲突
+- 同步失败使用递增退避自动重试；离线修改保留在本机，联网后自动补同步
+- 决策与目标冲突支持保留本机、使用云端或逐字段合并，处理前不静默覆盖
+- 提醒可靠性自检：检查设备订阅和云端排程，可发送安全测试提醒，并支持稍后 10 分钟、1 小时或次日提醒
+- 最近操作保留新增、编辑、完成、删除、恢复与冲突处理记录；30 天回收站可恢复误删事项
+- 一键导出安全备份，包含本地业务状态、删除标记、同步基线与操作日志，不包含密码、会话或服务密钥
 - JSON 数据导出、校验、覆盖导入和清除
 - PWA 安装：Mac/Windows Edge 或 Chrome、iPhone Safari、Android Chrome
 - Supabase 私有云同步：邮箱或密码登录，记录按用户隔离；联网、回到前台和本地改动后自动同步
@@ -76,7 +82,7 @@ curl -fsSI https://xz1220z-afk.github.io/zos-workbench/sw.js
 
 ## Supabase 配置
 
-数据库迁移文件位于 `supabase/migrations/`；v1.10 在可靠日程基础上增加任务删除同步、撤销恢复、统一回收站、任务详情动作和快捷筛选。本地记录继续使用本人私有 RLS 同步，外部日历保持只读。本次不新增数据库表或服务端权限。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，v1.10 设计见 [`docs/superpowers/specs/2026-08-06-zos-calendar-v1.10-design.md`](docs/superpowers/specs/2026-08-06-zos-calendar-v1.10-design.md)。
+数据库迁移文件位于 `supabase/migrations/`；v1.11 在可靠日程基础上增加同步自愈、冲突合并、提醒自检、本机操作日志、30 天回收和安全备份。`009_v1_11_reminder_reliability.sql` 让提醒排程以数据库事务整体替换，并为测试提醒增加 60 秒冷却。本地记录继续使用本人私有 RLS 同步，外部日历保持只读。本次不新增数据库表或飞书写权限。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，v1.11 设计见 [`docs/superpowers/specs/2026-08-06-zos-v1.11-sync-reliability-design.md`](docs/superpowers/specs/2026-08-06-zos-v1.11-sync-reliability-design.md)。
 
 邮箱登录链接必须回调到：
 

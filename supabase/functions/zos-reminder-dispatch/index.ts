@@ -55,14 +55,42 @@ async function manageSubscription(req: Request) {
       .eq('user_id', user.id).eq('enabled', true).limit(1).maybeSingle();
     if (!subscription) return response({ state: 'permission_required', scheduled: 0 });
     const jobs = normalizeScheduledJobs(body.jobs, { userId: user.id });
-    const { error: skipError } = await supabase.from('zos_reminder_jobs').update({ status: 'skipped' })
-      .eq('user_id', user.id).eq('status', 'pending');
-    if (skipError) return response({ error: 'reminder_write_failed' }, 502);
-    if (jobs.length) {
-      const { error: writeError } = await supabase.from('zos_reminder_jobs').upsert(jobs, { onConflict: 'user_id,dedupe_key' });
-      if (writeError) return response({ error: 'reminder_write_failed' }, 502);
-    }
+    const { error: writeError } = await supabase.rpc('replace_zos_reminder_schedule', {
+      p_user_id: user.id, p_jobs: jobs,
+    });
+    if (writeError) return response({ error: 'reminder_write_failed' }, 502);
     return response({ state: 'enabled', scheduled: jobs.length });
+  }
+  if (action === 'test') {
+    const vapidPublic = Deno.env.get('VAPID_PUBLIC_KEY') || '';
+    const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY') || '';
+    const vapidContact = Deno.env.get('VAPID_CONTACT') || '';
+    if (!vapidPublic || !vapidPrivate || !vapidContact) return response({ error: 'push_not_configured' }, 503);
+    const { data: subscriptions } = await supabase.from('zos_push_subscriptions').select('*')
+      .eq('user_id', user.id).eq('enabled', true);
+    const subscription = selectSingleSubscription(subscriptions || []);
+    if (!subscription) return response({ state: 'permission_required' }, 409);
+    const { data: claimed, error: claimError } = await supabase.rpc('claim_zos_reminder_test', {
+      p_user_id: user.id, p_subscription_id: subscription.id,
+    });
+    if (claimError) return response({ error: 'test_rate_limit_failed' }, 502);
+    if (!claimed) return response({ error: 'test_rate_limited', retryAfterSeconds: 60 }, 429);
+    webpush.setVapidDetails(vapidContact, vapidPublic, vapidPrivate);
+    try {
+      await webpush.sendNotification({
+        endpoint: subscription.endpoint,
+        keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+      }, JSON.stringify({
+        title: 'ZOS 提醒测试', body: '提醒链路工作正常', tag: `zos-test-${user.id}`, url: './#health',
+      }), { TTL: 300 });
+      return response({ state: 'sent' });
+    } catch (sendError) {
+      const statusCode = Number(sendError && typeof sendError === 'object' && 'statusCode' in sendError ? sendError.statusCode : 0);
+      if ([404, 410].includes(statusCode)) {
+        await supabase.from('zos_push_subscriptions').update({ enabled: false }).eq('id', subscription.id);
+      }
+      return response({ error: 'test_notification_failed' }, 502);
+    }
   }
   const raw = body.subscription && typeof body.subscription === 'object'
     ? body.subscription as Record<string, unknown> : {};

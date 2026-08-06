@@ -1,4 +1,4 @@
-import { countdownDistance, normalizeCountdown } from './countdown-center.mjs';
+import { countdownDistance, normalizeCountdown } from './countdown-center.mjs?v=1.11.0';
 
 function isWorkDate(item) {
   return item.privacy === 'work' || ['wanjia', 'huahuo', 'lingli'].includes(item.company);

@@ -21,6 +21,7 @@ export function createPushClient({ url, anonKey, accessToken, fetchImpl = global
     register: (subscription) => request({ action: 'subscribe', subscription }),
     unregister: (subscription) => request({ action: 'unsubscribe', subscription }),
     schedule: (jobs) => request({ action: 'schedule', jobs }),
+    test: () => request({ action: 'test' }),
   };
 }
 

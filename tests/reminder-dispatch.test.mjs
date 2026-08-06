@@ -108,7 +108,9 @@ test('push client uses the protected function and never reads subscription table
     fetchImpl: async (url, init) => {
       requests.push({ url: String(url), init });
       const action = JSON.parse(init?.body || '{}').action;
-      return new Response(JSON.stringify(action === 'status' ? { state: 'permission_required', publicKey: 'AQID' } : { state: 'enabled' }), {
+      return new Response(JSON.stringify(action === 'status'
+        ? { state: 'permission_required', publicKey: 'AQID' }
+        : action === 'test' ? { state: 'sent' } : { state: 'enabled' }), {
         status: 200, headers: { 'Content-Type': 'application/json' },
       });
     },
@@ -116,6 +118,26 @@ test('push client uses the protected function and never reads subscription table
   assert.equal((await client.status()).state, 'permission_required');
   assert.equal((await client.register({ endpoint: 'https://push.example/1', keys: { p256dh: 'p', auth: 'a' } })).state, 'enabled');
   assert.equal((await client.schedule([{ dedupeKey: 'job-1' }])).state, 'enabled');
+  assert.equal((await client.test()).state, 'sent');
   assert.ok(requests.every((item) => item.url.endsWith('/functions/v1/zos-reminder-dispatch')));
   assert.ok(requests.every((item) => item.init.headers.Authorization === 'Bearer jwt'));
+});
+
+test('authenticated reminder self-test sends only a generic safe payload to the newest device', async () => {
+  const edge = await readFile(new URL('../supabase/functions/zos-reminder-dispatch/index.ts', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../supabase/migrations/009_v1_11_reminder_reliability.sql', import.meta.url), 'utf8');
+  assert.match(edge, /action === 'test'/);
+  assert.match(edge, /ZOS 提醒测试/);
+  assert.match(edge, /selectSingleSubscription/);
+  assert.match(edge, /claim_zos_reminder_test/);
+  assert.match(edge, /test_rate_limited/);
+  assert.match(edge, /replace_zos_reminder_schedule/);
+  assert.doesNotMatch(edge, /update\(\{ status: 'skipped' \}\)[\s\S]*\.upsert\(jobs/);
+  assert.match(migration, /create or replace function public\.replace_zos_reminder_schedule/);
+  assert.match(migration, /create or replace function public\.claim_zos_reminder_test/);
+  assert.match(migration, /interval '60 seconds'/);
+  const lockAt = migration.indexOf('pg_advisory_xact_lock');
+  const replaceAt = migration.indexOf('update public.zos_reminder_jobs');
+  assert.ok(lockAt > -1 && lockAt < replaceAt, 'per-user transaction lock must be acquired before replacing jobs');
+  assert.doesNotMatch(edge, /body\.title|body\.message/);
 });
