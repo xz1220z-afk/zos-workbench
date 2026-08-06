@@ -79,7 +79,7 @@ git diff --check
 
 ```bash
 curl -fsSI https://xz1220z-afk.github.io/zos-workbench/
-curl -fsSI https://xz1220z-afk.github.io/zos-workbench/manifest.webmanifest
+curl -fsSI https://xz1220z-afk.github.io/zos-workbench/manifest.json
 curl -fsSI https://xz1220z-afk.github.io/zos-workbench/sw.js
 ```
 

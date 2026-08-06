@@ -17,7 +17,7 @@ jobs:
         run: |
           set -euo pipefail
           base='https://xz1220z-afk.github.io/zos-workbench'
-          for path in / /manifest.webmanifest /sw.js /src/app.mjs /src/legacy-app.mjs; do
+          for path in / /manifest.json /sw.js /src/app.mjs /src/legacy-app.mjs; do
             status=$(curl -L -sS -o /tmp/zos-response -w '%{http_code}' "$base$path")
             test "$status" = 200
           done

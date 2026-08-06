@@ -7,7 +7,7 @@ const root = new URL('../', import.meta.url);
 test('v2 release cache includes the complete content-growth module graph', async () => {
   const [sw, manifest, app, html] = await Promise.all([
     readFile(new URL('sw.js', root), 'utf8'),
-    readFile(new URL('manifest.webmanifest', root), 'utf8').then(JSON.parse),
+    readFile(new URL('manifest.json', root), 'utf8').then(JSON.parse),
     readFile(new URL('src/app.mjs', root), 'utf8'),
     readFile(new URL('index.html', root), 'utf8'),
   ]);

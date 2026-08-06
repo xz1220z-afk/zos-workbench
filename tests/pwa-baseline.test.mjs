@@ -7,7 +7,7 @@ const [shellHtml, legacySource, appSource, appCss, serviceWorker, manifest] = aw
   readFile(new URL('../src/app.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../assets/app.css', import.meta.url), 'utf8'),
   readFile(new URL('../sw.js', import.meta.url), 'utf8'),
-  readFile(new URL('../manifest.webmanifest', import.meta.url), 'utf8').then(JSON.parse),
+  readFile(new URL('../manifest.json', import.meta.url), 'utf8').then(JSON.parse),
 ]);
 const indexHtml = `${shellHtml}\n${legacySource}\n${appCss}`;
 
@@ -19,6 +19,10 @@ assert.match(shellHtml, /src\/app\.mjs\?v=2\.0\.0/,
   'The application bootstrap must bypass a stale controlling Service Worker cache');
 assert.match(shellHtml, /assets\/app\.css\?v=2\.0\.0/,
   'The visual system must bypass a stale browser and Service Worker cache');
+assert.match(shellHtml, /rel="manifest" href="manifest\.json"/,
+  'The hosted manifest must use a portable JSON MIME type');
+assert.match(serviceWorker, /manifest\.json/,
+  'The portable hosted manifest must remain available offline');
 assert.match(appSource, /\.\/app\/state-store\.mjs\?v=2\.0\.0/,
   'The startup-critical state module must bypass a stale controlling Service Worker cache');
 assert.match(legacySource, /\.\/app\/router\.mjs\?v=2\.0\.0/,

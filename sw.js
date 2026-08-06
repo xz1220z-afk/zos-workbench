@@ -4,7 +4,7 @@ const CACHE_NAME = 'zos-workbench-v2.0.0';
 const ASSETS_TO_CACHE = [
   './',
   'index.html',
-  'manifest.webmanifest',
+  'manifest.json',
   'assets/app.css?v=2.0.0',
   'src/data-model.mjs',
   'src/legacy-app.mjs',

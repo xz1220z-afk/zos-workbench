@@ -10,7 +10,7 @@ const [html, css, app] = await Promise.all([
 ]);
 const [serviceWorker, manifest] = await Promise.all([
   readFile(new URL('sw.js', root), 'utf8'),
-  readFile(new URL('manifest.webmanifest', root), 'utf8').then(JSON.parse),
+  readFile(new URL('manifest.json', root), 'utf8').then(JSON.parse),
 ]);
 
 test('v1.7 exposes execution, focus, merchant and availability surfaces', () => {
