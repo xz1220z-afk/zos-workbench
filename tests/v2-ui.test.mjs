@@ -94,3 +94,12 @@ test('production shell mounts the two new primary routes and knowledge upgrades'
   assert.match(legacy, /'agent-workbench': 'Agent 工作台'/);
   assert.match(css, /\.growth-filter-chips button\s*\{[^}]*min-height:\s*44px/s);
 });
+
+test('legacy deep-link navigation always asks the modular workspace to render the entered route', async () => {
+  const legacy = await readFile(new URL('src/legacy-app.mjs', root), 'utf8');
+  assert.match(
+    legacy,
+    /window\.ZOS_CEO_OS\s*&&\s*typeof window\.ZOS_CEO_OS\.render === 'function'[\s\S]*?window\.ZOS_CEO_OS\.render\(\)/,
+    'a route entered after modular startup must not remain an empty shell',
+  );
+});

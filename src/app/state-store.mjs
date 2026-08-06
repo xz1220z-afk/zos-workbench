@@ -1,5 +1,5 @@
-import { createRecord, markDeleted, normalizeRecord, touchRecord } from '../data-model.mjs?v=2.0.0';
-import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.0.0';
+import { createRecord, markDeleted, normalizeRecord, touchRecord } from '../data-model.mjs?v=2.0.1';
+import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.0.1';
 
 const STATE_KEY = 'zos_ceo_os_state_v1_7';
 const PREVIOUS_STATE_KEYS = ['zos_ceo_os_state_v1_4', 'zos_ceo_os_state_v1_3'];

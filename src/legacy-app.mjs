@@ -1,4 +1,4 @@
-import { pageIdFromHash } from './app/router.mjs?v=2.0.0';
+import { pageIdFromHash } from './app/router.mjs?v=2.0.1';
 
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
@@ -124,7 +124,7 @@ import { pageIdFromHash } from './app/router.mjs?v=2.0.0';
 (function() {
   'use strict';
 
-  const APP_VERSION = '2.0.0';
+  const APP_VERSION = '2.0.1';
   const PUBLIC_APP_URL = new URL('.', window.location.href).href;
   const APP_RELEASE_DATE = '2026-08-06';
 
@@ -2232,6 +2232,9 @@ import { pageIdFromHash } from './app/router.mjs?v=2.0.0';
 
     // Call page enter handler
     if (pageEnterHandlers[pageId]) pageEnterHandlers[pageId]();
+    if (window.ZOS_CEO_OS && typeof window.ZOS_CEO_OS.render === 'function') {
+      window.ZOS_CEO_OS.render();
+    }
     if (options.focusPage) focusPageContent(target);
   }
 

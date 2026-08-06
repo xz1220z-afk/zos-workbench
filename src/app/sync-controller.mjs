@@ -1,4 +1,4 @@
-import { applyRemoteSnapshot, resolveConflict, toCloudRow } from '../sync-engine.mjs?v=2.0.0';
+import { applyRemoteSnapshot, resolveConflict, toCloudRow } from '../sync-engine.mjs?v=2.0.1';
 
 function required(value, name) {
   if (!value) throw new Error(`${name} is required`);

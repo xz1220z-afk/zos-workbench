@@ -11,21 +11,21 @@ const [shellHtml, legacySource, appSource, appCss, serviceWorker, manifest] = aw
 ]);
 const indexHtml = `${shellHtml}\n${legacySource}\n${appCss}`;
 
-assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v2\.0\.0';/,
+assert.match(serviceWorker, /const CACHE_NAME = 'zos-workbench-v2\.0\.1';/,
   'A command-center UI release must receive a new Service Worker cache revision');
 assert.match(serviceWorker, /fetch\(assetUrl, \{ cache: 'reload' \}\)/,
   'A new Service Worker must bypass the browser HTTP cache while building its release cache');
-assert.match(shellHtml, /src\/app\.mjs\?v=2\.0\.0/,
+assert.match(shellHtml, /src\/app\.mjs\?v=2\.0\.1/,
   'The application bootstrap must bypass a stale controlling Service Worker cache');
-assert.match(shellHtml, /assets\/app\.css\?v=2\.0\.0/,
+assert.match(shellHtml, /assets\/app\.css\?v=2\.0\.1/,
   'The visual system must bypass a stale browser and Service Worker cache');
 assert.match(shellHtml, /rel="manifest" href="manifest\.json"/,
   'The hosted manifest must use a portable JSON MIME type');
 assert.match(serviceWorker, /manifest\.json/,
   'The portable hosted manifest must remain available offline');
-assert.match(appSource, /\.\/app\/state-store\.mjs\?v=2\.0\.0/,
+assert.match(appSource, /\.\/app\/state-store\.mjs\?v=2\.0\.1/,
   'The startup-critical state module must bypass a stale controlling Service Worker cache');
-assert.match(legacySource, /\.\/app\/router\.mjs\?v=2\.0\.0/,
+assert.match(legacySource, /\.\/app\/router\.mjs\?v=2\.0\.1/,
   'The startup-critical deep-link router must bypass a stale controlling Service Worker cache');
 for (const asset of [
   'assets/app.css', 'src/app.mjs', 'src/legacy-app.mjs', 'src/app/operating-loop.mjs',
@@ -49,9 +49,9 @@ assert.match(indexHtml, /refreshSession\(session\.refreshToken\)/,
   'Sync must refresh an existing Supabase session before pulling data');
 assert.match(indexHtml, /const PUBLIC_APP_URL = new URL\('\.', window\.location\.href\)\.href/,
   'The auth callback must follow the current stable host while staying on the app directory');
-assert.match(indexHtml, /const APP_VERSION = '2\.0\.0'/,
+assert.match(indexHtml, /const APP_VERSION = '2\.0\.1'/,
   'The inline application version must match the current release');
-assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v2\.0\.0/,
+assert.match(indexHtml, /工作台版本<\/div>[\s\S]{0,120}v2\.0\.1/,
   'The settings page version label must match the current release');
 assert.doesNotMatch(legacySource, /controllerchange[\s\S]{0,180}window\.location\.reload\(\)/,
   'Service Worker updates must not force a second page load');

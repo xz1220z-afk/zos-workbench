@@ -1,5 +1,5 @@
-import { CONTENT_STAGES, CONTENT_STAGE_LABELS } from '../content-growth.mjs?v=2.0.0';
-import { displayValue, escapeHtml, renderState } from './view-utils.mjs?v=2.0.0';
+import { CONTENT_STAGES, CONTENT_STAGE_LABELS } from '../content-growth.mjs?v=2.0.1';
+import { displayValue, escapeHtml, renderState } from './view-utils.mjs?v=2.0.1';
 
 const COMPANY_LABELS = { wanjia: '万嘉', huahuo: '花火', lingli: '玲丽', personal: '个人 IP' };
 const PLATFORM_LABELS = { douyin: '抖音', xiaohongshu: '小红书', wechat: '视频号', bilibili: 'B站', other: '其他' };

@@ -1,4 +1,4 @@
-import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.0.0';
+import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.0.1';
 
 export function listRestorableItems(tombstones = [], options = {}) {
   const nowMs = new Date(options.now || new Date().toISOString()).getTime();

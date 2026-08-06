@@ -1,4 +1,4 @@
-import { buildTodayTop3 } from './priority-engine.mjs?v=2.0.0';
+import { buildTodayTop3 } from './priority-engine.mjs?v=2.0.1';
 
 export const CEO_BRIEF_SECTIONS = Object.freeze([
   'yesterday',

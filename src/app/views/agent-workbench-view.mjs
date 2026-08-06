@@ -1,5 +1,5 @@
-import { AGENT_CATALOG } from '../agent-workbench.mjs?v=2.0.0';
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.0.0';
+import { AGENT_CATALOG } from '../agent-workbench.mjs?v=2.0.1';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.0.1';
 
 const COMPANY = { all: '总控', wanjia: '万嘉', huahuo: '花火', lingli: '玲丽', personal: '个人' };
 

@@ -1,5 +1,5 @@
-import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.0.0';
-import { formatCurrency, humanText } from '../value-utils.mjs?v=2.0.0';
+import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.0.1';
+import { formatCurrency, humanText } from '../value-utils.mjs?v=2.0.1';
 
 export { VIEW_STATES };
 
