@@ -1,7 +1,24 @@
-import { selectLatestRecord } from './data-model.mjs?v=1.11.0';
-import { sanitizeSensitiveFields } from './app/sensitive-fields.mjs?v=1.11.0';
+import { selectLatestRecord } from './data-model.mjs?v=2.0.0';
+import { sanitizeSensitiveFields } from './app/sensitive-fields.mjs?v=2.0.0';
 
-export const CRITICAL_ENTITY_TYPES = new Set(['decisions', 'targets']);
+export const CRITICAL_ENTITY_TYPES = new Set([
+  'decisions', 'targets', 'content_items', 'knowledge_cards', 'agent_runs',
+]);
+
+// Keep v2 logical collections compatible with the already-deployed v1.7
+// database constraint. The logical type remains in the private JSON payload,
+// while the physical row uses an existing owner-scoped entity namespace.
+export const CLOUD_ENTITY_TYPE_MAP = Object.freeze({
+  content_items: 'projects',
+  knowledge_cards: 'intelligence',
+  reading_items: 'intelligence',
+  agent_runs: 'commands',
+  social_insights: 'intelligence',
+  content_assets: 'inbox',
+  brainstorms: 'inbox',
+  content_experiments: 'projects',
+  compound_candidates: 'projects',
+});
 
 function required(value, name) {
   if (!value) throw new Error(`${name} is required`);
@@ -24,11 +41,13 @@ export function toCloudRow({ userId, entityType, record }) {
   required(entityType, 'entityType');
   const safeRecord = sanitizeSensitiveFields(record);
   const metadata = canonicalMetadata(safeRecord);
+  const cloudEntityType = CLOUD_ENTITY_TYPE_MAP[entityType] || entityType;
+  const isMapped = cloudEntityType !== entityType;
   return {
     user_id: userId,
-    entity_type: entityType,
-    record_id: metadata.id,
-    payload: { ...safeRecord },
+    entity_type: cloudEntityType,
+    record_id: isMapped ? `${entityType}:${metadata.id}` : metadata.id,
+    payload: isMapped ? { ...safeRecord, _zos_entity_type: entityType } : { ...safeRecord },
     created_at: metadata.createdAt,
     updated_at: metadata.updatedAt,
     deleted_at: metadata.deletedAt,
@@ -38,9 +57,16 @@ export function toCloudRow({ userId, entityType, record }) {
 }
 
 export function fromCloudRow(row) {
+  const safePayload = sanitizeSensitiveFields(row.payload || {});
+  const logicalType = String(safePayload._zos_entity_type || '').trim();
+  const prefix = logicalType ? `${logicalType}:` : '';
+  const logicalRecordId = prefix && String(row.record_id || '').startsWith(prefix)
+    ? String(row.record_id).slice(prefix.length)
+    : row.record_id;
+  delete safePayload._zos_entity_type;
   return {
-    ...sanitizeSensitiveFields(row.payload || {}),
-    id: required(row.record_id, 'row.record_id'),
+    ...safePayload,
+    id: required(logicalRecordId, 'row.record_id'),
     createdAt: required(row.created_at, 'row.created_at'),
     updatedAt: required(row.updated_at, 'row.updated_at'),
     deletedAt: row.deleted_at || null,
@@ -97,9 +123,10 @@ function authoritativeTombstone(left, right) {
 export function applyRemoteSnapshot({ local, remoteRows, userId = 'sync-user', baseRevisions = {} }) {
   const remoteByEntity = new Map();
   for (const row of remoteRows) {
-    const records = remoteByEntity.get(row.entity_type) || [];
+    const entityType = String(row?.payload?._zos_entity_type || row.entity_type || '').trim();
+    const records = remoteByEntity.get(entityType) || [];
     records.push(fromCloudRow(row));
-    remoteByEntity.set(row.entity_type, records);
+    remoteByEntity.set(entityType, records);
   }
 
   const collections = {};

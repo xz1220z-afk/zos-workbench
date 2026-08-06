@@ -1,8 +1,8 @@
 {
   "name": "ZOS CEO OS",
   "short_name": "CEO OS",
-  "version": "1.11.0",
-  "description": "ZOS CEO OS · 工作与生活双首页、万嘉网络、花火影像、玲丽教育、日历、情报与企业大脑",
+  "version": "2.0.0",
+  "description": "ZOS CEO OS · 三家公司经营、内容增长、知识阅读、社媒洞察、受控 Agent、日历与个人生活的一体化工作台",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -35,6 +35,8 @@
     { "name": "专注中心", "short_name": "专注", "url": "./#focus", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] },
     { "name": "数据健康", "short_name": "健康", "url": "./#health", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] },
     { "name": "日历中心", "short_name": "日历", "url": "./#calendar", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] },
-    { "name": "情报中心", "short_name": "情报", "url": "./#intelligence", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] }
+    { "name": "情报中心", "short_name": "情报", "url": "./#intelligence", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] },
+    { "name": "内容增长", "short_name": "增长", "url": "./#content-growth", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] },
+    { "name": "Agent 工作台", "short_name": "Agent", "url": "./#agent-workbench", "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }] }
   ]
 }

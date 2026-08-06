@@ -1,4 +1,4 @@
-import { pageIdFromHash } from './app/router.mjs?v=1.11.0';
+import { pageIdFromHash } from './app/router.mjs?v=2.0.0';
 
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
@@ -124,7 +124,7 @@ import { pageIdFromHash } from './app/router.mjs?v=1.11.0';
 (function() {
   'use strict';
 
-  const APP_VERSION = '1.11.0';
+  const APP_VERSION = '2.0.0';
   const PUBLIC_APP_URL = 'https://xz1220z-afk.github.io/zos-workbench/';
   const APP_RELEASE_DATE = '2026-08-06';
 
@@ -2133,6 +2133,8 @@ import { pageIdFromHash } from './app/router.mjs?v=1.11.0';
         'search': '全局搜索',
         'relations': '关系与跟进',
         'reviews': '复盘中心',
+        'content-growth': '内容增长中心',
+        'agent-workbench': 'Agent 工作台',
         'decisions': '待我决策',
         'today': '今日视图',
         'focus': '专注中心',
@@ -2165,7 +2167,7 @@ import { pageIdFromHash } from './app/router.mjs?v=1.11.0';
 
   let currentPage = 'dashboard';
   let sidebarCollapsed = false;
-      const mobileMorePageIds = ['dashboard', 'decisions', 'life', 'local-life', 'spark-media', 'lingli', 'intelligence', 'search', 'relations', 'reviews', 'enterprise', 'targets', 'health', 'inbox', 'tasks', 'zos-brain', 'risk', 'privacy', 'settings'];
+      const mobileMorePageIds = ['dashboard', 'decisions', 'life', 'local-life', 'spark-media', 'lingli', 'intelligence', 'content-growth', 'agent-workbench', 'search', 'relations', 'reviews', 'enterprise', 'targets', 'health', 'inbox', 'tasks', 'zos-brain', 'risk', 'privacy', 'settings'];
 
   function closeMobileMoreMenu(returnFocus) {
     const menu = document.getElementById('mobileMoreMenu');

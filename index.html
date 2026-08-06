@@ -12,14 +12,14 @@
 <meta name="application-name" content="ZOS"/>
 <script data-local-file-redirect>
 if (window.location.protocol === 'file:') {
-  window.location.replace('https://xz1220z-afk.github.io/zos-workbench/?v=1.11.0' + window.location.hash);
+  window.location.replace('https://xz1220z-afk.github.io/zos-workbench/?v=2.0.0' + window.location.hash);
 }
 </script>
 <link rel="manifest" href="manifest.webmanifest"/>
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png"/>
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.png"/>
-<link rel="stylesheet" href="assets/app.css"/>
+<link rel="stylesheet" href="assets/app.css?v=2.0.0"/>
 </head>
 <body class="zos-command">
 
@@ -95,6 +95,9 @@ if (window.location.protocol === 'file:') {
       <span class="nav-label">风险中心</span>
       <span class="nav-badge" id="riskBadge" style="display:none">0</span>
     </button>
+    <div class="nav-section">增长与智能</div>
+    <button type="button" class="nav-item" data-page="content-growth"><span class="nav-icon">↗</span><span class="nav-label">内容增长中心</span></button>
+    <button type="button" class="nav-item" data-page="agent-workbench"><span class="nav-icon">✦</span><span class="nav-label">Agent 工作台</span></button>
     <div class="nav-section">共享系统</div>
     <button type="button" class="nav-item" data-page="calendar"><span class="nav-icon">▦</span><span class="nav-label">日历中心</span></button>
     <button type="button" class="nav-item" data-page="intelligence"><span class="nav-icon">◌</span><span class="nav-label">情报中心</span></button>
@@ -177,6 +180,17 @@ if (window.location.protocol === 'file:') {
     <section class="page" id="page-intelligence" data-source="intelligence">
       <div class="page-header"><div class="page-header-left"><h2>情报中心</h2><p>万嘉、花火、玲丽与 CEO 每日必看；事实、影响和建议严格分栏。</p></div></div>
       <div id="intelligenceCenterRoot" class="v14-root" aria-live="polite"></div>
+      <div id="socialInsightsRoot" class="v20-root" aria-live="polite"></div>
+    </section>
+
+    <!-- ===== 内容增长中心 ===== -->
+    <section class="page" id="page-content-growth" data-source="private-sync">
+      <div id="contentGrowthRoot" class="v20-root" aria-live="polite"></div>
+    </section>
+
+    <!-- ===== Agent 工作台 ===== -->
+    <section class="page" id="page-agent-workbench" data-source="private-sync">
+      <div id="agentWorkbenchRoot" class="v20-root" aria-live="polite"></div>
     </section>
 
     <!-- ===== 全局搜索 ===== -->
@@ -479,6 +493,7 @@ if (window.location.protocol === 'file:') {
         <div class="source-rail-main"><div class="source-rail-title">数据来源：Obsidian 企业大脑只读元数据</div><div class="source-rail-status" data-source-status>只显示路径、标题、标签和时间，不读取或写入笔记正文。</div><div class="source-rail-updated" data-source-updated>等待首次手动同步。</div><div class="source-rail-error" data-source-error hidden>最近一次知识索引读取失败；请核对登录、权限或本机索引后重试。</div></div>
         <div class="source-rail-meta"><span class="read-only-badge">只读元数据</span></div>
       </div>
+      <div id="knowledgeWorkspaceRoot" class="v20-root" aria-live="polite"></div>
       <div class="settings-section" style="margin:0 0 16px;padding:14px 16px;">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
           <div><strong>数据来源：Obsidian 企业大脑</strong><div class="setting-desc" id="brainDataStatus">正在检查连接状态…</div></div>
@@ -666,7 +681,7 @@ if (window.location.protocol === 'file:') {
         <div class="setting-row">
           <div>
             <div class="setting-label">工作台版本</div>
-                <div class="setting-desc">v1.11.0 · 2026-08-06</div>
+                <div class="setting-desc">v2.0.0 · 2026-08-06</div>
           </div>
         </div>
         <div class="setting-row">
@@ -870,6 +885,8 @@ if (window.location.protocol === 'file:') {
     <button type="button" class="mobile-more-item" data-page="spark-media">🎬 花火影像</button>
     <button type="button" class="mobile-more-item" data-page="lingli">🎓 玲丽教育</button>
     <button type="button" class="mobile-more-item" data-page="intelligence">◌ 情报中心</button>
+    <button type="button" class="mobile-more-item" data-page="content-growth">↗ 内容增长</button>
+    <button type="button" class="mobile-more-item" data-page="agent-workbench">✦ Agent 工作台</button>
     <button type="button" class="mobile-more-item" data-page="life">♡ 生活首页</button>
     <button type="button" class="mobile-more-item" data-page="search">⌕ 全局搜索</button>
     <button type="button" class="mobile-more-item" data-page="relations">♧ 关系与跟进</button>
@@ -891,8 +908,8 @@ if (window.location.protocol === 'file:') {
   <div class="modal" id="modalBody"></div>
 </div>
 
-<script type="module" src="src/legacy-app.mjs?v=1.11.0"></script>
-<script type="module" src="src/app.mjs?v=1.11.0"></script>
+<script type="module" src="src/legacy-app.mjs?v=2.0.0"></script>
+<script type="module" src="src/app.mjs?v=2.0.0"></script>
 
 
 </body></html>

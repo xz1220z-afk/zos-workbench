@@ -1,5 +1,5 @@
-import { createRecord, markDeleted, normalizeRecord, touchRecord } from '../data-model.mjs?v=1.11.0';
-import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=1.11.0';
+import { createRecord, markDeleted, normalizeRecord, touchRecord } from '../data-model.mjs?v=2.0.0';
+import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.0.0';
 
 const STATE_KEY = 'zos_ceo_os_state_v1_7';
 const PREVIOUS_STATE_KEYS = ['zos_ceo_os_state_v1_4', 'zos_ceo_os_state_v1_3'];
@@ -11,6 +11,9 @@ const LEGACY_KEYS = {
 const ENTITY_TYPES = [
   'tasks', 'inbox', 'projects', 'commands', 'decisions', 'targets',
   'intelligence', 'calendar', 'life', 'focus_sessions', 'countdowns',
+  'content_items', 'knowledge_cards', 'reading_items', 'agent_runs',
+  'social_insights', 'content_assets', 'brainstorms', 'content_experiments',
+  'compound_candidates',
 ];
 
 function clone(value) {

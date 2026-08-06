@@ -9,7 +9,7 @@ ZOS 是朱帅个人使用的 CEO OS，当前以深色 PWA 形式发布。它把�
 
 注意：`https://xz1220z-afk.github.io/` 是用户主页根域名，目前没有配置 Pages，因此会显示 404。日常只使用上面的 `/zos-workbench/` 地址。
 
-## 当前能力（v1.11.0）
+## 当前能力（v2.0.0）
 
 - CEO 指挥中心与独立 Life OS；工作端只显示私人日程的忙碌占位
 - 今日行动、待我决策、经营目标、数据健康和每日 CEO 简报
@@ -25,6 +25,11 @@ ZOS 是朱帅个人使用的 CEO OS，当前以深色 PWA 形式发布。它把�
 - 万嘉商家 360 查询：按商家名或编号读取经营指标，并区分已完成、待执行、逾期与尚无证据的动作
 - 花火档期查询：按日期读取项目、地点、成员与角色，明确排期冲突、缺字段和“无可核验排期”状态
 - 独立情报中心：每日汇总最近 72 小时的飞书候选池与 AI HOT 公开摘要，按万嘉 / 花火 / 玲丽 / CEO 显示覆盖数、来源健康和更新时间；人工标记已读或转为行动
+- 内容增长中心：统一管理万嘉、花火、玲丽和个人 IP 的灵感、评估、计划、制作、待审核、发布、复盘与复用；支持真实表现录入、内容实验和资产复利候选
+- AI 阅读与知识卡片：保存文章、视频、PDF、书籍与课程的来源元数据和阅读进度；把有来源的摘录转成待审核知识卡片，不上传 Obsidian 正文
+- 社媒洞察：记录平台、账号/竞品、话题、用户问题、机会与证据链接；证据不足时明确标记待核验，可人工转为内容选题
+- Agent 工作台：提供 CEO、万嘉、花火、玲丽、知识研究与内容复盘六类受控 Agent；默认只生成草稿，发布、消息、ERP 写入和删除都必须人工确认
+- 复盘中心同时呈现内容表现、实验结果和案例/SOP/培训/话术复利候选，长期沉淀前仍需人工审核
 - 万嘉 / 花火 / 玲丽真实飞书事实只读聚合；三家公司统一区分业务量、合同额、实收与待回款
 - 企业大脑仅同步 Obsidian 元数据，不上传正文
 - localStorage 本地持久化与自动四端同步；关键决策和目标并发修改必须人工解冲突
@@ -82,7 +87,7 @@ curl -fsSI https://xz1220z-afk.github.io/zos-workbench/sw.js
 
 ## Supabase 配置
 
-数据库迁移文件位于 `supabase/migrations/`；v1.11 在可靠日程基础上增加同步自愈、冲突合并、提醒自检、本机操作日志、30 天回收和安全备份。`009_v1_11_reminder_reliability.sql` 让提醒排程以数据库事务整体替换，并为测试提醒增加 60 秒冷却。本地记录继续使用本人私有 RLS 同步，外部日历保持只读。本次不新增数据库表或飞书写权限。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，v1.11 设计见 [`docs/superpowers/specs/2026-08-06-zos-v1.11-sync-reliability-design.md`](docs/superpowers/specs/2026-08-06-zos-v1.11-sync-reliability-design.md)。
+数据库迁移文件位于 `supabase/migrations/`。v2.0 采用云端兼容命名空间：九类内容、知识、Agent 与洞察逻辑集合映射到现有本人私有记录类型，并在私有 JSON 载荷中保留逻辑类型，因此本次前端发布不要求新增数据库迁移。同步继续沿用 owner-only RLS、版本、软删除、冲突和重试机制；不新增飞书写权限，也不上传 Obsidian 正文。配置步骤见 [`docs/supabase-setup.md`](docs/supabase-setup.md)，v2.0 设计见 [`docs/superpowers/specs/2026-08-06-zos-v2-content-growth-design.md`](docs/superpowers/specs/2026-08-06-zos-v2-content-growth-design.md)。
 
 邮箱登录链接必须回调到：
 

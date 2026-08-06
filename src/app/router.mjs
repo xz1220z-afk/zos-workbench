@@ -5,6 +5,7 @@ const DEFAULT_TITLES = Object.freeze({
   risk: '风险中心', inbox: '收集箱', tasks: '任务', privacy: '隐私与数据', settings: '设置',
   life: '生活首页', lingli: '玲丽教育', calendar: '日历中心', intelligence: '情报中心',
   search: '全局搜索', relations: '关系与跟进', reviews: '复盘中心',
+  'content-growth': '内容增长中心', 'agent-workbench': 'Agent 工作台',
 });
 
 export function pageIdFromHash(hash, hasPage = () => true) {

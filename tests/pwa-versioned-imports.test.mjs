@@ -20,7 +20,7 @@ test('every browser module import is release-versioned so an old service worker 
     const source = await readFile(file, 'utf8');
     const imports = [...source.matchAll(/(?:from\s+|import\s*\()["'](\.{1,2}\/[^"']+\.mjs(?:\?[^"']*)?)["']/g)];
     for (const match of imports) {
-      if (!match[1].endsWith('?v=1.11.0')) failures.push(`${file.slice(root.length + 1)} -> ${match[1]}`);
+      if (!match[1].endsWith('?v=2.0.0')) failures.push(`${file.slice(root.length + 1)} -> ${match[1]}`);
     }
   }
   assert.deepEqual(failures, []);

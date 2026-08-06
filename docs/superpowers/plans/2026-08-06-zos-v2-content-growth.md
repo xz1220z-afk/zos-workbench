@@ -40,7 +40,7 @@
 - `src/app/state-store.mjs`, `src/sync-engine.mjs`, `src/app/search-center.mjs`: collections, conflicts, cloud payloads and search indexing.
 - `src/app.mjs`, `src/app/router.mjs`, `index.html`, `assets/app.css`: state composition, routes, page shells, interactions and responsive visual system.
 - `sw.js`, `manifest.webmanifest`, `README.md`: release and cache version.
-- `supabase/migrations/010_v2_content_growth.sql`: indexes/checks for new entity types without destructive schema changes.
+- `src/sync-engine.mjs`: compatibility namespace for new logical entity types without a production schema change.
 
 **Create/modify tests**
 
@@ -224,7 +224,7 @@ assert.equal(normalizeSocialInsight({ claim: '趋势' }).status, 'pending_eviden
 ### Task 9: Cloud compatibility, release version and operational docs
 
 **Files:**
-- Create: `supabase/migrations/010_v2_content_growth.sql`
+- Modify: `src/sync-engine.mjs`
 - Modify: `sw.js`
 - Modify: `manifest.webmanifest`
 - Modify: `index.html`
@@ -235,10 +235,10 @@ assert.equal(normalizeSocialInsight({ claim: '趋势' }).status, 'pending_eviden
 - Create: `docs/zos-ceo-os-v2.0.0-production-acceptance.md`
 
 **Interfaces:**
-- Produces: v2 cloud entity indexes/constraints, consistent `2.0.0` assets and release checklist.
+- Produces: v2 logical entity compatibility on the existing owner-only table, consistent `2.0.0` assets and release checklist.
 
-- [ ] **Step 1: Add failing version/import/migration assertions.**
-- [ ] **Step 2: Add non-destructive SQL indexes and entity-type documentation; update all release identifiers to `2.0.0`.**
+- [ ] **Step 1: Add failing version/import/cloud-compatibility assertions.**
+- [ ] **Step 2: Add a logical-to-physical private namespace mapping and round-trip tests; update all release identifiers to `2.0.0`.**
 - [ ] **Step 3: Update README and acceptance document with real status fields left pending until validation.**
 - [ ] **Step 4: Run full tests and module syntax/import checks; commit `chore: prepare ZOS v2 release`.**
 
@@ -252,7 +252,7 @@ assert.equal(normalizeSocialInsight({ claim: '趋势' }).status, 'pending_eviden
 
 - [ ] **Step 1: Validation pass 1 — run all Node tests, dynamic-import every browser module, `git diff --check`, secret-pattern scan and service-worker/version checks.**
 - [ ] **Step 2: Validation pass 2 — serve locally and inspect desktop 1440px, tablet 834px and mobile 390px across work home, content growth, agent workbench, Enterprise Brain, intelligence, reviews and search; create/edit/delete/restore a disposable local record, then clear it.**
-- [ ] **Step 3: Apply migration 010 through the authorized Supabase path, read back the created database objects and verify existing Edge Functions remain active.**
+- [ ] **Step 3: Verify the linked Supabase project is healthy and the v2 sync adapter only emits entity types already accepted by the deployed owner-only table.**
 - [ ] **Step 4: Merge the isolated branch into main, tag `zos-workbench-v2.0.0`, push main and tag, then verify the GitHub Pages deployment and versioned assets return HTTP 200.**
 - [ ] **Step 5: Validation pass 3 — inspect the official URL at desktop/tablet/mobile sizes, confirm no fatal console errors or horizontal overflow, and exercise the core input-to-review flow with production-safe local-only test data.**
 - [ ] **Step 6: Record exact pass counts, commit SHA, deployment URL, Supabase evidence, known limitations and rollback reference in the acceptance report; commit and push only if the recorded facts match the checks.**

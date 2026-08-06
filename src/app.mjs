@@ -1,48 +1,56 @@
-import { createStateStore } from './app/state-store.mjs?v=1.11.0';
-import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=1.11.0';
-import { render as renderDecisions } from './app/views/decision-view.mjs?v=1.11.0';
-import { render as renderTargets } from './app/views/targets-view.mjs?v=1.11.0';
-import { render as renderHealth } from './app/views/health-view.mjs?v=1.11.0';
-import { render as renderMobile } from './app/views/mobile-view.mjs?v=1.11.0';
-import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=1.11.0';
-import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=1.11.0';
-import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=1.11.0';
-import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=1.11.0';
-import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=1.11.0';
-import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=1.11.0';
-import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=1.11.0';
-import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=1.11.0';
-import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=1.11.0';
-import { buildImportantDates } from './app/important-dates.mjs?v=1.11.0';
-import { queryAvailability } from './app/availability-center.mjs?v=1.11.0';
-import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=1.11.0';
-import { normalizeIntelligenceItem, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=1.11.0';
-import { summarizeLife } from './app/life-os.mjs?v=1.11.0';
-import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=1.11.0';
-import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=1.11.0';
-import { render as renderCalendar } from './app/views/calendar-view.mjs?v=1.11.0';
-import { render as renderLife } from './app/views/life-view.mjs?v=1.11.0';
-import { render as renderSearch } from './app/views/search-view.mjs?v=1.11.0';
-import { render as renderLingli } from './app/views/lingli-view.mjs?v=1.11.0';
-import { buildRelations } from './app/relation-center.mjs?v=1.11.0';
-import { createReviewDraft } from './app/review-center.mjs?v=1.11.0';
-import { render as renderRelations } from './app/views/relation-view.mjs?v=1.11.0';
-import { render as renderReviews } from './app/views/review-view.mjs?v=1.11.0';
-import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=1.11.0';
-import { render as renderTaskCenter } from './app/views/task-view.mjs?v=1.11.0';
-import { render as renderFocus } from './app/views/focus-view.mjs?v=1.11.0';
-import { render as renderAvailability } from './app/views/availability-view.mjs?v=1.11.0';
-import { render as renderMerchant } from './app/views/merchant-view.mjs?v=1.11.0';
-import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=1.11.0';
-import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=1.11.0';
-import { buildTodayTop3 } from './app/priority-engine.mjs?v=1.11.0';
-import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=1.11.0';
-import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=1.11.0';
-import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=1.11.0';
-import { runCompanyAgent } from './app/company-agent-hub.mjs?v=1.11.0';
-import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=1.11.0';
+import { createStateStore } from './app/state-store.mjs?v=2.0.0';
+import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=2.0.0';
+import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.0.0';
+import { render as renderTargets } from './app/views/targets-view.mjs?v=2.0.0';
+import { render as renderHealth } from './app/views/health-view.mjs?v=2.0.0';
+import { render as renderMobile } from './app/views/mobile-view.mjs?v=2.0.0';
+import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.0.0';
+import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=2.0.0';
+import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=2.0.0';
+import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=2.0.0';
+import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=2.0.0';
+import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=2.0.0';
+import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=2.0.0';
+import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=2.0.0';
+import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=2.0.0';
+import { buildImportantDates } from './app/important-dates.mjs?v=2.0.0';
+import { queryAvailability } from './app/availability-center.mjs?v=2.0.0';
+import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=2.0.0';
+import { normalizeIntelligenceItem, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=2.0.0';
+import { summarizeLife } from './app/life-os.mjs?v=2.0.0';
+import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=2.0.0';
+import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=2.0.0';
+import { render as renderCalendar } from './app/views/calendar-view.mjs?v=2.0.0';
+import { render as renderLife } from './app/views/life-view.mjs?v=2.0.0';
+import { render as renderSearch } from './app/views/search-view.mjs?v=2.0.0';
+import { render as renderLingli } from './app/views/lingli-view.mjs?v=2.0.0';
+import { buildRelations } from './app/relation-center.mjs?v=2.0.0';
+import { createReviewDraft } from './app/review-center.mjs?v=2.0.0';
+import { render as renderRelations } from './app/views/relation-view.mjs?v=2.0.0';
+import { render as renderReviews } from './app/views/review-view.mjs?v=2.0.0';
+import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=2.0.0';
+import { render as renderTaskCenter } from './app/views/task-view.mjs?v=2.0.0';
+import { render as renderFocus } from './app/views/focus-view.mjs?v=2.0.0';
+import { render as renderAvailability } from './app/views/availability-view.mjs?v=2.0.0';
+import { render as renderMerchant } from './app/views/merchant-view.mjs?v=2.0.0';
+import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=2.0.0';
+import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=2.0.0';
+import { buildTodayTop3 } from './app/priority-engine.mjs?v=2.0.0';
+import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=2.0.0';
+import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=2.0.0';
+import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=2.0.0';
+import { runCompanyAgent } from './app/company-agent-hub.mjs?v=2.0.0';
+import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=2.0.0';
+import { contentOverview, contentPerformance, evaluateExperiment, normalizeContentItem, transitionContent, buildCompoundCandidate } from './app/content-growth.mjs?v=2.0.0';
+import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.0.0';
+import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.0.0';
+import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.0.0';
+import { render as renderContentGrowth } from './app/views/content-growth-view.mjs?v=2.0.0';
+import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.0.0';
+import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.0.0';
+import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.0.0';
 
-export const APP_VERSION = '1.11.0';
+export const APP_VERSION = '2.0.0';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
@@ -57,6 +65,7 @@ export function createCeoOsApplication(config = {}) {
   const runtime = {
     health: [], gaps: [], briefs: [], conflicts: [], approvals: [], decisions: [], targets: [],
     businessExceptions: [], intelligence: [], intelligenceState: 'loading', intelligenceCompany: 'all',
+    contentCompany: 'all', contentOwner: 'all',
     intelligenceSources: {}, intelligenceFetchedAt: null,
     calendarView: 'week', calendarAnchor: now().slice(0, 10), calendarPanel: null,
     selectedCalendarId: null, calendarDraft: null, calendarDraftKind: 'calendar',
@@ -112,6 +121,20 @@ export function createCeoOsApplication(config = {}) {
     const tasks = state.collections.tasks || [];
     const focusSessions = state.collections.focus_sessions || [];
     const countdowns = state.collections.countdowns || [];
+    const allContentItems = (state.collections.content_items || []).map(normalizeContentItem);
+    const contentItems = allContentItems.filter((item) => {
+      const companyMatches = runtime.contentCompany === 'all' || item.company === runtime.contentCompany;
+      const ownerMatches = runtime.contentOwner === 'all' || item.owner === 'me';
+      return companyMatches && ownerMatches;
+    });
+    const readingItems = (state.collections.reading_items || []).map(normalizeReadingItem);
+    const knowledgeCards = state.collections.knowledge_cards || [];
+    const agentRuns = state.collections.agent_runs || [];
+    const socialInsights = rankSocialOpportunities(state.collections.social_insights || []);
+    const contentAssets = state.collections.content_assets || [];
+    const brainstorms = state.collections.brainstorms || [];
+    const contentExperiments = state.collections.content_experiments || [];
+    const compoundCandidates = state.collections.compound_candidates || [];
     const calendar = buildCalendar({
       calendar: [...(state.collections.calendar || []), ...(runtime.externalCalendar || [])],
       tasks,
@@ -163,6 +186,13 @@ export function createCeoOsApplication(config = {}) {
       intelligence,
       actions: [...(state.collections.tasks || []), ...(state.collections.inbox || [])],
       life,
+      content: allContentItems,
+      reading: readingItems,
+      cards: knowledgeCards,
+      social: socialInsights,
+      agentRuns,
+      assets: contentAssets,
+      brainstorms,
     });
     return {
       ...runtime,
@@ -215,6 +245,21 @@ export function createCeoOsApplication(config = {}) {
       focusSnapshot: activeFocus ? focusSnapshot(activeFocus, { now: now() }) : { state: 'planned', remainingSeconds: runtime.focusDuration * 60, elapsedSeconds: 0 },
       focusTasks: tasks.filter((item) => !['done', 'completed', 'cancelled'].includes(item.status)),
       focusSummary: summarizeFocus(focusSessions, { now: now() }),
+      contentItems,
+      contentCompany: runtime.contentCompany,
+      contentOwner: runtime.contentOwner,
+      contentOverview: contentOverview(contentItems),
+      contentPerformance: contentPerformance(contentItems),
+      readingItems,
+      knowledgeCards,
+      knowledgeReview: knowledgeReviewQueue(knowledgeCards),
+      agentRuns,
+      agentSummary: summarizeAgentRuns(agentRuns),
+      socialInsights,
+      contentAssets,
+      brainstorms,
+      contentExperiments,
+      compoundCandidates,
       merchantSearch: runtime.merchantSearch || { state: 'empty_query', matches: [] },
       merchantProfile: runtime.merchantProfile || null,
       availability: runtime.availability || queryHuahuoAvailability({ date: runtime.availabilityDate }, { render: false }),
@@ -957,6 +1002,240 @@ export function createCeoOsApplication(config = {}) {
     return draft;
   }
 
+  function promptValue(message, defaultValue = '') {
+    return (config.prompt || globalThis.prompt)?.(message, defaultValue);
+  }
+
+  function confirmAction(message) {
+    return (config.confirm || globalThis.confirm)?.(message) === true;
+  }
+
+  function saveContentItem(input = {}) {
+    const record = store.saveEntity('content_items', normalizeContentItem(input));
+    signalLocalChange();
+    renderAll();
+    return record;
+  }
+
+  function captureContentItem(seed = {}) {
+    const title = promptValue('内容标题 / 选题名称', seed.title || '');
+    if (!String(title || '').trim()) return null;
+    const company = promptValue('归属：wanjia / huahuo / lingli / personal', seed.company || 'wanjia');
+    const platform = promptValue('平台：douyin / xiaohongshu / wechat / bilibili', seed.platform || 'douyin');
+    const angle = promptValue('内容角度或要解决的用户问题', seed.angle || '');
+    return saveContentItem({ ...seed, title, company, platform, angle, owner: seed.owner || 'me', stage: seed.stage || 'idea' });
+  }
+
+  function editContentItem(id) {
+    const item = store.load().collections.content_items?.find((record) => record.id === id);
+    if (!item) throw new Error('content_item_not_found');
+    const title = promptValue('内容标题', item.title);
+    if (!String(title || '').trim()) return item;
+    const angle = promptValue('内容角度', item.angle || '');
+    return saveContentItem({ ...item, title, angle });
+  }
+
+  function advanceContentItem(id, nextStage) {
+    const item = store.load().collections.content_items?.find((record) => record.id === id);
+    if (!item) throw new Error('content_item_not_found');
+    const approved = nextStage !== 'published' || confirmAction('确认这条内容已完成审核并正式发布？');
+    if (!approved) return item;
+    return saveContentItem(transitionContent(item, nextStage, { approved, now: now() }));
+  }
+
+  function deletePrivateEntity(entityType, id, confirmation) {
+    if (!confirmAction(confirmation)) return null;
+    const deleted = store.deleteEntity(entityType, id);
+    signalLocalChange();
+    renderAll();
+    return deleted;
+  }
+
+  function captureReadingItem() {
+    const sourceUrl = promptValue('粘贴网页、视频、PDF 或飞书链接');
+    if (!String(sourceUrl || '').trim()) return null;
+    const title = promptValue('阅读标题', '待读资料');
+    const sourceType = promptValue('类型：web / video / pdf / feishu / book / course', 'web');
+    const record = store.saveEntity('reading_items', normalizeReadingItem({ title, sourceUrl, sourceType }));
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function updateReadingProgress(id) {
+    const item = store.load().collections.reading_items?.find((record) => record.id === id);
+    if (!item) throw new Error('reading_item_not_found');
+    const progress = promptValue('完成进度（0-100）', String(item.progress || 0));
+    if (progress == null) return item;
+    const record = store.saveEntity('reading_items', normalizeReadingItem({ ...item, progress }));
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function readingToKnowledgeCard(id) {
+    const item = store.load().collections.reading_items?.find((record) => record.id === id);
+    if (!item) throw new Error('reading_item_not_found');
+    const quote = promptValue('原文摘录（可留空）', item.highlights?.[0] || '');
+    const insight = promptValue('你的理解 / 可执行结论');
+    if (!String(insight || '').trim()) return null;
+    const record = store.saveEntity('knowledge_cards', createKnowledgeCard({
+      sourceId: item.id, sourceUrl: item.sourceUrl, title: item.title, quote, insight,
+    }));
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function reviewKnowledgeCard(id) {
+    const item = store.load().collections.knowledge_cards?.find((record) => record.id === id);
+    if (!item) throw new Error('knowledge_card_not_found');
+    if (!confirmAction('确认该知识卡片已核对来源并通过审核？')) return item;
+    const record = store.saveEntity('knowledge_cards', { ...item, reviewStatus: 'approved', reviewedAt: now() });
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function editKnowledgeCard(id) {
+    const item = store.load().collections.knowledge_cards?.find((record) => record.id === id);
+    if (!item) throw new Error('knowledge_card_not_found');
+    const title = promptValue('知识卡片标题', item.title || '');
+    if (!String(title || '').trim()) return item;
+    const insight = promptValue('你的理解 / 可执行结论', item.insight || '');
+    const record = store.saveEntity('knowledge_cards', { ...item, title, insight, reviewStatus: 'pending' });
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function captureBrainstorm() {
+    const title = promptValue('头脑风暴主题');
+    if (!String(title || '').trim()) return null;
+    const directions = String(promptValue('初始方向（用逗号分隔）', '') || '').split(/[,，]/).map((item) => item.trim()).filter(Boolean);
+    const record = store.saveEntity('brainstorms', createBrainstorm({ title, nodes: directions.map((direction, index) => ({ id: `direction-${index + 1}`, title: direction })) }));
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function captureAsset() {
+    const title = promptValue('素材名称');
+    if (!String(title || '').trim()) return null;
+    const mediaType = promptValue('素材类型：photo / video / template / music', 'video');
+    const licenseStatus = promptValue('授权状态：owned / licensed / pending', 'pending');
+    const record = store.saveEntity('content_assets', { title, mediaType, licenseStatus, reuseScope: 'internal_review' });
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function captureSocialInsight() {
+    const claim = promptValue('洞察或用户问题');
+    if (!String(claim || '').trim()) return null;
+    const sourceUrl = promptValue('证据链接（没有可留空）', '');
+    const platform = promptValue('平台', 'douyin');
+    const record = store.saveEntity('social_insights', normalizeSocialInsight({ claim, sourceUrl, platform, capturedAt: sourceUrl ? now() : '', score: 60 }));
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function editSocialInsight(id) {
+    const item = store.load().collections.social_insights?.find((record) => record.id === id);
+    if (!item) throw new Error('social_insight_not_found');
+    const claim = promptValue('洞察或用户问题', item.claim || '');
+    if (!String(claim || '').trim()) return item;
+    const sourceUrl = promptValue('证据链接（没有可留空）', item.sourceUrl || '');
+    const company = promptValue('归属：wanjia / huahuo / lingli / personal', item.company || 'wanjia');
+    const record = store.saveEntity('social_insights', normalizeSocialInsight({
+      ...item, claim, sourceUrl, company, capturedAt: sourceUrl ? (item.capturedAt || now()) : '',
+    }));
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function socialInsightToContent(id) {
+    const insight = store.load().collections.social_insights?.find((record) => record.id === id);
+    if (!insight) throw new Error('social_insight_not_found');
+    return captureContentItem({ title: insight.claim, company: insight.company, sourceRefs: [insight.sourceUrl].filter(Boolean), angle: insight.userQuestion || insight.contentGap || '' });
+  }
+
+  function captureContentExperiment() {
+    const title = promptValue('实验名称');
+    if (!String(title || '').trim()) return null;
+    const variable = promptValue('实验变量：标题 / 封面 / 开头 / 发布时间', '标题');
+    const first = promptValue('方案 A', 'A');
+    const second = promptValue('方案 B', 'B');
+    const record = store.saveEntity('content_experiments', evaluateExperiment({
+      title, variable, status: 'planned',
+      variants: [{ id: 'A', label: first, metric: null }, { id: 'B', label: second, metric: null }],
+    }));
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function updateContentExperiment(id) {
+    const item = store.load().collections.content_experiments?.find((record) => record.id === id);
+    if (!item) throw new Error('content_experiment_not_found');
+    const variants = (item.variants || []).map((variant) => ({
+      ...variant,
+      metric: promptValue(`${variant.label || variant.id} 的真实结果`, variant.metric == null ? '' : String(variant.metric)),
+    }));
+    const record = store.saveEntity('content_experiments', evaluateExperiment({ ...item, variants }));
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function compoundContentItem(id, type = 'case') {
+    const item = store.load().collections.content_items?.find((record) => record.id === id);
+    if (!item) throw new Error('content_item_not_found');
+    const record = store.saveEntity('compound_candidates', buildCompoundCandidate(item, { type }));
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function reviewCompoundCandidate(id) {
+    const item = store.load().collections.compound_candidates?.find((record) => record.id === id);
+    if (!item) throw new Error('compound_candidate_not_found');
+    if (!confirmAction('确认该复利候选已核对来源，可进入人工沉淀流程？')) return item;
+    const record = store.saveEntity('compound_candidates', { ...item, status: 'approved', reviewedAt: now() });
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function launchAgentRun(agentId) {
+    const objective = promptValue('这次希望 Agent 完成什么？');
+    if (!String(objective || '').trim()) return null;
+    const record = store.saveEntity('agent_runs', createAgentRun({ agentId, objective, status: 'draft', inputRefs: [] }));
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function updateContentMetrics(id) {
+    const item = store.load().collections.content_items?.find((record) => record.id === id);
+    if (!item) throw new Error('content_item_not_found');
+    const metrics = {
+      views: promptValue('播放 / 阅读量', String(item.metrics?.views || 0)),
+      interactions: promptValue('互动量', String(item.metrics?.interactions || 0)),
+      leads: promptValue('有效咨询 / 线索', String(item.metrics?.leads || 0)),
+      revenue: promptValue('关联已确认回款', String(item.metrics?.revenue || 0)),
+    };
+    return saveContentItem({ ...item, metrics });
+  }
+
+  function editAsset(id) {
+    const item = store.load().collections.content_assets?.find((record) => record.id === id);
+    if (!item) throw new Error('asset_not_found');
+    const licenseStatus = promptValue('授权状态：owned / licensed / pending', item.licenseStatus || 'pending');
+    const reuseScope = promptValue('复用范围', item.reuseScope || 'internal_review');
+    const record = store.saveEntity('content_assets', { ...item, licenseStatus, reuseScope });
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function openBrainstorm(id) {
+    const item = store.load().collections.brainstorms?.find((record) => record.id === id);
+    if (!item) throw new Error('brainstorm_not_found');
+    const choices = (item.nodes || []).map((node) => `${node.id}:${node.title}`).join(' / ');
+    const nodeId = promptValue(`选择方向 ID：${choices}`, item.selectedNodeId || item.nodes?.[0]?.id || '');
+    if (!nodeId) return item;
+    const record = store.saveEntity('brainstorms', selectBrainstormDirection(item, nodeId));
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function submitAgentRun(id) {
+    const item = store.load().collections.agent_runs?.find((record) => record.id === id);
+    if (!item) throw new Error('agent_run_not_found');
+    const record = store.saveEntity('agent_runs', { ...item, status: 'awaiting_approval', submittedAt: now() });
+    signalLocalChange(); renderAll(); return record;
+  }
+
+  function approveAgentRun(id) {
+    const item = store.load().collections.agent_runs?.find((record) => record.id === id);
+    if (!item) throw new Error('agent_run_not_found');
+    if (!confirmAction('确认该 Agent 草稿已人工审核？这只确认草稿，不会自动发布、发消息或写 ERP。')) return item;
+    const record = store.saveEntity('agent_runs', { ...item, status: 'completed', approval: { approved: true, approvedAt: now(), scope: 'draft_only' } });
+    signalLocalChange(); renderAll(); return record;
+  }
+
   async function syncNow() {
     const controller = operatingRuntime?.syncController || config.syncController;
     if (!controller?.sync) throw new Error('sync_not_connected');
@@ -1087,8 +1366,76 @@ export function createCeoOsApplication(config = {}) {
       const reminderSnooze = event.target?.closest?.('[data-reminder-snooze]');
       const reliabilityRestore = event.target?.closest?.('[data-reliability-restore]');
       const exportBackup = event.target?.closest?.('[data-export-backup]');
+      const contentCapture = event.target?.closest?.('[data-content-capture]');
+      const contentCompany = event.target?.closest?.('[data-content-company]');
+      const contentOwner = event.target?.closest?.('[data-content-owner]');
+      const contentEdit = event.target?.closest?.('[data-content-edit]');
+      const contentTransition = event.target?.closest?.('[data-content-transition]');
+      const contentDelete = event.target?.closest?.('[data-content-delete]');
+      const contentMetricsButton = event.target?.closest?.('[data-content-metrics]');
+      const contentCompound = event.target?.closest?.('[data-content-compound]');
+      const compoundReview = event.target?.closest?.('[data-compound-review]');
+      const compoundDelete = event.target?.closest?.('[data-compound-delete]');
+      const experimentCapture = event.target?.closest?.('[data-experiment-capture]');
+      const experimentResults = event.target?.closest?.('[data-experiment-results]');
+      const experimentDelete = event.target?.closest?.('[data-experiment-delete]');
+      const readingCapture = event.target?.closest?.('[data-reading-capture]');
+      const readingProgressButton = event.target?.closest?.('[data-reading-progress]');
+      const readingToCard = event.target?.closest?.('[data-reading-to-card]');
+      const readingDelete = event.target?.closest?.('[data-reading-delete]');
+      const knowledgeReview = event.target?.closest?.('[data-knowledge-review]');
+      const knowledgeEdit = event.target?.closest?.('[data-knowledge-edit]');
+      const knowledgeDelete = event.target?.closest?.('[data-knowledge-delete]');
+      const brainstormCapture = event.target?.closest?.('[data-brainstorm-capture]');
+      const brainstormOpen = event.target?.closest?.('[data-brainstorm-open]');
+      const brainstormDelete = event.target?.closest?.('[data-brainstorm-delete]');
+      const assetCapture = event.target?.closest?.('[data-asset-capture]');
+      const assetEditButton = event.target?.closest?.('[data-asset-edit]');
+      const assetDelete = event.target?.closest?.('[data-asset-delete]');
+      const socialCapture = event.target?.closest?.('[data-social-capture]');
+      const socialEdit = event.target?.closest?.('[data-social-edit]');
+      const socialToContent = event.target?.closest?.('[data-social-to-content]');
+      const socialDelete = event.target?.closest?.('[data-social-delete]');
+      const agentRun = event.target?.closest?.('[data-agent-run]');
+      const agentSubmit = event.target?.closest?.('[data-agent-submit]');
+      const agentApprove = event.target?.closest?.('[data-agent-approve]');
+      const agentRunDelete = event.target?.closest?.('[data-agent-run-delete]');
       try {
-        if (syncNowButton) await syncNow();
+        if (contentCapture) captureContentItem();
+        else if (contentCompany) { runtime.contentCompany = contentCompany.dataset.contentCompany || 'all'; renderAll(); }
+        else if (contentOwner) { runtime.contentOwner = contentOwner.dataset.contentOwner || 'all'; renderAll(); }
+        else if (contentEdit) editContentItem(contentEdit.dataset.contentEdit);
+        else if (contentTransition) advanceContentItem(contentTransition.dataset.contentTransition, contentTransition.dataset.contentNextStage);
+        else if (contentDelete) deletePrivateEntity('content_items', contentDelete.dataset.contentDelete, '确认删除这条内容记录？删除会同步到其他设备，并可从回收记录恢复。');
+        else if (contentMetricsButton) updateContentMetrics(contentMetricsButton.dataset.contentMetrics);
+        else if (contentCompound) compoundContentItem(contentCompound.dataset.contentCompound);
+        else if (compoundReview) reviewCompoundCandidate(compoundReview.dataset.compoundReview);
+        else if (compoundDelete) deletePrivateEntity('compound_candidates', compoundDelete.dataset.compoundDelete, '确认删除这条复利候选？');
+        else if (experimentCapture) captureContentExperiment();
+        else if (experimentResults) updateContentExperiment(experimentResults.dataset.experimentResults);
+        else if (experimentDelete) deletePrivateEntity('content_experiments', experimentDelete.dataset.experimentDelete, '确认删除这条内容实验？');
+        else if (readingCapture) captureReadingItem();
+        else if (readingProgressButton) updateReadingProgress(readingProgressButton.dataset.readingProgress);
+        else if (readingToCard) readingToKnowledgeCard(readingToCard.dataset.readingToCard);
+        else if (readingDelete) deletePrivateEntity('reading_items', readingDelete.dataset.readingDelete, '确认删除这条阅读记录？');
+        else if (knowledgeEdit) editKnowledgeCard(knowledgeEdit.dataset.knowledgeEdit);
+        else if (knowledgeReview) reviewKnowledgeCard(knowledgeReview.dataset.knowledgeReview);
+        else if (knowledgeDelete) deletePrivateEntity('knowledge_cards', knowledgeDelete.dataset.knowledgeDelete, '确认删除这张知识卡片？');
+        else if (brainstormCapture) captureBrainstorm();
+        else if (brainstormOpen) openBrainstorm(brainstormOpen.dataset.brainstormOpen);
+        else if (brainstormDelete) deletePrivateEntity('brainstorms', brainstormDelete.dataset.brainstormDelete, '确认删除这次头脑风暴？');
+        else if (assetCapture) captureAsset();
+        else if (assetEditButton) editAsset(assetEditButton.dataset.assetEdit);
+        else if (assetDelete) deletePrivateEntity('content_assets', assetDelete.dataset.assetDelete, '确认删除这条素材资产？');
+        else if (socialCapture) captureSocialInsight();
+        else if (socialEdit) editSocialInsight(socialEdit.dataset.socialEdit);
+        else if (socialToContent) socialInsightToContent(socialToContent.dataset.socialToContent);
+        else if (socialDelete) deletePrivateEntity('social_insights', socialDelete.dataset.socialDelete, '确认删除这条社媒洞察？');
+        else if (agentRun) launchAgentRun(agentRun.dataset.agentRun);
+        else if (agentSubmit) submitAgentRun(agentSubmit.dataset.agentSubmit);
+        else if (agentApprove) approveAgentRun(agentApprove.dataset.agentApprove);
+        else if (agentRunDelete) deletePrivateEntity('agent_runs', agentRunDelete.dataset.agentRunDelete, '确认删除这条 Agent 执行记录？');
+        else if (syncNowButton) await syncNow();
         else if (syncResolution) await resolveSyncConflict(syncResolution.dataset.syncConflict, syncResolution.dataset.syncResolution);
         else if (reminderTest) await testReminderDelivery();
         else if (reminderSnooze) snoozeReminder(reminderSnooze.dataset.reminderEntity, reminderSnooze.dataset.reminderId, reminderSnooze.dataset.reminderSnooze);
@@ -1217,7 +1564,10 @@ export function createCeoOsApplication(config = {}) {
         } else if (merchantSelect) queryMerchant(runtime.merchantQuery, { id: merchantSelect.dataset.merchantSelect });
         else if (reviewDraft) generateReview(reviewDraft.dataset.reviewDraft);
         else if (agentDraft) await generateAgentDraft(agentDraft.dataset.agentDraft || 'ceo');
-        else if (pageButton && globalThis.window?.navigateTo) globalThis.window.navigateTo(pageButton.dataset.page);
+        else if (pageButton && globalThis.window?.navigateTo) {
+          globalThis.window.navigateTo(pageButton.dataset.page);
+          renderAll();
+        }
       } catch { runtime.syncStatus = '操作未完成，请检查登录与数据权限'; renderAll(); }
     });
     document.addEventListener('submit', (event) => {
@@ -1439,6 +1789,8 @@ export function createCeoOsApplication(config = {}) {
 
   function renderAll() {
     const model = viewModel();
+    const activePageId = document?.querySelector?.('.page.active')?.id || '';
+    const activePage = activePageId.replace(/^page-/, '');
     renderDashboard(document?.getElementById('ceoDashboardRoot'), model);
     renderDecisions(document?.getElementById('decisionCenterRoot'), model);
     renderTargets(document?.getElementById('targetCenterRoot'), model);
@@ -1456,6 +1808,10 @@ export function createCeoOsApplication(config = {}) {
     renderFocus(document?.getElementById('focusCenterRoot'), model);
     renderAvailability(document?.getElementById('availabilityCenterRoot'), model);
     renderMerchant(document?.getElementById('merchantCenterRoot'), model);
+    if (!activePage || activePage === 'content-growth') renderContentGrowth(document?.getElementById('contentGrowthRoot'), model);
+    if (!activePage || activePage === 'zos-brain') renderKnowledgeWorkspace(document?.getElementById('knowledgeWorkspaceRoot'), model);
+    if (!activePage || activePage === 'intelligence') renderSocialInsights(document?.getElementById('socialInsightsRoot'), model);
+    if (!activePage || activePage === 'agent-workbench') renderAgentWorkbench(document?.getElementById('agentWorkbenchRoot'), model);
     const badge = document?.getElementById('decisionBadge');
     if (badge) {
       badge.textContent = String(model.decisions.filter((item) => ['open', 'pending_resolution'].includes(item.status)).length);
@@ -1652,6 +2008,11 @@ export function createCeoOsApplication(config = {}) {
     syncNow, resolveSyncConflict, testReminderDelivery, snoozeReminder, restoreReliabilityItem, exportSafeBackup,
     createFocus, transitionCurrentFocus, queryMerchant, queryHuahuoAvailability,
     openTaskEditor, closeTaskEditor, generateReview, generateAgentDraft,
+    saveContentItem, captureContentItem, editContentItem, advanceContentItem,
+    captureReadingItem, updateReadingProgress, readingToKnowledgeCard, reviewKnowledgeCard, editKnowledgeCard,
+    captureBrainstorm, captureAsset, captureSocialInsight, editSocialInsight, socialInsightToContent,
+    captureContentExperiment, updateContentExperiment, compoundContentItem, reviewCompoundCandidate, updateContentMetrics, editAsset, openBrainstorm,
+    launchAgentRun, submitAgentRun, approveAgentRun, deletePrivateEntity,
     get operatingRuntime() { return operatingRuntime; },
   };
 }
