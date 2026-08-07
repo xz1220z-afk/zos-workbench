@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { render } from '../src/app/views/dashboard-view.mjs';
 import { render as renderDecisions } from '../src/app/views/decision-view.mjs';
+import { render as renderMobile } from '../src/app/views/mobile-view.mjs';
 
 test('CEO dashboard formats money and never exposes JavaScript object placeholders', () => {
   const container = { innerHTML: '' };
@@ -14,7 +15,7 @@ test('CEO dashboard formats money and never exposes JavaScript object placeholde
       huahuo: { summary: { outstandingAmount: 28000 } },
     },
     todayTop3: [{ id: 'a1', title: { text: '确认项目动作' } }],
-    decisions: [{ id: 'd1', factSummary: { text: '核对项目状态' }, severity: 'high', status: 'open' }],
+    decisions: [{ id: 'd1', factSummary: { text: '核对项目状态' }, category: 'high_risk', severity: 'high', status: 'open' }],
     health: [], mustRead: [], calendar: [], calendarConflicts: [],
   });
 
@@ -34,4 +35,28 @@ test('decision center also normalizes legacy rich-value decisions', () => {
   assert.match(container.innerHTML, /确认客户交付时间/);
   assert.match(container.innerHTML, /今天联系负责人/);
   assert.doesNotMatch(container.innerHTML, /\[object Object\]/);
+});
+
+test('decision surfaces separate CEO choices from owner follow-up and resolved history', () => {
+  const decisions = [
+    { id: 'ceo', status: 'open', category: 'revenue_pending', severity: 'high', factSummary: '花火项目待回款', recommendedAction: '确认收款方案' },
+    { id: 'follow', status: 'open', category: 'stale', severity: 'medium', factSummary: '普通项目超过 7 天未更新', recommendedAction: '负责人跟进' },
+    { id: 'history', status: 'pending_resolution', severity: 'high', factSummary: '旧风险', decisionNote: '来源风险已消失，等待人工确认解除' },
+  ];
+  const dashboard = { innerHTML: '' };
+  render(dashboard, { state: 'ready', today: '2026-08-07', decisions, health: [], mustRead: [], calendar: [], calendarConflicts: [] });
+  assert.match(dashboard.innerHTML, /<span>待我决策<\/span><strong>1<\/strong>/);
+  assert.match(dashboard.innerHTML, /花火项目待回款/);
+  assert.doesNotMatch(dashboard.innerHTML, /普通项目超过 7 天未更新|来源风险已消失/);
+
+  const center = { innerHTML: '' };
+  renderDecisions(center, { state: 'ready', decisions });
+  assert.match(center.innerHTML, /需要你决定[\s\S]*1/);
+  assert.match(center.innerHTML, /负责人跟进[\s\S]*1/);
+  assert.match(center.innerHTML, /已解除历史[\s\S]*1/);
+  assert.equal((center.innerHTML.match(/data-preview-decision=/g) || []).length, 1);
+
+  const mobile = { innerHTML: '' };
+  renderMobile(mobile, { decisions });
+  assert.match(mobile.innerHTML, /1 项需要确认/);
 });

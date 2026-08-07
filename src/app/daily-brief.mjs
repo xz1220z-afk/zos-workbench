@@ -1,4 +1,5 @@
 import { buildTodayTop3 } from './priority-engine.mjs?v=2.0.2';
+import { partitionDecisions } from './decision-center.mjs?v=2.0.2';
 
 export const CEO_BRIEF_SECTIONS = Object.freeze([
   'yesterday',
@@ -135,9 +136,10 @@ function buildSections(input = {}, date) {
   const completedYesterday = tasks
     .filter((task) => task.status === 'done' && String(task.completedAt || '').slice(0, 10) === yesterday)
     .sort((left, right) => left.id.localeCompare(right.id, 'zh-CN'));
+  const ceoDecisions = partitionDecisions(input.decisions).ceo;
   const todayTop3 = buildTodayTop3({
     tasks,
-    decisions: input.decisions,
+    decisions: ceoDecisions,
     risks: input.risks,
     calendarConflicts: input.calendarConflicts,
     intelligence: input.intelligence,
@@ -148,7 +150,7 @@ function buildSections(input = {}, date) {
     todayTop3,
     targetGaps: stableValue(Array.isArray(input.targetGaps) ? input.targetGaps : []),
     risks: stableValue(Array.isArray(input.risks) ? input.risks : []),
-    decisions: stableValue((Array.isArray(input.decisions) ? input.decisions : []).filter((item) => ['open', 'pending_resolution'].includes(item.status))),
+    decisions: stableValue(ceoDecisions),
     cashAndDelivery: {
       wanjia: pickNumbers(input.wanjia?.summary, ['paymentGmv', 'redeemedGmv', 'estimatedCommission']),
       huahuo: pickNumbers(input.huahuo?.summary, ['receivedAmount', 'outstandingAmount', 'pendingDeliveries']),

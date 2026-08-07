@@ -1,11 +1,13 @@
 import { escapeHtml } from './view-utils.mjs?v=2.0.2';
+import { partitionDecisions } from '../decision-center.mjs?v=2.0.2';
 
 function count(items) { return Array.isArray(items) ? items.length : 0; }
 
 export function render(container, viewModel = {}) {
   if (!container) return;
+  const decisions = partitionDecisions(viewModel.decisions).ceo;
   container.innerHTML = `
-    <section id="mobile-decisions" class="v13-panel v13-mobile-section"><h3>🔴 待我决策</h3><p>${count(viewModel.decisions)} 项需要确认</p></section>
+    <section id="mobile-decisions" class="v13-panel v13-mobile-section"><h3>🔴 待我决策</h3><p>${count(decisions)} 项需要确认</p></section>
     <section id="mobile-today" class="v13-panel v13-mobile-section"><h3>◎ 今日 Top 3</h3><p>${count(viewModel.todayTop3)} 项优先行动</p></section>
     <section id="mobile-business-exceptions" class="v13-panel v13-mobile-section"><h3>经营异常</h3><p>${count(viewModel.businessExceptions)} 项需要关注</p></section>
     <section id="mobile-quick-capture" class="v13-panel v13-mobile-section"><h3>快速收集</h3><button class="v13-action" data-quick-capture>＋ 记录想法或任务</button></section>

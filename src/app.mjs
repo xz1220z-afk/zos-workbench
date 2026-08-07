@@ -51,6 +51,7 @@ import { render as renderSocialInsights } from './app/views/social-insights-view
 import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.0.2';
 import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.0.2';
 import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.0.2';
+import { partitionDecisions } from './app/decision-center.mjs?v=2.0.2';
 
 export const APP_VERSION = '2.0.2';
 const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
@@ -2056,7 +2057,7 @@ export function createCeoOsApplication(config = {}) {
     if (!activePage || activePage === 'agent-workbench') renderAgentWorkbench(document?.getElementById('agentWorkbenchRoot'), model);
     const badge = document?.getElementById('decisionBadge');
     if (badge) {
-      badge.textContent = String(model.decisions.filter((item) => ['open', 'pending_resolution'].includes(item.status)).length);
+      badge.textContent = String(partitionDecisions(model.decisions).ceo.length);
       badge.style.display = badge.textContent === '0' ? 'none' : '';
     }
   }

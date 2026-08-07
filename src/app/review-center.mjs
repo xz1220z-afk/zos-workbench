@@ -1,3 +1,5 @@
+import { partitionDecisions } from './decision-center.mjs?v=2.0.2';
+
 const REVIEW_LABELS = {
   weekly_business: '本周经营复盘', monthly_company: '本月公司复盘', life: '生活复盘',
 };
@@ -12,7 +14,7 @@ export function createReviewDraft(type, model = {}) {
     kind: 'review_draft', type, status: 'pending_review', reviewRequired: true,
     facts: {
       sourceStates,
-      openDecisions: (model.decisions || []).filter((item) => ['open', 'pending_resolution'].includes(item.status)).length,
+      openDecisions: partitionDecisions(model.decisions).ceo.length,
       targetGaps: (model.gaps || []).length,
       calendarConflicts: (model.calendarConflicts || []).length,
     },

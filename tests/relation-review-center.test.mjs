@@ -16,11 +16,23 @@ test('relations are derived only from records that contain a real party name', (
 test('review drafts keep facts, suggestions and confirmation state separate', () => {
   const draft = createReviewDraft('weekly_business', {
     date: '2026-08-02', sources: { wanjia: { state: 'synced' }, huahuo: { state: 'failed' } },
-    decisions: [{ id: 'd1', status: 'open' }], gaps: [{ metricKey: 'wanjia.paymentGmv' }],
+    decisions: [{ id: 'd1', status: 'open', decisionScope: 'ceo' }], gaps: [{ metricKey: 'wanjia.paymentGmv' }],
     calendarConflicts: [{ ids: ['a', 'b'] }],
   });
   assert.equal(draft.status, 'pending_review');
   assert.equal(draft.reviewRequired, true);
   assert.equal(draft.facts.openDecisions, 1);
   assert.match(draft.title, /经营复盘/);
+});
+
+test('review facts count only decisions that require CEO judgment', () => {
+  const draft = createReviewDraft('weekly_business', {
+    date: '2026-08-07',
+    decisions: [
+      { id: 'ceo', status: 'open', category: 'revenue_pending', factSummary: '待回款' },
+      { id: 'follow', status: 'open', category: 'stale', factSummary: '超过 7 天未更新' },
+      { id: 'history', status: 'pending_resolution', decisionNote: '来源风险已消失' },
+    ],
+  });
+  assert.equal(draft.facts.openDecisions, 1);
 });

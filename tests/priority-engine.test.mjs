@@ -23,7 +23,7 @@ test('ranks overdue, due-today and cash or delivery risks ahead of lower-signal 
 
 test('keeps source, owner and due date explicit and never invents missing facts', () => {
   const [item] = buildTodayTop3({
-    decisions: [{ id: 'decision-1', factSummary: '需要确认一项经营决策', severity: 'high', status: 'open', recommendedAction: '核对事实后决定' }],
+    decisions: [{ id: 'decision-1', factSummary: '需要确认一项经营决策', decisionScope: 'ceo', severity: 'high', status: 'open', recommendedAction: '核对事实后决定' }],
   }, { date: '2026-08-03' });
 
   assert.equal(item.sourceType, 'decision');
@@ -43,4 +43,15 @@ test('deduplicates equivalent actions and excludes completed tasks', () => {
   }, { date: '2026-08-03' });
 
   assert.deepEqual(top3.map((item) => item.title), ['跟进客户']);
+});
+
+test('priority engine excludes owner follow-up and resolved decision history', () => {
+  const top3 = buildTodayTop3({
+    decisions: [
+      { id: 'ceo', status: 'open', category: 'revenue_pending', factSummary: '确认花火待回款方案', severity: 'high' },
+      { id: 'follow', status: 'open', category: 'stale', factSummary: '普通项目超过 7 天未更新', severity: 'high' },
+      { id: 'history', status: 'pending_resolution', factSummary: '旧风险', severity: 'high' },
+    ],
+  }, { date: '2026-08-07' });
+  assert.deepEqual(top3.map((item) => item.sourceId), ['ceo']);
 });

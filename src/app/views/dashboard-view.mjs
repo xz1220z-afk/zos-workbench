@@ -1,5 +1,6 @@
 import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.0.2';
 import { formatCurrency, humanText } from '../value-utils.mjs?v=2.0.2';
+import { partitionDecisions } from '../decision-center.mjs?v=2.0.2';
 
 export { VIEW_STATES };
 
@@ -69,7 +70,7 @@ export function render(container, viewModel = {}) {
   const health = Array.isArray(viewModel.health) ? viewModel.health : [];
   const synced = health.filter((item) => item.state === 'synced').length;
   const mustRead = viewModel.mustRead || [];
-  const activeDecisions = (viewModel.decisions || []).filter((item) => ['open', 'pending_resolution'].includes(item.status));
+  const activeDecisions = partitionDecisions(viewModel.decisions).ceo;
   const companies = viewModel.companyOperating || {};
   const workDates = viewModel.importantDates?.work || [];
   container.innerHTML = `<div class="v14-dashboard">

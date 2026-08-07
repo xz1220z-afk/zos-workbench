@@ -77,8 +77,8 @@ function riskCandidates(risks) {
 }
 
 function decisionCandidates(decisions) {
-  return (Array.isArray(decisions) ? decisions : [])
-    .filter((item) => item && ['open', 'pending_resolution'].includes(item.status) && text(item.id) && text(item.factSummary || item.title))
+  return partitionDecisions(decisions).ceo
+    .filter((item) => item && text(item.id) && text(item.factSummary || item.title))
     .map((item) => candidate({
       sourceType: 'decision', sourceId: item.id, title: item.factSummary || item.title,
       score: item.severity === 'high' ? 84 : item.severity === 'medium' ? 64 : 52,
@@ -134,3 +134,4 @@ export function buildTodayTop3(input = {}, options = {}) {
     return true;
   }).slice(0, 3).map(({ score, ...item }) => item);
 }
+import { partitionDecisions } from './decision-center.mjs?v=2.0.2';

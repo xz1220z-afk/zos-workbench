@@ -15,7 +15,7 @@ const fixture = {
     { id: 't1', title: '确认交付', status: 'done', completedAt: '2026-08-01T12:00:00.000Z' },
     { id: 't3', title: '推进商家活动', status: 'open', priority: 2, dueDate: '2026-08-02' },
   ],
-  decisions: [{ id: 'd1', factSummary: '一个项目延期', status: 'open', severity: 'high' }],
+  decisions: [{ id: 'd1', factSummary: '一个项目延期', category: 'high_risk', status: 'open', severity: 'high' }],
   targetGaps: [{ metricKey: 'wanjia.paymentGmv', state: 'behind', actual: 80, gap: 20 }],
   risks: [{ source: 'huahuo', sourceRecordId: 'p1', factSummary: '交付延期 3 天', severity: 'high' }],
   wanjia: { summary: { paymentGmv: 80, redeemedGmv: 60 }, fetchedAt: '2026-08-02T06:00:00.000Z' },
@@ -71,7 +71,7 @@ test('brief keeps source facts and AI suggestions separate and exports all headi
   assert.match(markdown, /待人工审核/);
 });
 
-test('open decisions fill empty Top 3 slots without leaking object strings', () => {
+test('only CEO decisions fill empty Top 3 slots without leaking object strings', () => {
   const brief = generateCeoBrief({
     tasks: [{ id: 't1', title: '先处理今天到期任务', status: 'open', priority: 3, dueDate: '2026-08-02' }],
     decisions: [
@@ -82,8 +82,19 @@ test('open decisions fill empty Top 3 slots without leaking object strings', () 
 
   assert.deepEqual(brief.sections.todayTop3.map((item) => item.title), [
     '先处理今天到期任务',
-    '确认万嘉停滞商家的负责人和完成时间',
     '确认花火待回款项目的收款日期',
   ]);
   assert.equal(brief.sections.todayTop3.every((item) => !item.title.includes('[object Object]')), true);
+});
+
+test('daily brief keeps only CEO decisions in the decision section and Top 3', () => {
+  const brief = generateCeoBrief({
+    decisions: [
+      { id: 'ceo', status: 'open', category: 'revenue_pending', factSummary: '确认待回款方案', severity: 'high' },
+      { id: 'follow', status: 'open', category: 'stale', factSummary: '普通超期跟进', severity: 'high' },
+      { id: 'history', status: 'pending_resolution', factSummary: '旧风险', severity: 'high' },
+    ],
+  }, { date: '2026-08-07', now: '2026-08-07T07:30:00.000Z' });
+  assert.deepEqual(brief.sections.decisions.map((item) => item.id), ['ceo']);
+  assert.deepEqual(brief.sections.todayTop3.map((item) => item.sourceId), ['ceo']);
 });

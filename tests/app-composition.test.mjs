@@ -121,6 +121,35 @@ test('renders cached content before remote startup settles', async () => {
   assert.ok(document.nodes.get('ceoDashboardRoot').innerHTML.length > 0);
 });
 
+test('application badge counts only decisions that require CEO judgment', async () => {
+  const document = renderDocument();
+  const operatingLoop = {
+    async refresh() {}, confirmTargets() {}, ensureDailyBrief() { return null; },
+    getState() {
+      return {
+        decisions: [
+          { id: 'ceo', status: 'open', category: 'revenue_pending', factSummary: '确认待回款方案' },
+          { id: 'follow', status: 'open', category: 'stale', factSummary: '普通项目超过 7 天未更新' },
+          { id: 'history', status: 'pending_resolution', decisionNote: '来源风险已消失' },
+        ],
+        targets: [], gaps: [], briefs: [], health: [], conflicts: [], approvals: [], sources: {},
+      };
+    },
+  };
+  const app = createCeoOsApplication({
+    document,
+    storage: { getItem: () => 'device-1', setItem() {} },
+    store: fakeStore(),
+    operatingRuntime: { operatingLoop, syncController: { start() {} } },
+  });
+
+  await app.start();
+  await app.whenIdle();
+
+  assert.equal(document.nodes.get('decisionBadge').textContent, '1');
+  assert.equal(document.nodes.get('decisionBadge').style.display, '');
+});
+
 test('production application drives the authenticated operating loop on startup', async () => {
   const calls = [];
   const target = { id: 'target-1', metricKey: 'wanjia.paymentGmv', value: 10000, confirmation: 'confirmed' };

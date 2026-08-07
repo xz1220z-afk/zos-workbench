@@ -1449,6 +1449,13 @@
 /* ===== CEO OS v1.3 operating loop ===== */
 .v13-root { margin-top: 18px; }
 .v13-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.decision-center-stack { display: grid; gap: 20px; }
+.decision-center-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.decision-center-section { display: grid; gap: 12px; }
+.decision-center-section .v14-section-head { align-items: end; }
+.decision-center-section .v14-section-head h2 { margin: 0; font-size: 18px; }
+.decision-center-section .v14-section-head p { margin: 6px 0 0; color: var(--cc-text-muted); font-size: 13px; }
+.decision-center-section.is-history .v13-panel { opacity: .76; }
 .v13-panel {
   min-width: 0; padding: 18px; border: 1px solid var(--cc-border); border-radius: 16px;
   background: linear-gradient(145deg, rgba(20, 30, 48, .94), rgba(11, 18, 31, .96));
@@ -1572,6 +1579,7 @@ body { overflow-x: hidden; }
 .v15-sync-source.is-failed { color: #f1c478; border-color: rgba(240, 183, 94, .34); }
 .v15-health-summary { margin-bottom: 16px; }
 @media (max-width: 760px) {
+  .decision-center-summary { grid-template-columns: 1fr; }
   .v15-sync-rail { grid-template-columns: 1fr auto; }
   .v15-sync-sources {
     display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
