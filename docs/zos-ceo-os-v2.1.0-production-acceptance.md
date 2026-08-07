@@ -30,7 +30,13 @@
 
 ## 生产回读
 
-待正式站部署完成后回填 `index.html`、`manifest.json`、`sw.js` 与新增浏览器模块的 HTTP 和版本结果。
+- 正式网址：`https://xz1220z-afk.github.io/zos-workbench/`
+- `index.html`：HTTP 200，v2.1.0。
+- `manifest.json`：HTTP 200，v2.1.0。
+- `sw.js`：HTTP 200，缓存版本 v2.1.0。
+- `src/app.mjs`、`src/legacy-app.mjs`：HTTP 200，版本化导入 v2.1.0。
+- 四个新增浏览器模块：HTTP 200，远端 SHA-256 与本地发布包逐个一致。
+- 正式站未登录状态在桌面、平板、手机均正常进入对应路由、无横向溢出、无控件截断、控制台错误为 0；登录后的完整功能已在同一发布包的本地三尺寸验收中通过。
 
 ## 数据边界
 
