@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 
 import {
   applyDecisionAction,
+  applyDecisionBatch,
   classifyDecision,
   decisionKey,
   deriveDecisions,
   partitionDecisions,
   reconcileDecisions,
+  reviewDecisionHistory,
   transitionDecision,
 } from '../src/app/decision-center.mjs';
 
@@ -236,4 +238,52 @@ test('decision actions reject invalid action and status pairs and require identi
   assert.throws(() => applyDecisionAction({ ...open, status: 'approved' }, 'delegate', '', { now: NOW, ...callbacks }), /invalid decision action/);
   assert.throws(() => applyDecisionAction(open, 'unknown', '', { now: NOW, ...callbacks }), /invalid decision action/);
   assert.throws(() => applyDecisionAction({ ...open, id: '' }, 'delegate', '', { now: NOW, ...callbacks }), /decision id is required/);
+});
+
+test('history review keeps the original decision status and identity', () => {
+  const [open] = deriveDecisions({ risks: [risk] }, { now: NOW, ...callbacks });
+  const approved = applyDecisionAction(open, 'approve', '执行', { now: NOW, ...callbacks });
+  const reviewed = reviewDecisionHistory(approved, {
+    now: '2026-08-07T09:00:00.000Z', ...callbacks,
+  });
+
+  assert.equal(reviewed.id, approved.id);
+  assert.equal(reviewed.status, 'approved');
+  assert.equal(reviewed.historyReviewed, true);
+  assert.equal(reviewed.historyReviewedAt, '2026-08-07T09:00:00.000Z');
+  assert.equal(reviewed.revision, approved.revision + 1);
+});
+
+test('batch review handles every history record while batch reopen skips final decisions', () => {
+  const [open] = deriveDecisions({ risks: [risk] }, { now: NOW, ...callbacks });
+  const deferred = applyDecisionAction(open, 'defer', '稍后', { now: NOW, ...callbacks });
+  const pending = transitionDecision(open, 'pending_resolution', '', { now: NOW, ...callbacks });
+  const approved = applyDecisionAction(open, 'approve', '执行', { now: NOW, ...callbacks });
+
+  const reviewed = applyDecisionBatch([deferred, pending, approved], 'review_history', '', {
+    now: '2026-08-07T09:00:00.000Z', ...callbacks,
+  });
+  assert.equal(reviewed.changed.length, 3);
+  assert.deepEqual(reviewed.skipped, []);
+  assert.ok(reviewed.changed.every((item) => item.historyReviewed));
+
+  const reopened = applyDecisionBatch([deferred, pending, approved], 'reopen', '继续跟进', {
+    now: '2026-08-07T10:00:00.000Z', ...callbacks,
+  });
+  assert.deepEqual(reopened.changed.map((item) => item.status), ['open', 'open']);
+  assert.deepEqual(reopened.skipped, [{ id: approved.id, status: 'approved' }]);
+});
+
+test('batch decisions are planned without mutating the selected records', () => {
+  const [open] = deriveDecisions({ risks: [risk] }, { now: NOW, ...callbacks });
+  const deferred = applyDecisionAction(open, 'defer', '稍后', { now: NOW, ...callbacks });
+  const before = structuredClone(deferred);
+
+  const result = applyDecisionBatch([deferred], 'reopen', '', {
+    now: '2026-08-07T10:00:00.000Z', ...callbacks,
+  });
+
+  assert.deepEqual(deferred, before);
+  assert.equal(result.changed[0].status, 'open');
+  assert.throws(() => applyDecisionBatch([deferred], 'delete', '', { now: NOW, ...callbacks }), /unsupported batch action/);
 });

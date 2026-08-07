@@ -234,6 +234,28 @@ test('decision confirmation keeps drawer open on failure and ignores duplicate b
   assert.equal(failedApp.runtime.decisionUi.error, '暂缓前请填写原因。');
 });
 
+test('decision history supports visible selection, safe batch review and one-step undo', async () => {
+  const decisions = [
+    { id: 'history-1', status: 'approved', source: 'wanjia', sourceRecordId: 'rec-1', category: 'review', factSummary: '已完成事项', revision: 1 },
+    { id: 'history-2', status: 'deferred', source: 'huahuo', sourceRecordId: 'rec-2', category: 'review', factSummary: '暂缓事项', revision: 1 },
+  ];
+  const store = fakeStore([], decisions);
+  const app = createCeoOsApplication({
+    document: renderDocument(), storage: { getItem: () => 'device-1', setItem() {} }, store,
+    now: () => '2026-08-07T10:00:00.000Z',
+  });
+  await app.start(); await app.whenIdle();
+
+  app.setDecisionSelection(['history-1', 'history-2']);
+  const result = await app.executeDecisionBatch('review_history');
+  assert.equal(result.changed.length, 2);
+  assert.equal(store.load().collections.decisions.every((item) => item.historyReviewed), true);
+  assert.deepEqual(app.runtime.decisionUi.selectedIds, []);
+
+  await app.undoDecisionAction();
+  assert.equal(store.load().collections.decisions.every((item) => !item.historyReviewed), true);
+});
+
 test('production application drives the authenticated operating loop on startup', async () => {
   const calls = [];
   const target = { id: 'target-1', metricKey: 'wanjia.paymentGmv', value: 10000, confirmation: 'confirmed' };
@@ -340,7 +362,7 @@ test('service worker caches the complete transitive browser module graph', async
     'src/app/auto-refresh-controller.mjs',
     'src/app/daily-digest.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.0\.4`/);
+  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.1\.0`/);
 });
 
 test('the shell captures raw pre-upgrade state before either application module can migrate it', async () => {
@@ -348,8 +370,8 @@ test('the shell captures raw pre-upgrade state before either application module 
   const html = await readFile(new URL('index.html', root), 'utf8');
   const capture = html.indexOf('window.__ZOS_PRE_UPGRADE_RAW__');
   assert.ok(capture >= 0);
-  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.0.4'));
-  assert.ok(capture < html.indexOf('src/app.mjs?v=2.0.4'));
+  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.1.0'));
+  assert.ok(capture < html.indexOf('src/app.mjs?v=2.1.0'));
 });
 
 test('enabled closed-app reminders synchronize current tasks calendar deadlines and daily digests', async () => {

@@ -1,6 +1,6 @@
-import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.0.4';
-import { formatCurrency, humanText } from '../value-utils.mjs?v=2.0.4';
-import { partitionDecisions } from '../decision-center.mjs?v=2.0.4';
+import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.1.0';
+import { formatCurrency, humanText } from '../value-utils.mjs?v=2.1.0';
+import { partitionDecisions } from '../decision-center.mjs?v=2.1.0';
 
 export { VIEW_STATES };
 

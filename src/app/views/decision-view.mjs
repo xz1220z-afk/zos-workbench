@@ -1,6 +1,6 @@
-import { escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.0.4';
-import { humanText } from '../value-utils.mjs?v=2.0.4';
-import { classifyDecision, partitionDecisions } from '../decision-center.mjs?v=2.0.4';
+import { escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.1.0';
+import { humanText } from '../value-utils.mjs?v=2.1.0';
+import { classifyDecision, partitionDecisions } from '../decision-center.mjs?v=2.1.0';
 
 export { VIEW_STATES };
 
@@ -59,10 +59,11 @@ function ownerCard(item) {
   </article>`;
 }
 
-function historyRow(item) {
+function historyRow(item, selected = false) {
   const pending = item.status === 'pending_resolution';
   const deferred = item.status === 'deferred';
   return `<article class="decision-history-row" data-decision-card="${escapeHtml(item.id)}">
+    <label class="decision-select-control"><input type="checkbox" data-decision-select="${escapeHtml(item.id)}" aria-label="选择${escapeHtml(decisionTitle(item))}" ${selected ? 'checked' : ''}><span aria-hidden="true"></span></label>
     <div><span class="v13-chip">${escapeHtml(humanText(item.status, '历史'))}</span><strong>${escapeHtml(decisionTitle(item))}</strong><small>${escapeHtml(humanText(item.decisionNote, '已保留完整处理记录'))}</small></div>
     <div class="decision-history-actions">
       ${pending ? actionButton(item, 'resolve', '确认解除', 'v13-action-primary') : ''}
@@ -72,13 +73,13 @@ function historyRow(item) {
   </article>`;
 }
 
-function section(title, count, items, kind, description, total) {
+function section(title, count, items, kind, description, total, selectedIds = new Set()) {
   const cards = kind === 'history'
-    ? `<div class="decision-history-list">${items.map(historyRow).join('')}</div>`
+    ? `<div class="decision-history-list">${items.map((item) => historyRow(item, selectedIds.has(item.id))).join('')}</div>`
     : `<div class="v13-grid decision-card-grid">${items.map(kind === 'ceo' ? ceoCard : ownerCard).join('')}</div>`;
   const empty = renderState('empty', title);
   return `<section id="decision-${kind}" class="decision-center-section ${kind === 'history' ? 'is-history' : ''}" data-decision-section="${kind}">
-    <header class="v14-section-head"><div><h2>${escapeHtml(title)} <span class="v13-chip">${count}</span></h2><p>${escapeHtml(description)}</p></div></header>
+    <header class="v14-section-head"><div><h2>${escapeHtml(title)} <span class="v13-chip">${count}</span></h2><p>${escapeHtml(description)}</p></div>${kind === 'history' && items.length ? `<button class="v13-action" type="button" data-decision-select-visible data-decision-visible-ids="${escapeHtml(items.map((item) => item.id).join(','))}">勾选本页</button>` : ''}</header>
     ${items.length ? cards : empty}
     ${items.length < total ? `<button class="v13-action decision-load-more" type="button" data-decision-load-more="${kind === 'owner' ? 'followUp' : kind}">再显示 12 条</button>` : ''}
   </section>`;
@@ -117,7 +118,7 @@ export function render(container, viewModel = {}) {
   const decisions = Array.isArray(viewModel.decisions) ? viewModel.decisions : [];
   const ui = {
     action: null, busy: false, error: null, search: '', company: 'all', status: 'all',
-    followUpLimit: 6, historyLimit: 6, undo: null,
+    followUpLimit: 6, historyLimit: 6, undo: null, selectedIds: [], batchBusy: false, batchError: null,
     ...(viewModel.decisionUi || {}),
   };
   const queues = partitionDecisions(decisions);
@@ -128,6 +129,7 @@ export function render(container, viewModel = {}) {
   };
   const visibleFollowUp = filtered.followUp.slice(0, ui.followUpLimit);
   const visibleHistory = filtered.history.slice(0, ui.historyLimit);
+  const selectedIds = new Set(Array.isArray(ui.selectedIds) ? ui.selectedIds : []);
   container.innerHTML = `
     <div class="decision-center-stack">
       <section class="decision-center-summary v14-kpi-grid">
@@ -140,9 +142,10 @@ export function render(container, viewModel = {}) {
         <select data-decision-filter="company"><option value="all">全部公司</option>${['wanjia', 'huahuo', 'lingli', 'projects'].map((value) => `<option value="${value}" ${ui.company === value ? 'selected' : ''}>${value}</option>`).join('')}</select>
         <select data-decision-filter="status"><option value="all">全部状态</option>${['open', 'pending_resolution', 'deferred', 'approved', 'resolved'].map((value) => `<option value="${value}" ${ui.status === value ? 'selected' : ''}>${value}</option>`).join('')}</select>
       </section>
-      ${section('需要你决定', queues.ceo.length, filtered.ceo, 'ceo', '只保留真正需要你拍板的事项。', filtered.ceo.length)}
-      ${section('负责人跟进', queues.followUp.length, visibleFollowUp, 'owner', '由负责人推进，可随时转回你拍板。', filtered.followUp.length)}
-      ${section('处理历史', queues.history.length, visibleHistory, 'history', '历史完整保留，不删除原始数据。', filtered.history.length)}
+      ${selectedIds.size ? `<section class="decision-batch-bar" aria-label="批量处理"><strong>已选择 ${selectedIds.size} 条</strong><div><button class="v13-action v13-action-primary" type="button" data-decision-batch="review_history" ${ui.batchBusy ? 'disabled' : ''}>标记已复核</button><button class="v13-action" type="button" data-decision-batch="reopen" ${ui.batchBusy ? 'disabled' : ''}>批量重新打开</button><button class="v13-action v13-action-quiet" type="button" data-decision-selection-clear>取消选择</button></div>${ui.batchError ? `<p role="alert">${escapeHtml(ui.batchError)}</p>` : ''}</section>` : ''}
+      ${section('需要你决定', queues.ceo.length, filtered.ceo, 'ceo', '只保留真正需要你拍板的事项。', filtered.ceo.length, selectedIds)}
+      ${section('负责人跟进', queues.followUp.length, visibleFollowUp, 'owner', '由负责人推进，可随时转回你拍板。', filtered.followUp.length, selectedIds)}
+      ${section('处理历史', queues.history.length, visibleHistory, 'history', '历史完整保留，不删除原始数据。', filtered.history.length, selectedIds)}
     </div>
     ${drawer(decisions, ui)}
     ${ui.undo ? `<div class="decision-undo-toast" role="status"><span>${escapeHtml(humanText(ui.undo.message, '处理已保存'))}</span><button class="v13-action" type="button" data-decision-undo>撤销</button></div>` : ''}

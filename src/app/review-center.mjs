@@ -1,4 +1,4 @@
-import { partitionDecisions } from './decision-center.mjs?v=2.0.4';
+import { partitionDecisions } from './decision-center.mjs?v=2.1.0';
 
 const REVIEW_LABELS = {
   weekly_business: '本周经营复盘', monthly_company: '本月公司复盘', life: '生活复盘',

@@ -7,7 +7,7 @@ import {
 } from '../src/app/snapshot-repository.mjs';
 
 function backup(label) {
-  return { backupVersion: '2.0.4', state: { collections: { tasks: [{ id: label, title: label }] } } };
+  return { backupVersion: '2.1.0', state: { collections: { tasks: [{ id: label, title: label }] } } };
 }
 
 test('snapshot repository keeps three upgrade checkpoints and latest pre-import checkpoint', async () => {
@@ -20,9 +20,9 @@ test('snapshot repository keeps three upgrade checkpoints and latest pre-import 
   await repository.save({ kind: 'upgrade', appVersion: '1.9.0', backup: backup('u1') });
   await repository.save({ kind: 'upgrade', appVersion: '2.0.0', backup: backup('u2') });
   await repository.save({ kind: 'upgrade', appVersion: '2.0.1', backup: backup('u3') });
-  await repository.save({ kind: 'upgrade', appVersion: '2.0.4', backup: backup('u4') });
-  await repository.save({ kind: 'pre-import', appVersion: '2.0.4', backup: backup('before-1') });
-  const latest = await repository.save({ kind: 'pre-import', appVersion: '2.0.4', backup: backup('before-2') });
+  await repository.save({ kind: 'upgrade', appVersion: '2.1.0', backup: backup('u4') });
+  await repository.save({ kind: 'pre-import', appVersion: '2.1.0', backup: backup('before-1') });
+  const latest = await repository.save({ kind: 'pre-import', appVersion: '2.1.0', backup: backup('before-2') });
 
   const rows = await repository.list();
   assert.equal(rows.filter((item) => item.kind === 'upgrade').length, 3);

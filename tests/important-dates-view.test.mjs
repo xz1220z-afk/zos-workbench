@@ -50,3 +50,26 @@ test('life home shows private important dates without exposing business deadline
   assert.doesNotMatch(root.innerHTML, /万嘉合同到期/);
   assert.match(root.innerHTML, /data-important-dates-open="life"/);
 });
+
+test('life home provides a seven-day agenda, ritual planning and privacy-safe metadata import', () => {
+  const root = container();
+  renderLife(root, {
+    lifeSummary: [
+      { key: 'health', icon: '♡', label: '健康与精力', open: 1, count: 2 },
+      { key: 'family', icon: '⌂', label: '家庭与关系', open: 1, count: 1 },
+    ],
+    life: [], importantDates: { work: [], life: [] },
+    lifeNextSevenDays: [{ id: 'next-1', title: '家人晚餐', occurrence: '2026-08-10', daysUntil: 3, category: 'family' }],
+    rituals: [{ id: 'milk-tea', title: '秋天的第一杯奶茶', occurrence: '2026-08-11', daysUntil: 4, suggestion: '提前选好口味。' }],
+    privateDateSource: { state: 'ready', count: 19 },
+  });
+  assert.match(root.innerHTML, /未来 7 天/);
+  assert.match(root.innerHTML, /家人晚餐/);
+  assert.match(root.innerHTML, /仪式提醒/);
+  assert.match(root.innerHTML, /秋天的第一杯奶茶/);
+  assert.match(root.innerHTML, /data-ritual-convert="milk-tea"/);
+  assert.match(root.innerHTML, /data-ritual-ignore="milk-tea"/);
+  assert.match(root.innerHTML, /仅导入标题、日期、分类和提醒提前量/);
+  assert.match(root.innerHTML, /data-private-date-import/);
+  assert.match(root.innerHTML, /已安全导入 19 条/);
+});

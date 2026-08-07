@@ -43,16 +43,50 @@ export function normalizeIntelligenceItem(input = {}) {
 }
 
 export function rankIntelligence(items = []) {
-  return items.map(normalizeIntelligenceItem).sort((left, right) => {
-    const score = (right.score ?? -1) - (left.score ?? -1);
-    if (score) return score;
-    return String(right.publishedAt || right.capturedAt).localeCompare(String(left.publishedAt || left.capturedAt));
+  return sortIntelligence(items, 'newest');
+}
+
+function timestamp(item) {
+  const value = new Date(item.publishedAt || item.capturedAt || '').getTime();
+  return Number.isFinite(value) && value > 0 ? value : Number.NEGATIVE_INFINITY;
+}
+
+export function sortIntelligence(items = [], sortBy = 'newest') {
+  const credibilityRank = { high: 3, medium: 2, low: 1 };
+  return items.map((item, index) => ({ item: normalizeIntelligenceItem(item), index })).sort((left, right) => {
+    let order = 0;
+    if (sortBy === 'score') order = (right.item.score ?? -1) - (left.item.score ?? -1);
+    else if (sortBy === 'credibility') order = credibilityRank[right.item.credibility] - credibilityRank[left.item.credibility];
+    if (!order) order = timestamp(right.item) - timestamp(left.item);
+    if (!Number.isFinite(order) || !order) order = left.index - right.index;
+    return order;
+  }).map(({ item }) => item);
+}
+
+export function filterIntelligence(items = [], filters = {}) {
+  const now = new Date(filters.now || new Date().toISOString()).getTime();
+  const ageDays = { '1d': 1, '3d': 3, '7d': 7, '30d': 30 }[filters.age] || null;
+  const query = String(filters.search || '').trim().toLowerCase();
+  return items.map(normalizeIntelligenceItem).filter((item) => {
+    if (filters.company && filters.company !== 'all' && !(item.relevantCompanies || []).includes(filters.company)) return false;
+    if (filters.source && filters.source !== 'all' && item.sourceName !== filters.source) return false;
+    if (filters.credibility && filters.credibility !== 'all' && item.credibility !== filters.credibility) return false;
+    if (filters.status && filters.status !== 'all' && item.status !== filters.status) return false;
+    if (ageDays) {
+      const at = timestamp(item);
+      if (!Number.isFinite(at) || at < now - ageDays * 86_400_000) return false;
+    }
+    if (query) {
+      const haystack = [item.title, item.sourceName, item.factSummary, item.impactAnalysis, item.suggestedAction, ...(item.tags || [])].join(' ').toLowerCase();
+      if (!haystack.includes(query)) return false;
+    }
+    return true;
   });
 }
 
 export function todayMustRead(items = [], { now = new Date().toISOString(), limit = 5, maxAgeDays = 3 } = {}) {
   const cutoff = new Date(now).getTime() - maxAgeDays * 86_400_000;
-  return rankIntelligence(items).filter((item) => {
+  return sortIntelligence(items, 'newest').filter((item) => {
     const timestamp = new Date(item.publishedAt || item.capturedAt).getTime();
     return Number.isFinite(timestamp) && timestamp >= cutoff && item.status !== 'ignored';
   }).slice(0, limit);
@@ -65,4 +99,3 @@ export function transitionIntelligence(item, nextStatus) {
 }
 
 export const INTELLIGENCE_COMPANIES = Object.freeze([...COMPANIES]);
-

@@ -1,11 +1,11 @@
-const CACHE_NAME = 'zos-workbench-v2.0.4';
+const CACHE_NAME = 'zos-workbench-v2.1.0';
 // Resolve from the service worker scope so the PWA works both at a domain root
 // and from a GitHub Pages project path such as /zos-workbench/.
 const ASSETS_TO_CACHE = [
   './',
   'index.html',
   'manifest.json',
-  'assets/app.css?v=2.0.4',
+  'assets/app.css?v=2.1.0',
   'src/data-model.mjs',
   'src/legacy-app.mjs',
   'src/app.mjs',
@@ -22,6 +22,7 @@ const ASSETS_TO_CACHE = [
   'src/app/sync-controller.mjs',
   'src/app/auto-refresh-controller.mjs',
   'src/app/company-operating-contract.mjs',
+  'src/app/company-cockpit.mjs',
   'src/app/priority-engine.mjs',
   'src/app/reminder-center.mjs',
   'src/app/daily-digest.mjs',
@@ -57,6 +58,8 @@ const ASSETS_TO_CACHE = [
   'src/app/merchant-center.mjs',
   'src/app/search-center.mjs',
   'src/app/life-os.mjs',
+  'src/app/ritual-calendar.mjs',
+  'src/app/private-date-import.mjs',
   'src/app/relation-center.mjs',
   'src/app/review-center.mjs',
   'src/app/value-utils.mjs',
@@ -72,6 +75,7 @@ const ASSETS_TO_CACHE = [
   'src/app/views/life-view.mjs',
   'src/app/views/search-view.mjs',
   'src/app/views/lingli-view.mjs',
+  'src/app/views/company-cockpit-view.mjs',
   'src/app/views/relation-view.mjs',
   'src/app/views/review-view.mjs',
   'src/app/views/task-view.mjs',
@@ -88,7 +92,7 @@ const ASSETS_TO_CACHE = [
   'icons/icon-maskable-512x512.png',
   'icons/apple-touch-icon.png'
 ].map(function(asset) {
-  const versionedAsset = asset.endsWith('.mjs') ? `${asset}?v=2.0.4` : asset;
+  const versionedAsset = asset.endsWith('.mjs') ? `${asset}?v=2.1.0` : asset;
   return new URL(versionedAsset, self.registration.scope).href;
 });
 

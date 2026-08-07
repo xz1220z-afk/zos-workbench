@@ -1,11 +1,11 @@
-import { fetchBusinessData } from '../business-data-client.mjs?v=2.0.4';
-import { createSupabaseAuth } from '../supabase-auth.mjs?v=2.0.4';
-import { createSupabaseTransport } from '../supabase-transport.mjs?v=2.0.4';
-import { createFeishuApprovalClient } from './feishu-approvals.mjs?v=2.0.4';
-import { createOperatingLoop } from './operating-loop.mjs?v=2.0.4';
-import { createSyncController } from './sync-controller.mjs?v=2.0.4';
-import { createPushClient } from './push-notifications.mjs?v=2.0.4';
-import { buildLocalSyncInput } from '../sync-engine.mjs?v=2.0.4';
+import { fetchBusinessData } from '../business-data-client.mjs?v=2.1.0';
+import { createSupabaseAuth } from '../supabase-auth.mjs?v=2.1.0';
+import { createSupabaseTransport } from '../supabase-transport.mjs?v=2.1.0';
+import { createFeishuApprovalClient } from './feishu-approvals.mjs?v=2.1.0';
+import { createOperatingLoop } from './operating-loop.mjs?v=2.1.0';
+import { createSyncController } from './sync-controller.mjs?v=2.1.0';
+import { createPushClient } from './push-notifications.mjs?v=2.1.0';
+import { buildLocalSyncInput } from '../sync-engine.mjs?v=2.1.0';
 
 const DEFAULT_CONFIG = Object.freeze({
   url: 'https://dtwvyramgbwtlyhmkhkd.supabase.co',

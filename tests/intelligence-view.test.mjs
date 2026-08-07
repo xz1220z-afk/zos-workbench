@@ -62,3 +62,26 @@ test('daily briefing makes company coverage and source freshness visible', () =>
   assert.match(container.innerHTML, /已同步 4 条/);
   assert.match(container.innerHTML, /更新于/);
 });
+
+test('intelligence workbench renders combined filters, sort, result count and ignore action', () => {
+  const container = { innerHTML: '' };
+  render(container, {
+    intelligenceFilters: { company: 'all', source: 'all', credibility: 'all', status: 'all', age: 'all', search: '', sortBy: 'newest' },
+    intelligenceTotal: 12,
+    intelligence: [{
+      externalId: 'new-1', title: '最新平台规则', sourceName: '平台公告', sourceUrl: '',
+      factSummary: '规则更新', credibility: 'high', status: 'candidate', relevantCompanies: ['wanjia'],
+      capturedAt: '2026-08-07T08:00:00Z',
+    }],
+  });
+  assert.match(container.innerHTML, /data-intelligence-search/);
+  assert.match(container.innerHTML, /data-intelligence-filter="source"/);
+  assert.match(container.innerHTML, /data-intelligence-filter="credibility"/);
+  assert.match(container.innerHTML, /data-intelligence-filter="status"/);
+  assert.match(container.innerHTML, /data-intelligence-filter="age"/);
+  assert.match(container.innerHTML, /data-intelligence-sort/);
+  assert.match(container.innerHTML, /最新优先/);
+  assert.match(container.innerHTML, /1 \/ 12 条/);
+  assert.match(container.innerHTML, /data-intelligence-reset/);
+  assert.match(container.innerHTML, /data-intelligence-status="ignored"/);
+});

@@ -1,59 +1,63 @@
-import { createStateStore, readPersistedStateForBackup } from './app/state-store.mjs?v=2.0.4';
-import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=2.0.4';
-import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.0.4';
-import { render as renderTargets } from './app/views/targets-view.mjs?v=2.0.4';
-import { render as renderHealth } from './app/views/health-view.mjs?v=2.0.4';
-import { render as renderMobile } from './app/views/mobile-view.mjs?v=2.0.4';
-import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.0.4';
-import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=2.0.4';
-import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=2.0.4';
-import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=2.0.4';
-import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=2.0.4';
-import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=2.0.4';
-import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=2.0.4';
-import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=2.0.4';
-import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=2.0.4';
-import { buildImportantDates } from './app/important-dates.mjs?v=2.0.4';
-import { queryAvailability } from './app/availability-center.mjs?v=2.0.4';
-import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=2.0.4';
-import { normalizeIntelligenceItem, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=2.0.4';
-import { summarizeLife } from './app/life-os.mjs?v=2.0.4';
-import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=2.0.4';
-import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=2.0.4';
-import { render as renderCalendar } from './app/views/calendar-view.mjs?v=2.0.4';
-import { render as renderLife } from './app/views/life-view.mjs?v=2.0.4';
-import { render as renderSearch } from './app/views/search-view.mjs?v=2.0.4';
-import { render as renderLingli } from './app/views/lingli-view.mjs?v=2.0.4';
-import { buildRelations } from './app/relation-center.mjs?v=2.0.4';
-import { createReviewDraft } from './app/review-center.mjs?v=2.0.4';
-import { render as renderRelations } from './app/views/relation-view.mjs?v=2.0.4';
-import { render as renderReviews } from './app/views/review-view.mjs?v=2.0.4';
-import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=2.0.4';
-import { render as renderTaskCenter } from './app/views/task-view.mjs?v=2.0.4';
-import { render as renderFocus } from './app/views/focus-view.mjs?v=2.0.4';
-import { render as renderAvailability } from './app/views/availability-view.mjs?v=2.0.4';
-import { render as renderMerchant } from './app/views/merchant-view.mjs?v=2.0.4';
-import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=2.0.4';
-import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=2.0.4';
-import { buildTodayTop3 } from './app/priority-engine.mjs?v=2.0.4';
-import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=2.0.4';
-import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=2.0.4';
-import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=2.0.4';
-import { runCompanyAgent } from './app/company-agent-hub.mjs?v=2.0.4';
-import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=2.0.4';
-import { contentOverview, contentPerformance, evaluateExperiment, normalizeContentItem, transitionContent, buildCompoundCandidate } from './app/content-growth.mjs?v=2.0.4';
-import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.0.4';
-import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.0.4';
-import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.0.4';
-import { render as renderContentGrowth } from './app/views/content-growth-view.mjs?v=2.0.4';
-import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.0.4';
-import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.0.4';
-import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.0.4';
-import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.0.4';
-import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.0.4';
-import { applyDecisionAction, partitionDecisions } from './app/decision-center.mjs?v=2.0.4';
+import { createStateStore, readPersistedStateForBackup } from './app/state-store.mjs?v=2.1.0';
+import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=2.1.0';
+import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.1.0';
+import { render as renderTargets } from './app/views/targets-view.mjs?v=2.1.0';
+import { render as renderHealth } from './app/views/health-view.mjs?v=2.1.0';
+import { render as renderMobile } from './app/views/mobile-view.mjs?v=2.1.0';
+import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.1.0';
+import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=2.1.0';
+import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=2.1.0';
+import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=2.1.0';
+import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=2.1.0';
+import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=2.1.0';
+import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=2.1.0';
+import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=2.1.0';
+import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=2.1.0';
+import { buildImportantDates } from './app/important-dates.mjs?v=2.1.0';
+import { queryAvailability } from './app/availability-center.mjs?v=2.1.0';
+import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=2.1.0';
+import { filterIntelligence, normalizeIntelligenceItem, sortIntelligence, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=2.1.0';
+import { buildLifeAgenda, summarizeLife } from './app/life-os.mjs?v=2.1.0';
+import { upcomingRituals } from './app/ritual-calendar.mjs?v=2.1.0';
+import { parsePrivateDateMetadata } from './app/private-date-import.mjs?v=2.1.0';
+import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=2.1.0';
+import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=2.1.0';
+import { render as renderCalendar } from './app/views/calendar-view.mjs?v=2.1.0';
+import { render as renderLife } from './app/views/life-view.mjs?v=2.1.0';
+import { render as renderSearch } from './app/views/search-view.mjs?v=2.1.0';
+import { render as renderLingli } from './app/views/lingli-view.mjs?v=2.1.0';
+import { buildRelations } from './app/relation-center.mjs?v=2.1.0';
+import { createReviewDraft } from './app/review-center.mjs?v=2.1.0';
+import { render as renderRelations } from './app/views/relation-view.mjs?v=2.1.0';
+import { render as renderReviews } from './app/views/review-view.mjs?v=2.1.0';
+import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=2.1.0';
+import { render as renderTaskCenter } from './app/views/task-view.mjs?v=2.1.0';
+import { render as renderFocus } from './app/views/focus-view.mjs?v=2.1.0';
+import { render as renderAvailability } from './app/views/availability-view.mjs?v=2.1.0';
+import { render as renderMerchant } from './app/views/merchant-view.mjs?v=2.1.0';
+import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=2.1.0';
+import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=2.1.0';
+import { buildCompanyCockpit } from './app/company-cockpit.mjs?v=2.1.0';
+import { render as renderCompanyCockpit } from './app/views/company-cockpit-view.mjs?v=2.1.0';
+import { buildTodayTop3 } from './app/priority-engine.mjs?v=2.1.0';
+import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=2.1.0';
+import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=2.1.0';
+import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=2.1.0';
+import { runCompanyAgent } from './app/company-agent-hub.mjs?v=2.1.0';
+import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=2.1.0';
+import { contentOverview, contentPerformance, evaluateExperiment, normalizeContentItem, transitionContent, buildCompoundCandidate } from './app/content-growth.mjs?v=2.1.0';
+import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.1.0';
+import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.1.0';
+import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.1.0';
+import { render as renderContentGrowth } from './app/views/content-growth-view.mjs?v=2.1.0';
+import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.1.0';
+import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.1.0';
+import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.1.0';
+import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.1.0';
+import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.1.0';
+import { applyDecisionAction, applyDecisionBatch, partitionDecisions } from './app/decision-center.mjs?v=2.1.0';
 
-export const APP_VERSION = '2.0.4';
+export const APP_VERSION = '2.1.0';
 const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
 const SYNC_META_KEY = 'zos_sync_meta_v2';
 const LEGACY_COLLECTION_KEYS = Object.freeze({
@@ -93,6 +97,7 @@ export function createCeoOsApplication(config = {}) {
   const runtime = {
     health: [], gaps: [], briefs: [], conflicts: [], approvals: [], decisions: [], targets: [],
     businessExceptions: [], intelligence: [], intelligenceState: 'loading', intelligenceCompany: 'all',
+    intelligenceFilters: { company: 'all', source: 'all', credibility: 'all', status: 'all', age: 'all', search: '', sortBy: 'newest' },
     contentCompany: 'all', contentOwner: 'all',
     intelligenceSources: {}, intelligenceFetchedAt: null,
     calendarView: 'week', calendarAnchor: now().slice(0, 10), calendarPanel: null,
@@ -108,6 +113,8 @@ export function createCeoOsApplication(config = {}) {
     availabilityDate: now().slice(0, 10), merchantQuery: '', selectedMerchantId: null,
     syncStatus: '等待首次同步', loopConnected: false, reminderTestState: 'idle',
     snapshotCount: 0, protectionState: '本机数据已保护', lastRestoreAt: null,
+    ignoredRitualIds: readJson('zos_ignored_rituals', []),
+    privateDateSource: { state: 'idle', count: 0 },
     autoRefresh: {
       phase: 'idle', reason: null, lastAttemptAt: null, lastSuccessAt: null,
       succeeded: [], failed: [],
@@ -115,6 +122,7 @@ export function createCeoOsApplication(config = {}) {
     decisionUi: {
       action: null, busy: false, error: null, search: '', company: 'all', status: 'all',
       followUpLimit: 6, historyLimit: 6, undo: null,
+      selectedIds: [], batchBusy: false, batchError: null,
     },
   };
   let operatingRuntime = config.operatingRuntime || null;
@@ -266,7 +274,7 @@ export function createCeoOsApplication(config = {}) {
           ? readPersistedStateForBackup({ rawSnapshot: preUpgradeRaw, now, deviceId, createId: browserId })
           : currentDurableState());
         await snapshotRepository.save({
-          kind: 'upgrade', appVersion: previousVersion || 'pre-2.0.4',
+          kind: 'upgrade', appVersion: previousVersion || 'pre-2.1.0',
           backup: buildSafeBackup({ state: checkpointState, baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() }),
         });
         storage?.setItem?.(LAST_PROTECTED_VERSION_KEY, APP_VERSION);
@@ -356,10 +364,16 @@ export function createCeoOsApplication(config = {}) {
       calendarConflicts,
       intelligence,
     }, { date: now().slice(0, 10) });
-    const companyIntelligence = runtime.intelligenceCompany === 'all'
-      ? intelligence
-      : intelligence.filter((item) => (item.relevantCompanies || []).includes(runtime.intelligenceCompany));
-    const filteredIntelligence = todayMustRead(companyIntelligence, { now: now(), limit: 100 });
+    const intelligenceFilters = { ...runtime.intelligenceFilters, company: runtime.intelligenceFilters?.company || runtime.intelligenceCompany || 'all' };
+    const filteredIntelligence = sortIntelligence(
+      filterIntelligence(intelligence, { ...intelligenceFilters, now: now() }),
+      intelligenceFilters.sortBy,
+    ).slice(0, 100);
+    const companyOperating = buildCompanyOperatingContract(sources);
+    const companyCockpits = Object.fromEntries(['wanjia', 'huahuo', 'lingli'].map((company) => [
+      company,
+      buildCompanyCockpit(company, { operating: companyOperating[company], decisions, intelligence }),
+    ]));
     const activeFocus = [...focusSessions].reverse().find((item) => ['planned', 'running', 'paused'].includes(item.state)) || null;
     const searchIndex = buildSearchIndex({
       business: businessRecords,
@@ -390,9 +404,13 @@ export function createCeoOsApplication(config = {}) {
       })),
       brief,
       sources,
-      companyOperating: buildCompanyOperatingContract(sources),
+      companyOperating,
+      companyCockpits,
       intelligence: filteredIntelligence,
-      intelligenceCompany: runtime.intelligenceCompany,
+      intelligenceAll: intelligence,
+      intelligenceTotal: intelligence.length,
+      intelligenceCompany: intelligenceFilters.company,
+      intelligenceFilters,
       mustRead: todayMustRead(intelligence, { now: now() }),
       calendar,
       calendarFiltered,
@@ -410,6 +428,12 @@ export function createCeoOsApplication(config = {}) {
       relations: buildRelations(businessRecords),
       life,
       lifeSummary: summarizeLife(life),
+      lifeNextSevenDays: buildLifeAgenda(life, { now: now(), horizonDays: 7 }),
+      rituals: upcomingRituals({ now: now(), horizonDays: 45, ignoredIds: runtime.ignoredRitualIds }),
+      privateDateSource: {
+        state: life.some((item) => item.kind === 'private_date') ? 'ready' : runtime.privateDateSource.state,
+        count: life.filter((item) => item.kind === 'private_date').length,
+      },
       importantDates,
       morningDigest: buildMorningDigest(digestInput, { date: now().slice(0, 10), timeZone: 'Asia/Shanghai' }),
       eveningDigest: buildEveningDigest(digestInput, { date: now().slice(0, 10), timeZone: 'Asia/Shanghai' }),
@@ -759,15 +783,81 @@ export function createCeoOsApplication(config = {}) {
 
   async function undoDecisionAction() {
     const undo = runtime.decisionUi.undo;
-    if (!undo?.before) return null;
-    const restored = store.saveEntity('decisions', undo.before, { action: 'decision_undo' });
-    operatingRuntime?.operatingLoop?.updateDecision?.(restored);
+    const beforeRecords = undo?.beforeMany || (undo?.before ? [undo.before] : []);
+    if (!beforeRecords.length) return null;
+    const restoredRecords = beforeRecords.map((record) => store.saveEntity('decisions', record, { action: 'decision_undo' }));
+    restoredRecords.forEach((record) => operatingRuntime?.operatingLoop?.updateDecision?.(record));
     if (operatingRuntime?.operatingLoop) updateFromOperatingLoop();
     else runtime.decisions = store.load().collections.decisions || [];
     clearDecisionUndo();
     signalLocalChange();
     renderAll();
-    return restored;
+    return restoredRecords.length === 1 ? restoredRecords[0] : restoredRecords;
+  }
+
+  function setDecisionSelection(ids = []) {
+    const available = new Set(viewModel().decisions.map((item) => item.id));
+    runtime.decisionUi.selectedIds = [...new Set(Array.isArray(ids) ? ids : [])]
+      .filter((id) => available.has(id));
+    runtime.decisionUi.batchError = null;
+    renderAll();
+    return [...runtime.decisionUi.selectedIds];
+  }
+
+  function toggleDecisionSelection(id, selected) {
+    const ids = new Set(runtime.decisionUi.selectedIds || []);
+    if (selected) ids.add(id); else ids.delete(id);
+    return setDecisionSelection([...ids]);
+  }
+
+  async function executeDecisionBatch(action) {
+    if (decisionActionWork) return decisionActionWork;
+    const selectedIds = new Set(runtime.decisionUi.selectedIds || []);
+    const before = viewModel().decisions.filter((item) => selectedIds.has(item.id));
+    if (!before.length) throw new Error('请先勾选处理历史');
+    runtime.decisionUi.batchBusy = true;
+    runtime.decisionUi.batchError = null;
+    renderAll();
+    decisionActionWork = (async () => {
+      await Promise.resolve();
+      try {
+        const result = applyDecisionBatch(before, action, '', { now: now(), deviceId });
+        const saved = result.changed.map((record) => store.saveEntity('decisions', record, { action: `decision_batch_${action}` }));
+        saved.forEach((record) => operatingRuntime?.operatingLoop?.updateDecision?.(record));
+        if (operatingRuntime?.operatingLoop) updateFromOperatingLoop();
+        else runtime.decisions = store.load().collections.decisions || [];
+        clearDecisionUndo();
+        runtime.decisionUi.undo = {
+          beforeMany: before.filter((record) => saved.some((item) => item.id === record.id)).map((record) => ({
+            ...decisionBusinessFields(record),
+            ...(action === 'review_history' && !record.historyReviewed
+              ? { historyReviewed: false, historyReviewedAt: null }
+              : {}),
+          })),
+          message: `已批量处理 ${saved.length} 条，8 秒内可撤销`,
+        };
+        runtime.decisionUi.selectedIds = [];
+        const clock = document?.defaultView || globalThis;
+        decisionUndoTimer = clock.setTimeout?.(() => {
+          decisionUndoTimer = null;
+          runtime.decisionUi.undo = null;
+          if (started) renderAll();
+        }, 8_000);
+        decisionUndoTimer?.unref?.();
+        signalLocalChange();
+        renderAll();
+        return { ...result, changed: saved };
+      } catch (error) {
+        runtime.decisionUi.batchError = '批量处理未完成，原记录已保留，请重试。';
+        renderAll();
+        throw error;
+      } finally {
+        runtime.decisionUi.batchBusy = false;
+        decisionActionWork = null;
+        if (started) renderAll();
+      }
+    })();
+    return decisionActionWork;
   }
 
   function setDecisionFilter(kind, value) {
@@ -792,6 +882,71 @@ export function createCeoOsApplication(config = {}) {
     signalLocalChange();
     renderAll();
     return item;
+  }
+
+  function setIntelligenceFilter(kind, value) {
+    if (!['company', 'source', 'credibility', 'status', 'age', 'search', 'sortBy'].includes(kind)) throw new Error('unsupported intelligence filter');
+    runtime.intelligenceFilters = { ...runtime.intelligenceFilters, [kind]: String(value || (kind === 'search' ? '' : kind === 'sortBy' ? 'newest' : 'all')) };
+    runtime.intelligenceCompany = runtime.intelligenceFilters.company;
+    renderAll();
+    return { ...runtime.intelligenceFilters };
+  }
+
+  function resetIntelligenceFilters() {
+    runtime.intelligenceFilters = { company: 'all', source: 'all', credibility: 'all', status: 'all', age: 'all', search: '', sortBy: 'newest' };
+    runtime.intelligenceCompany = 'all';
+    renderAll();
+    return { ...runtime.intelligenceFilters };
+  }
+
+  function ignoreRitual(id) {
+    runtime.ignoredRitualIds = [...new Set([...(runtime.ignoredRitualIds || []), String(id || '')])].filter(Boolean);
+    try { storage?.setItem?.('zos_ignored_rituals', JSON.stringify(runtime.ignoredRitualIds)); } catch { /* Local preference only. */ }
+    renderAll();
+    return [...runtime.ignoredRitualIds];
+  }
+
+  function convertRitualToLifeTask(id) {
+    const ritual = upcomingRituals({ now: now(), horizonDays: 366, ignoredIds: [] }).find((item) => item.id === id);
+    if (!ritual) throw new Error('ritual_not_found');
+    const saved = store.saveEntity('life', {
+      title: ritual.title, area: ritual.category === 'family' ? 'family' : 'review',
+      category: ritual.category, date: ritual.occurrence, status: 'open', kind: 'ritual',
+      privacy: 'private', notes: ritual.suggestion,
+    });
+    signalLocalChange();
+    renderAll();
+    return saved;
+  }
+
+  function importPrivateDateText(text) {
+    const rows = parsePrivateDateMetadata(text);
+    const saved = rows.map((row) => store.saveEntity('life', {
+      ...row, area: row.category === 'relationship' || row.category === 'family' ? 'family' : 'review',
+      kind: 'private_date', status: 'open', privacy: 'private',
+    }));
+    runtime.privateDateSource = { state: 'ready', count: saved.length };
+    signalLocalChange();
+    renderAll();
+    return saved;
+  }
+
+  function selectPrivateDateFile() {
+    const input = document?.createElement?.('input');
+    if (!input) return false;
+    input.type = 'file'; input.accept = 'application/json,.json';
+    input.addEventListener('change', async () => {
+      try {
+        const file = input.files?.[0];
+        if (!file) return;
+        importPrivateDateText(await file.text());
+      } catch (error) {
+        runtime.privateDateSource = { state: 'error', count: 0, message: error?.message || '导入失败' };
+        renderAll();
+      }
+    }, { once: true });
+    input.click();
+    return true;
   }
 
   function sourceRows(source) {
@@ -1685,6 +1840,9 @@ export function createCeoOsApplication(config = {}) {
       const decisionUndo = event.target?.closest?.('[data-decision-undo]');
       const decisionLoadMore = event.target?.closest?.('[data-decision-load-more]');
       const decisionJump = event.target?.closest?.('[data-decision-jump]');
+      const decisionSelectVisible = event.target?.closest?.('[data-decision-select-visible]');
+      const decisionBatch = event.target?.closest?.('[data-decision-batch]');
+      const decisionSelectionClear = event.target?.closest?.('[data-decision-selection-clear]');
       const executeButton = event.target?.closest?.('[data-execute-approval]');
       const refreshButton = event.target?.closest?.('[data-refresh-source]');
       const refreshAllButton = event.target?.closest?.('[data-refresh-all]');
@@ -1692,7 +1850,12 @@ export function createCeoOsApplication(config = {}) {
       const pageButton = event.target?.closest?.('[data-page]');
       const intelligenceButton = event.target?.closest?.('[data-intelligence-status]');
       const intelligenceRefresh = event.target?.closest?.('[data-refresh-intelligence]');
+      const intelligenceReset = event.target?.closest?.('[data-intelligence-reset]');
       const lifeCapture = event.target?.closest?.('[data-life-capture]');
+      const ritualConvert = event.target?.closest?.('[data-ritual-convert]');
+      const ritualIgnore = event.target?.closest?.('[data-ritual-ignore]');
+      const privateDateImport = event.target?.closest?.('[data-private-date-import]');
+      const companySpecialist = event.target?.closest?.('[data-company-specialist]');
       const calendarCapture = event.target?.closest?.('[data-calendar-capture]');
       const calendarKind = event.target?.closest?.('[data-calendar-kind]');
       const calendarView = event.target?.closest?.('[data-calendar-view]');
@@ -1828,6 +1991,9 @@ export function createCeoOsApplication(config = {}) {
         else if (decisionConfirm) await confirmDecisionAction(document?.querySelector?.('[data-decision-note]')?.value || '');
         else if (decisionClose) closeDecisionAction();
         else if (decisionUndo) await undoDecisionAction();
+        else if (decisionBatch) await executeDecisionBatch(decisionBatch.dataset.decisionBatch);
+        else if (decisionSelectVisible) setDecisionSelection(String(decisionSelectVisible.dataset.decisionVisibleIds || '').split(',').filter(Boolean));
+        else if (decisionSelectionClear) setDecisionSelection([]);
         else if (decisionLoadMore) loadMoreDecisions(decisionLoadMore.dataset.decisionLoadMore);
         else if (decisionJump) document?.getElementById?.(`decision-${decisionJump.dataset.decisionJump}`)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
         else if (previewButton) { closeDecisionAction(); await previewDecision(previewButton.dataset.previewDecision); }
@@ -1849,8 +2015,9 @@ export function createCeoOsApplication(config = {}) {
             renderAll();
           }
         } else if (intelligenceCompany) {
-          runtime.intelligenceCompany = intelligenceCompany.dataset.intelligenceCompany || 'all';
-          renderAll();
+          setIntelligenceFilter('company', intelligenceCompany.dataset.intelligenceCompany || 'all');
+        } else if (intelligenceReset) {
+          resetIntelligenceFilters();
         } else if (calendarKind) {
           setCalendarDraftKind(calendarKind.dataset.calendarKind);
         } else if (calendarView) {
@@ -1924,7 +2091,18 @@ export function createCeoOsApplication(config = {}) {
           commitCalendarSelection();
         } else if (lifeCapture) {
           const title = (config.prompt || globalThis.prompt)?.('记录一条生活事项');
-          if (String(title || '').trim()) store.saveEntity('life', { title: String(title).trim(), area: 'review', status: 'open', privacy: 'private' });
+          if (String(title || '').trim()) {
+            store.saveEntity('life', { title: String(title).trim(), area: 'review', status: 'open', privacy: 'private' });
+            signalLocalChange(); renderAll();
+          }
+        } else if (ritualConvert) {
+          convertRitualToLifeTask(ritualConvert.dataset.ritualConvert);
+        } else if (ritualIgnore) {
+          ignoreRitual(ritualIgnore.dataset.ritualIgnore);
+        } else if (privateDateImport) {
+          selectPrivateDateFile();
+        } else if (companySpecialist) {
+          document?.getElementById?.(companySpecialist.dataset.companySpecialist)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
         } else if (taskCapture) {
           showTaskCenter();
           openTaskEditor();
@@ -2069,8 +2247,20 @@ export function createCeoOsApplication(config = {}) {
       } catch { runtime.syncStatus = '目标保存失败，请检查数值和登录状态'; renderAll(); }
     });
     document.addEventListener('change', (event) => {
+      if (event.target?.matches?.('[data-decision-select]')) {
+        toggleDecisionSelection(event.target.dataset.decisionSelect, event.target.checked);
+        return;
+      }
       if (event.target?.matches?.('[data-decision-filter]')) {
         setDecisionFilter(event.target.dataset.decisionFilter, event.target.value);
+        return;
+      }
+      if (event.target?.matches?.('[data-intelligence-filter]')) {
+        setIntelligenceFilter(event.target.dataset.intelligenceFilter, event.target.value);
+        return;
+      }
+      if (event.target?.matches?.('[data-intelligence-sort]')) {
+        setIntelligenceFilter('sortBy', event.target.value);
         return;
       }
       if (event.target?.matches?.('[data-calendar-anchor]')) {
@@ -2089,6 +2279,7 @@ export function createCeoOsApplication(config = {}) {
     });
     document.addEventListener('input', (event) => {
       if (event.target?.matches?.('[data-decision-search]')) setDecisionFilter('search', event.target.value);
+      if (event.target?.matches?.('[data-intelligence-search]')) setIntelligenceFilter('search', event.target.value);
     });
     document.addEventListener('pointerdown', (event) => {
       const target = event.target?.closest?.('[data-calendar-select-date]');
@@ -2207,6 +2398,9 @@ export function createCeoOsApplication(config = {}) {
     renderLife(document?.getElementById('lifeCenterRoot'), model);
     renderSearch(document?.getElementById('searchCenterRoot'), model);
     renderLingli(document?.getElementById('lingliCenterRoot'), model);
+    renderCompanyCockpit(document?.getElementById('wanjiaOperatingRoot'), model, 'wanjia');
+    renderCompanyCockpit(document?.getElementById('huahuoOperatingRoot'), model, 'huahuo');
+    renderCompanyCockpit(document?.getElementById('lingliOperatingRoot'), model, 'lingli');
     renderRelations(document?.getElementById('relationCenterRoot'), model);
     renderReviews(document?.getElementById('reviewCenterRoot'), model);
     renderTodayExecution(document?.getElementById('todayExecutionRoot'), model);
@@ -2413,7 +2607,10 @@ export function createCeoOsApplication(config = {}) {
     start, stop, whenIdle: () => Promise.all([startupWork, reminderScheduleWork]).then(() => viewModel()), render: renderAll, store, runtime, viewModel,
     refreshSource, refreshAllSources, notifyCurrentReminders, confirmTarget, previewDecision, executeApproval,
     openDecisionAction, closeDecisionAction, confirmDecisionAction, undoDecisionAction, setDecisionFilter, loadMoreDecisions,
+    setDecisionSelection, toggleDecisionSelection, executeDecisionBatch,
     quickCapture, captureCalendar, saveCalendar, deleteCalendar, restoreCalendar, copyCalendar, moveCalendar,
+    ignoreRitual, convertRitualToLifeTask, importPrivateDateText, selectPrivateDateFile,
+    setIntelligenceFilter, resetIntelligenceFilters,
     deleteTask, restoreTask, toggleTask, copyTask, moveTask,
     setCalendarView, navigateCalendar, goToCalendarToday, refreshCalendarRange,
     selectCalendar, openCalendarEditor, closeCalendarPanel, requestCalendarMutation, applyCalendarSeriesScope,

@@ -2143,3 +2143,81 @@ body { overflow-x: hidden; }
   .review-content-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .review-growth-grid { grid-template-columns: 1fr; }
 }
+
+/* ===== v2.1 unified personal operations ===== */
+.v13-action { min-height: 44px; transition: transform 120ms ease, border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease; }
+.v13-action:hover { box-shadow: 0 8px 22px rgba(0,0,0,.18); transform: translateY(-1px); }
+.v13-action:active { box-shadow: none; transform: translateY(0) scale(.975); }
+.v13-action:focus-visible, .decision-select-control input:focus-visible, .intelligence-workbench-toolbar :focus-visible { outline: 2px solid var(--cc-accent-gold); outline-offset: 3px; }
+
+.decision-history-row { grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; }
+.decision-history-row > div:nth-child(2) { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 10px; min-width: 0; }
+.decision-history-row > div:nth-child(2) small { grid-column: 2; color: var(--cc-text-muted); }
+.decision-select-control { display: grid; place-items: center; width: 32px; height: 44px; cursor: pointer; }
+.decision-select-control input { width: 19px; height: 19px; accent-color: var(--cc-accent-gold); cursor: pointer; }
+.decision-batch-bar { position: sticky; top: 10px; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; border: 1px solid rgba(216,180,106,.42); border-radius: 13px; background: rgba(13,24,41,.96); box-shadow: 0 16px 44px rgba(0,0,0,.34); backdrop-filter: blur(16px); }
+.decision-batch-bar > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.decision-batch-bar p { flex-basis: 100%; margin: 0; color: var(--cc-risk); }
+
+.life-hero-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.life-ritual-section, .private-date-import-note { margin-top: 14px; }
+.ritual-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ritual-card { padding: 16px; border: 1px solid rgba(216,180,106,.2); border-radius: 14px; background: radial-gradient(circle at 100% 0, rgba(216,180,106,.09), transparent 38%), var(--cc-panel); }
+.ritual-card > div, .ritual-card footer, .private-date-import-note { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ritual-card small { color: var(--cc-text-muted); }
+.ritual-card h3 { margin: 16px 0 8px; }
+.ritual-card p { min-height: 42px; margin: 0 0 14px; color: var(--cc-text-muted); line-height: 1.6; }
+.ritual-card footer { justify-content: flex-start; flex-wrap: wrap; }
+.private-date-import-note { padding: 18px; border-style: dashed; }
+.private-date-import-note h3, .private-date-import-note p { margin: 0; }
+.private-date-import-note p { margin-top: 6px; color: var(--cc-text-muted); line-height: 1.6; }
+.private-date-import-note strong { flex-shrink: 0; color: var(--cc-success); }
+
+.v21-root { margin: 14px 0 18px; color: var(--cc-text); }
+.company-operating-stack { display: grid; gap: 12px; }
+.company-tier { padding: 18px; border: 1px solid var(--cc-border); border-radius: 15px; background: linear-gradient(155deg, rgba(17,28,46,.97), rgba(8,15,27,.98)); box-shadow: 0 14px 38px rgba(0,0,0,.14); }
+.company-tier > header, .company-risk-intel-grid > div > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.company-tier h2 { margin: 4px 0 12px; font-size: 18px; }
+.company-tier header p { margin: 0; color: var(--cc-text-muted); }
+.company-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.company-summary-grid article, .company-analysis-grid article { padding: 15px; border: 1px solid var(--cc-border); border-radius: 12px; background: rgba(255,255,255,.025); }
+.company-summary-grid span, .company-summary-grid small { display: block; color: var(--cc-text-muted); }
+.company-summary-grid strong { display: block; margin: 9px 0 5px; font-size: clamp(20px, 3vw, 28px); }
+.company-analysis-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.company-analysis-grid h3, .company-analysis-grid p { margin: 0; }
+.company-analysis-grid p { min-height: 38px; margin: 8px 0 12px; color: var(--cc-text-muted); line-height: 1.55; }
+.company-analysis-grid small { color: var(--cc-accent-gold); }
+.company-risk-intel-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.company-risk-intel-grid > div { min-width: 0; }
+.company-tier-evidence { border-color: rgba(216,180,106,.25); }
+
+.intelligence-workbench-toolbar { display: grid; grid-template-columns: minmax(220px, 1.5fr) repeat(5, minmax(116px, .7fr)) minmax(126px, .8fr) auto auto; align-items: center; }
+.intelligence-workbench-toolbar input, .intelligence-workbench-toolbar select { width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--cc-border); border-radius: 9px; background: #07101d; color: var(--cc-text); color-scheme: dark; }
+.intelligence-result-count { margin: -4px 0 12px; color: var(--cc-text-muted); font-size: 11px; }
+.intelligence-card.is-unread { border-color: rgba(216,180,106,.34); box-shadow: inset 3px 0 0 var(--cc-accent-gold); }
+
+@media (max-width: 1180px) {
+  .intelligence-workbench-toolbar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .intelligence-workbench-toolbar input { grid-column: span 2; }
+  .company-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .decision-history-row { grid-template-columns: 32px minmax(0, 1fr); }
+  .decision-history-actions { grid-column: 2; }
+  .decision-batch-bar, .private-date-import-note { align-items: stretch; flex-direction: column; }
+  .decision-batch-bar > div { display: grid; grid-template-columns: 1fr 1fr; }
+  .decision-batch-bar .v13-action { width: auto; }
+  .decision-batch-bar .v13-action:last-child { grid-column: 1 / -1; }
+  .life-hero-actions, .ritual-card footer { display: grid; grid-template-columns: 1fr 1fr; }
+  .ritual-grid, .company-analysis-grid, .company-risk-intel-grid { grid-template-columns: 1fr; }
+  .company-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .company-tier { padding: 14px; }
+  .company-tier-evidence > header { align-items: stretch; flex-direction: column; }
+  .intelligence-workbench-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .intelligence-workbench-toolbar input { grid-column: 1 / -1; }
+  .intelligence-workbench-toolbar .v13-action { width: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v13-action { transition: none; }
+  .v13-action:hover, .v13-action:active { transform: none; }
+}

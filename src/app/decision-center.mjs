@@ -1,5 +1,5 @@
-import { createRecord as defaultCreateRecord, touchRecord as defaultTouchRecord } from '../data-model.mjs?v=2.0.4';
-import { humanText } from './value-utils.mjs?v=2.0.4';
+import { createRecord as defaultCreateRecord, touchRecord as defaultTouchRecord } from '../data-model.mjs?v=2.1.0';
+import { humanText } from './value-utils.mjs?v=2.1.0';
 
 const TRANSITIONS = Object.freeze({
   open: new Set(['approved', 'rejected', 'deferred', 'pending_resolution']),
@@ -150,6 +150,42 @@ export function applyDecisionAction(decision, action, note = '', options = {}) {
     }, at);
   }
   throw new Error(`invalid decision action: ${next}`);
+}
+
+export function reviewDecisionHistory(decision, options = {}) {
+  requiredText(decision?.id, 'decision id');
+  const current = requiredText(decision?.status, 'decision status');
+  if (current === 'open') throw new Error('open decision is not history');
+  const now = requiredText(options.now, 'now');
+  const { touchRecord } = callbacks(options);
+  return touchRecord({
+    ...decision,
+    historyReviewed: true,
+    historyReviewedAt: now,
+  }, { now, deviceId: options.deviceId || 'decision-engine' });
+}
+
+export function applyDecisionBatch(decisions = [], action, note = '', options = {}) {
+  const requested = requiredText(action, 'batch action');
+  if (!['review_history', 'reopen'].includes(requested)) {
+    throw new Error(`unsupported batch action: ${requested}`);
+  }
+  const changed = [];
+  const skipped = [];
+  for (const decision of Array.isArray(decisions) ? decisions : []) {
+    const status = humanText(decision?.status, '');
+    const eligible = requested === 'review_history'
+      ? status !== 'open'
+      : ['pending_resolution', 'deferred'].includes(status);
+    if (!eligible) {
+      skipped.push({ id: decision?.id || '', status });
+      continue;
+    }
+    changed.push(requested === 'review_history'
+      ? reviewDecisionHistory(decision, options)
+      : applyDecisionAction(decision, 'reopen', note, options));
+  }
+  return { changed, skipped };
 }
 
 export function reconcileDecisions(existing = [], currentItems = [], options = {}) {
