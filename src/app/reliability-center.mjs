@@ -1,4 +1,4 @@
-import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.0.1';
+import { createDurableBackup } from './data-durability.mjs?v=2.0.1';
 
 export function listRestorableItems(tombstones = [], options = {}) {
   const nowMs = new Date(options.now || new Date().toISOString()).getTime();
@@ -20,13 +20,7 @@ export function listRestorableItems(tombstones = [], options = {}) {
 }
 
 export function buildSafeBackup({ state = {}, baseRevisions = {}, createdAt = new Date().toISOString() } = {}) {
-  return sanitizeSensitiveFields({
-    product: 'ZOS CEO Operating System',
-    backupVersion: '1.11.0',
-    createdAt,
-    state,
-    baseRevisions,
-  });
+  return createDurableBackup({ state, baseRevisions, createdAt, appVersion: '2.0.2' });
 }
 
 export function reminderSnoozeAt(choice, options = {}) {

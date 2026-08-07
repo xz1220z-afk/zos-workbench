@@ -243,3 +243,28 @@ test('state store records bounded safe operations and preserves them across remo
   store.replaceSnapshot({ collections: { tasks: [] }, tombstones: [] });
   assert.deepEqual(store.load().auditLog, before.auditLog);
 });
+
+test('safe snapshot merge preserves current-only records and publishes one audited change', () => {
+  let tick = 0;
+  const store = createStateStore({
+    storage: memoryStorage(), deviceId: 'mac-1', createId: () => `id-${tick++}`,
+    now: () => '2026-08-07T02:00:00.000Z',
+  });
+  store.saveEntity('tasks', { id: 'keep', title: '当前保留' });
+  store.saveEntity('tasks', { id: 'shared', title: '当前内容' });
+  const notices = [];
+  store.subscribe((state) => notices.push(state));
+
+  const result = store.mergeSnapshot({
+    collections: { tasks: [
+      { id: 'shared', title: '备份内容', revision: 5 },
+      { id: 'restore', title: '恢复新增', revision: 1 },
+    ] },
+    tombstones: [{ id: 'keep', entity: 'tasks', deletedAt: '2026-08-01T00:00:00.000Z' }],
+  });
+
+  assert.deepEqual(result.collections.tasks.map((item) => item.id).sort(), ['keep', 'restore', 'shared']);
+  assert.equal(result.collections.tasks.find((item) => item.id === 'shared').title, '备份内容');
+  assert.equal(result.auditLog[0].action, 'backup_merge_restore');
+  assert.equal(notices.length, 1);
+});

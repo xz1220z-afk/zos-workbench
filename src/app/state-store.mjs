@@ -1,5 +1,6 @@
 import { createRecord, markDeleted, normalizeRecord, touchRecord } from '../data-model.mjs?v=2.0.1';
 import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.0.1';
+import { buildSafeMergeSnapshot, STATE_ENTITY_TYPES } from './data-durability.mjs?v=2.0.1';
 
 const STATE_KEY = 'zos_ceo_os_state_v1_7';
 const PREVIOUS_STATE_KEYS = ['zos_ceo_os_state_v1_4', 'zos_ceo_os_state_v1_3'];
@@ -8,13 +9,9 @@ const PREVIOUS_BASE_REVISIONS_KEYS = ['zos_ceo_os_base_revisions_v1_4', 'zos_ceo
 const LEGACY_KEYS = {
   tasks: 'zos_tasks', inbox: 'zos_inbox', projects: 'zos_projects', commands: 'zos_commands',
 };
-const ENTITY_TYPES = [
-  'tasks', 'inbox', 'projects', 'commands', 'decisions', 'targets',
-  'intelligence', 'calendar', 'life', 'focus_sessions', 'countdowns',
-  'content_items', 'knowledge_cards', 'reading_items', 'agent_runs',
-  'social_insights', 'content_assets', 'brainstorms', 'content_experiments',
-  'compound_candidates',
-];
+const ENTITY_TYPES = STATE_ENTITY_TYPES;
+
+export { STATE_ENTITY_TYPES };
 
 function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
@@ -208,6 +205,19 @@ export function createStateStore(config = {}) {
         ...snapshot,
         deviceId: state.deviceId,
         auditLog: options.preserveAudit === false ? snapshot?.auditLog : state.auditLog,
+      });
+      publish();
+      return clone(state);
+    },
+    mergeSnapshot(snapshot) {
+      const merged = buildSafeMergeSnapshot(state, snapshot, {
+        now: context.now(), deviceId: state.deviceId,
+      });
+      const record = { id: 'backup', title: '安全合并恢复' };
+      state = persist({
+        ...merged,
+        deviceId: state.deviceId,
+        auditLog: audit('backup_merge_restore', 'backup', record),
       });
       publish();
       return clone(state);
