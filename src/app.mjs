@@ -49,8 +49,11 @@ import { render as renderContentGrowth } from './app/views/content-growth-view.m
 import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.0.1';
 import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.0.1';
 import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.0.1';
+import { parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.0.1';
+import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.0.1';
 
 export const APP_VERSION = '2.0.1';
+const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
@@ -62,6 +65,10 @@ export function createCeoOsApplication(config = {}) {
   const now = config.now || (() => new Date().toISOString());
   const deviceId = storage?.getItem?.('zos_device_id') || browserId();
   const store = config.store || createStateStore({ storage, now, deviceId, createId: browserId });
+  const snapshotRepository = config.snapshotRepository || createSnapshotRepository({
+    adapter: createIndexedDbSnapshotAdapter(document?.defaultView?.indexedDB || globalThis.indexedDB),
+    now, createId: browserId,
+  });
   const runtime = {
     health: [], gaps: [], briefs: [], conflicts: [], approvals: [], decisions: [], targets: [],
     businessExceptions: [], intelligence: [], intelligenceState: 'loading', intelligenceCompany: 'all',
@@ -79,6 +86,7 @@ export function createCeoOsApplication(config = {}) {
     taskDrawerOpen: false, taskDraft: null, focusDuration: 25, focusTaskId: null,
     availabilityDate: now().slice(0, 10), merchantQuery: '', selectedMerchantId: null,
     syncStatus: '等待首次同步', loopConnected: false, reminderTestState: 'idle',
+    snapshotCount: 0, protectionState: '本机数据已保护', lastRestoreAt: null,
     autoRefresh: {
       phase: 'idle', reason: null, lastAttemptAt: null, lastSuccessAt: null,
       succeeded: [], failed: [],
@@ -99,6 +107,38 @@ export function createCeoOsApplication(config = {}) {
     ? config.reminderScheduleRetryDelays : [5_000, 30_000, 120_000];
   const reminderClock = config.clock || document?.defaultView || globalThis;
   const notifiedReminderIds = new Set();
+
+  function deferSafetyWork(callback) {
+    if (typeof config.deferSafetyWork === 'function') return config.deferSafetyWork(callback);
+    const browserWindow = document?.defaultView || globalThis;
+    if (typeof browserWindow.requestIdleCallback === 'function') return browserWindow.requestIdleCallback(callback, { timeout: 1500 });
+    return browserWindow.setTimeout?.(callback, 0);
+  }
+
+  async function refreshSnapshotCount() {
+    try { runtime.snapshotCount = (await snapshotRepository.list()).length; }
+    catch { runtime.snapshotCount = 0; }
+    if (started) renderAll();
+    return runtime.snapshotCount;
+  }
+
+  function scheduleUpgradeCheckpoint() {
+    const previousVersion = storage?.getItem?.(LAST_PROTECTED_VERSION_KEY);
+    if (previousVersion === APP_VERSION) return;
+    deferSafetyWork(async () => {
+      try {
+        await snapshotRepository.save({
+          kind: 'upgrade', appVersion: previousVersion || 'pre-2.0.2',
+          backup: buildSafeBackup({ state: store.load(), baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() }),
+        });
+        storage?.setItem?.(LAST_PROTECTED_VERSION_KEY, APP_VERSION);
+        await refreshSnapshotCount();
+      } catch {
+        runtime.protectionState = '请先下载安全备份';
+        if (started) renderAll();
+      }
+    });
+  }
 
   function signalLocalChange() {
     try { (config.eventTarget || globalThis).dispatchEvent(new Event('zos:local-change')); } catch { /* Optional outside browsers. */ }
@@ -1308,6 +1348,36 @@ export function createCeoOsApplication(config = {}) {
     return backup;
   }
 
+  function previewBackupText(text) {
+    const parsed = parseBackupFile(text, { deviceId, now: now() });
+    return { ...parsed, summary: summarizeBackup(parsed) };
+  }
+
+  async function importBackupText(text) {
+    const parsed = previewBackupText(text);
+    const currentBackup = buildSafeBackup({
+      state: store.load(), baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now(),
+    });
+    await snapshotRepository.save({ kind: 'pre-import', appVersion: APP_VERSION, backup: currentBackup });
+    const merged = store.mergeSnapshot(parsed.state);
+    runtime.lastRestoreAt = now();
+    await refreshSnapshotCount();
+    signalLocalChange();
+    renderAll();
+    return { state: merged, summary: parsed.summary, sourceVersion: parsed.sourceVersion };
+  }
+
+  async function undoLastRestore() {
+    const checkpoint = await snapshotRepository.latest('pre-import');
+    if (!checkpoint?.backup?.state) throw new Error('restore_checkpoint_not_found');
+    const restored = store.replaceSnapshot(checkpoint.backup.state);
+    if (checkpoint.backup.baseRevisions) store.saveBaseRevisions(checkpoint.backup.baseRevisions);
+    runtime.lastRestoreAt = now();
+    signalLocalChange();
+    renderAll();
+    return restored;
+  }
+
   function bindActions() {
     if (actionsBound || !document?.addEventListener) return;
     actionsBound = true;
@@ -1962,6 +2032,7 @@ export function createCeoOsApplication(config = {}) {
     unsubscribeStore = store.subscribe(renderAll);
     bindActions();
     renderAll();
+    scheduleUpgradeCheckpoint();
     const browserWindow = document?.defaultView;
     clearCalendarTouchPending();
     if (browserWindow?.setInterval && !focusTicker) {
@@ -2006,6 +2077,7 @@ export function createCeoOsApplication(config = {}) {
     saveCalendarArrangement,
     saveTask, convertIntelligenceToTask, saveCountdown, enableClosedAppReminders, scheduleDurableReminders,
     syncNow, resolveSyncConflict, testReminderDelivery, snoozeReminder, restoreReliabilityItem, exportSafeBackup,
+    previewBackupText, importBackupText, undoLastRestore, refreshSnapshotCount,
     createFocus, transitionCurrentFocus, queryMerchant, queryHuahuoAvailability,
     openTaskEditor, closeTaskEditor, generateReview, generateAgentDraft,
     saveContentItem, captureContentItem, editContentItem, advanceContentItem,
