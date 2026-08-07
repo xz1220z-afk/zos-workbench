@@ -1,6 +1,6 @@
 import { escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.0.3';
 import { humanText } from '../value-utils.mjs?v=2.0.3';
-import { partitionDecisions } from '../decision-center.mjs?v=2.0.3';
+import { classifyDecision, partitionDecisions } from '../decision-center.mjs?v=2.0.3';
 
 export { VIEW_STATES };
 
@@ -97,11 +97,12 @@ function drawer(decisions, ui) {
       return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
     } catch { return ''; }
   })();
+  const canPreviewWrite = classifyDecision(item) === 'ceo' && item.status === 'open' && item.writeAvailable !== false;
   return `<div class="decision-drawer-backdrop" data-decision-close></div>
     <aside class="decision-action-drawer" role="dialog" aria-modal="true" aria-label="${escapeHtml(label)}">
       <header><div><span class="v13-chip">${escapeHtml(companyOf(item))}</span><h2>${escapeHtml(label)}</h2></div><button class="v13-action v13-action-icon" type="button" data-decision-close aria-label="关闭">×</button></header>
       <div class="decision-drawer-fact"><small>事实</small><strong>${escapeHtml(decisionTitle(item))}</strong><p>${escapeHtml(humanText(item.recommendedAction, '暂无系统建议'))}</p></div>
-      ${isSource ? `<div class="decision-source-detail"><dl><dt>来源系统</dt><dd>${escapeHtml(humanText(item.source, '未知来源'))}</dd><dt>记录编号</dt><dd>${escapeHtml(humanText(item.sourceRecordId, item.id))}</dd><dt>更新时间</dt><dd>${escapeHtml(humanText(item.sourceUpdatedAt, '未提供'))}</dd></dl>${sourceUrl ? `<a class="v13-action v13-action-primary" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">打开真实来源</a>` : '<p class="decision-inline-note">当前记录没有可验证的网页链接，已展示来源详情。</p>'}</div>` : `<label class="decision-note-field"><span>处理备注</span><textarea data-decision-note rows="4" placeholder="写清负责人、时间或暂缓原因">${escapeHtml(humanText(action.note, ''))}</textarea></label>
+      ${isSource ? `<div class="decision-source-detail"><dl><dt>来源系统</dt><dd>${escapeHtml(humanText(item.source, '未知来源'))}</dd><dt>记录编号</dt><dd>${escapeHtml(humanText(item.sourceRecordId, item.id))}</dd><dt>更新时间</dt><dd>${escapeHtml(humanText(item.sourceUpdatedAt, '未提供'))}</dd></dl>${sourceUrl ? `<a class="v13-action v13-action-primary" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">打开真实来源</a>` : '<p class="decision-inline-note">当前记录没有可验证的网页链接，已展示来源详情。</p>'}${canPreviewWrite ? `<button class="v13-action" type="button" data-preview-decision="${escapeHtml(item.id)}">预览更新</button>` : ''}</div>` : `<label class="decision-note-field"><span>处理备注</span><textarea data-decision-note rows="4" placeholder="写清负责人、时间或暂缓原因">${escapeHtml(humanText(action.note, ''))}</textarea></label>
       ${ui.error ? `<p class="decision-inline-error" role="alert">${escapeHtml(ui.error)}</p>` : ''}
       <footer><button class="v13-action" type="button" data-decision-close>取消</button><button class="v13-action v13-action-primary" type="button" data-decision-confirm ${ui.busy ? 'disabled aria-busy="true"' : ''}>${ui.busy ? '正在保存…' : `确认${escapeHtml(label)}`}</button></footer>`}
     </aside>`;

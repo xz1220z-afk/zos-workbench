@@ -43,6 +43,8 @@ test('responsive CSS preserves dark tokens, safe areas and four-device touch con
   assert.match(css, /\.v14-kpi-grid\.decision-center-summary\s*\{[^}]*repeat\(3,/s);
   assert.match(css, /@media \(max-width: 760px\)\s*\{[\s\S]{0,160}\.v14-kpi-grid\.decision-center-summary\s*\{[^}]*grid-template-columns:\s*1fr/s);
   assert.doesNotMatch(css, /\.v13-mobile-dashboard\s*\{\s*display:\s*block/, 'mobile must not duplicate the responsive CEO dashboard');
+  assert.match(css, /--motion-fast:\s*140ms/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
 test('mobile dashboard follows the action-first order and never embeds sample KPIs', async () => {
