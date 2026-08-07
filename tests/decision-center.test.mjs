@@ -2,8 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  classifyDecision,
   decisionKey,
   deriveDecisions,
+  partitionDecisions,
   reconcileDecisions,
   transitionDecision,
 } from '../src/app/decision-center.mjs';
@@ -42,6 +44,38 @@ function touchRecord(record, options) {
 }
 
 const callbacks = { createRecord, touchRecord };
+
+test('decision classification separates CEO choices, owner follow-up and history without mutation', () => {
+  const items = [
+    { id: 'history', status: 'pending_resolution', decisionNote: '来源风险已消失，等待人工确认解除' },
+    { id: 'follow-up', status: 'open', category: 'stale', severity: 'high', factSummary: '超过 7 天未更新（已停滞 30 天）' },
+    { id: 'payment', status: 'open', category: 'stale', severity: 'medium', factSummary: '项目存在回款 / 收款待处理' },
+    { id: 'explicit', status: 'open', decisionScope: 'ceo', factSummary: '需要朱帅拍板' },
+  ];
+  const before = structuredClone(items);
+
+  assert.equal(classifyDecision(items[0]), 'history');
+  assert.equal(classifyDecision(items[1]), 'follow_up');
+  assert.equal(classifyDecision(items[2]), 'ceo');
+  assert.equal(classifyDecision(items[3]), 'ceo');
+  assert.deepEqual(partitionDecisions(items), {
+    ceo: [items[2], items[3]],
+    followUp: [items[1]],
+    history: [items[0]],
+  });
+  assert.deepEqual(items, before);
+});
+
+test('explicit non-CEO scope keeps an open operational item in owner follow-up', () => {
+  assert.equal(classifyDecision({
+    id: 'delegated-payment',
+    status: 'open',
+    decisionScope: 'owner',
+    requiresCeoDecision: false,
+    category: 'revenue_pending',
+    factSummary: '负责人跟进待回款',
+  }), 'follow_up');
+});
 
 test('decisionKey uses the stable source identity and category', () => {
   assert.equal(decisionKey(risk), 'huahuo:project-7:delivery_delay');

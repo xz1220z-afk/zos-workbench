@@ -10,10 +10,36 @@ const TRANSITIONS = Object.freeze({
   resolved: new Set(),
 });
 
+const CEO_CATEGORIES = new Set(['high_risk', 'revenue_pending', 'write_approval']);
+const CEO_FACT_PATTERN = /价格|报价|回款|收款|亏损|高风险|资源(?:投入|增派|调整)|增派资源|重大交付|交付延期|延期交付|CEO|朱帅|拍板|确认执行|审批|批准/i;
+
 function requiredText(value, name) {
   const text = humanText(value, '');
   if (!text) throw new Error(`${name} is required`);
   return text;
+}
+
+export function classifyDecision(item = {}) {
+  if (item.status !== 'open') return 'history';
+  if (item.requiresCeoDecision === false || item.decisionScope === 'owner') return 'follow_up';
+  if (item.requiresCeoDecision === true || item.decisionScope === 'ceo') return 'ceo';
+  if (CEO_CATEGORIES.has(String(item.category || '').trim())) return 'ceo';
+  const evidence = [item.factSummary, item.title, item.recommendedAction]
+    .map((value) => humanText(value, ''))
+    .filter(Boolean)
+    .join('；');
+  return CEO_FACT_PATTERN.test(evidence) ? 'ceo' : 'follow_up';
+}
+
+export function partitionDecisions(items = []) {
+  const result = { ceo: [], followUp: [], history: [] };
+  for (const item of Array.isArray(items) ? items : []) {
+    const bucket = classifyDecision(item);
+    if (bucket === 'ceo') result.ceo.push(item);
+    else if (bucket === 'follow_up') result.followUp.push(item);
+    else result.history.push(item);
+  }
+  return result;
 }
 
 function normalizedIdentity(item) {
