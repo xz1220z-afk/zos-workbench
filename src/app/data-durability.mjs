@@ -51,9 +51,35 @@ function validateRecords(records, label) {
     const id = typeof record.id === 'string' ? record.id.trim() : '';
     if (!id) throw new Error(`missing_record_id:${label}:${index}`);
     if (ids.has(id)) throw new Error(`duplicate_record_id:${label}:${id}`);
+    for (const field of ['createdAt', 'updatedAt', 'deletedAt']) {
+      if (record[field] != null && (typeof record[field] !== 'string' || !Number.isFinite(Date.parse(record[field])))) {
+        throw new Error(`invalid_timestamp:${label}:${index}:${field}`);
+      }
+    }
     ids.add(id);
     return { ...record, id };
   });
+}
+
+function validateTombstones(records) {
+  const keys = new Set();
+  return records.map((record, index) => {
+    const [value] = validateRecords([record], `tombstones:${index}`);
+    if (!STATE_ENTITY_TYPES.includes(value.entity)) throw new Error(`invalid_tombstone_entity:${index}`);
+    if (!value.deletedAt) throw new Error(`missing_tombstone_deleted_at:${index}`);
+    const key = `${value.entity}:${value.id}`;
+    if (keys.has(key)) throw new Error(`duplicate_tombstone:${key}`);
+    keys.add(key);
+    return value;
+  });
+}
+
+function validateBaseRevisions(value) {
+  if (!isPlainObject(value)) throw new Error('invalid_base_revisions');
+  for (const revision of Object.values(value)) {
+    if (!Number.isInteger(revision) || revision <= 0) throw new Error('invalid_base_revision');
+  }
+  return value;
 }
 
 function normalizedCollections(input = {}) {
@@ -72,13 +98,14 @@ function normalizedState(input = {}, options = {}) {
   if (input.auditLog != null && !Array.isArray(input.auditLog)) throw new Error('invalid_audit_log');
   const auditLog = (Array.isArray(input.auditLog) ? input.auditLog : []).map((entry, index) => {
     if (!isPlainObject(entry)) throw new Error(`invalid_audit_entry:${index}`);
+    if (!String(entry.id || '').trim() || !String(entry.action || '').trim()) throw new Error(`invalid_audit_entry:${index}`);
     return clone(entry);
   });
   return sanitizeSensitiveFields({
     schemaVersion: input.schemaVersion || '1.7',
     deviceId: input.deviceId || options.deviceId || 'backup-device',
     collections: normalizedCollections(input.collections),
-    tombstones: Array.isArray(input.tombstones) ? validateRecords(clone(input.tombstones), 'tombstones') : [],
+    tombstones: Array.isArray(input.tombstones) ? validateTombstones(clone(input.tombstones)) : [],
     auditLog,
   });
 }
@@ -111,8 +138,7 @@ export function summarizeBackup(input = {}) {
 
 export function createDurableBackup({ state = {}, baseRevisions = {}, createdAt = new Date().toISOString(), appVersion = '2.0.2' } = {}) {
   const safeState = normalizedState(state);
-  if (!isPlainObject(baseRevisions)) throw new Error('invalid_base_revisions');
-  const safeRevisions = sanitizeSensitiveFields(clone(baseRevisions));
+  const safeRevisions = sanitizeSensitiveFields(clone(validateBaseRevisions(baseRevisions)));
   const backup = {
     product: 'ZOS CEO Operating System',
     backupVersion: appVersion,
@@ -154,7 +180,7 @@ export function parseBackupFile(text, options = {}) {
   if (!value.state?.collections || !value.integrity?.digest || value.integrity.algorithm !== 'fnv1a32') {
     throw new Error('unsupported_backup');
   }
-  if (!isPlainObject(value.baseRevisions || {})) throw new Error('invalid_base_revisions');
+  validateBaseRevisions(value.baseRevisions || {});
   const safe = {
     product: value.product,
     backupVersion: value.backupVersion,
@@ -237,18 +263,6 @@ export function buildDurableStateView(currentState = {}, legacyState = {}, optio
   for (const record of legacy.tombstones) {
     const key = `${record.entity || ''}:${record.id}`;
     tombstones.set(key, latestRecord(tombstones.get(key), record));
-  }
-  for (const [key, tombstone] of [...tombstones]) {
-    const entity = tombstone.entity;
-    if (!STATE_ENTITY_TYPES.includes(entity)) continue;
-    const records = new Map(collections[entity].map((record) => [record.id, record]));
-    const live = records.get(tombstone.id);
-    if (!live) continue;
-    if (latestRecord(live, tombstone) === tombstone) {
-      collections[entity] = collections[entity].filter((record) => record.id !== tombstone.id);
-    } else {
-      tombstones.delete(key);
-    }
   }
   return { ...current, deviceId, collections, tombstones: [...tombstones.values()] };
 }

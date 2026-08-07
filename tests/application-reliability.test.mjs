@@ -153,7 +153,10 @@ test('upgrade checkpoint captures the state from before startup migration', asyn
   let deferred;
   const app = createCeoOsApplication({
     document: { getElementById: () => null, addEventListener() {} }, storage, store, snapshotRepository: snapshots,
-    preUpgradeState: { collections: { tasks: [{ id: 'before-startup', title: '升级前状态' }] } },
+    preUpgradeRaw: {
+      zos_tasks: JSON.stringify([{ id: 'before-startup', title: '升级前状态' }]),
+      zos_device_id: 'mac-1',
+    },
     createOperatingRuntime: false, deferSafetyWork: (callback) => { deferred = callback; },
     now: () => '2026-08-07T04:00:00.000Z',
   });
@@ -161,6 +164,39 @@ test('upgrade checkpoint captures the state from before startup migration', asyn
   await deferred();
   assert.deepEqual((await snapshots.latest('upgrade')).backup.state.collections.tasks.map((item) => item.id), ['before-startup']);
   app.stop();
+});
+
+test('legacy projection quota failure keeps modular restore successful and retries the compatibility view', async () => {
+  const base = memoryStorage();
+  let failOnce = true;
+  const storage = {
+    getItem: base.getItem,
+    setItem(key, value) {
+      if (key === 'zos_inbox' && failOnce) {
+        failOnce = false;
+        const error = new Error('quota');
+        error.name = 'QuotaExceededError';
+        throw error;
+      }
+      base.setItem(key, value);
+    },
+  };
+  const store = createStateStore({ storage, deviceId: 'mac-1', createId: () => 'generated-id', now: () => '2026-08-07T05:00:00.000Z' });
+  const snapshots = createSnapshotRepository({ adapter: createMemorySnapshotAdapter(), createId: () => 'pre-import' });
+  let retry;
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} }, storage, store, snapshotRepository: snapshots,
+    createOperatingRuntime: false, deferSafetyWork: (callback) => { retry = callback; },
+    now: () => '2026-08-07T05:00:00.000Z',
+  });
+  const incoming = createDurableBackup({ state: { collections: { tasks: [{ id: 'restored', title: '安全恢复' }] } } });
+  const result = await app.importBackupText(JSON.stringify(incoming));
+  assert.equal(result.projectionComplete, false);
+  assert.equal(store.load().collections.tasks.some((item) => item.id === 'restored'), true);
+  assert.equal(app.runtime.protectionState, '主数据已安全保存，兼容页面稍后刷新');
+  await retry();
+  assert.equal(JSON.parse(storage.getItem('zos_inbox')).length, 0);
+  assert.equal(app.runtime.protectionState, '本机数据已保护');
 });
 
 test('sync metadata keeps the last success during attention states and storage failures never break sync UI', () => {

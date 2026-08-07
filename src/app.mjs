@@ -80,9 +80,8 @@ export function createCeoOsApplication(config = {}) {
   const storage = config.storage || globalThis.localStorage;
   const now = config.now || (() => new Date().toISOString());
   const deviceId = storage?.getItem?.('zos_device_id') || browserId();
-  const preUpgradeState = config.preUpgradeState || (!config.store
-    ? readPersistedStateForBackup({ storage, now, deviceId, createId: browserId })
-    : config.store.load());
+  const preUpgradeState = config.preUpgradeState || null;
+  const preUpgradeRaw = config.preUpgradeRaw || globalThis.__ZOS_PRE_UPGRADE_RAW__ || null;
   const store = config.store || createStateStore({ storage, now, deviceId, createId: browserId });
   const snapshotRepository = config.snapshotRepository || createSnapshotRepository({
     adapter: createIndexedDbSnapshotAdapter(document?.defaultView?.indexedDB || globalThis.indexedDB),
@@ -145,16 +144,32 @@ export function createCeoOsApplication(config = {}) {
   }
 
   function mirrorLegacyWorkspace(state) {
-    for (const [type, key] of Object.entries(LEGACY_COLLECTION_KEYS)) {
-      storage?.setItem?.(key, JSON.stringify(state.collections?.[type] || []));
-    }
-    const legacyTypes = new Set(Object.keys(LEGACY_COLLECTION_KEYS));
-    storage?.setItem?.(LEGACY_TOMBSTONES_KEY, JSON.stringify((state.tombstones || [])
-      .filter((record) => legacyTypes.has(record.entity))));
     try {
-      const browserWindow = document?.defaultView;
-      browserWindow?.dispatchEvent?.(new browserWindow.CustomEvent('zos:durable-state-restored'));
-    } catch { /* The persisted projection is authoritative even when no live legacy view exists. */ }
+      for (const [type, key] of Object.entries(LEGACY_COLLECTION_KEYS)) {
+        storage?.setItem?.(key, JSON.stringify(state.collections?.[type] || []));
+      }
+      const legacyTypes = new Set(Object.keys(LEGACY_COLLECTION_KEYS));
+      storage?.setItem?.(LEGACY_TOMBSTONES_KEY, JSON.stringify((state.tombstones || [])
+        .filter((record) => legacyTypes.has(record.entity))));
+      try {
+        const browserWindow = document?.defaultView;
+        browserWindow?.dispatchEvent?.(new browserWindow.CustomEvent('zos:durable-state-restored'));
+      } catch { /* The persisted projection is authoritative even when no live legacy view exists. */ }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function projectLegacyWorkspace(state) {
+    if (mirrorLegacyWorkspace(state)) return true;
+    runtime.protectionState = '主数据已安全保存，兼容页面稍后刷新';
+    deferSafetyWork(() => {
+      if (!mirrorLegacyWorkspace(state)) return;
+      runtime.protectionState = '本机数据已保护';
+      if (started) renderAll();
+    });
+    return false;
   }
 
   function deferSafetyWork(callback) {
@@ -179,11 +194,15 @@ export function createCeoOsApplication(config = {}) {
           await refreshSnapshotCount();
           return;
         }
+        const checkpointState = preUpgradeState || (preUpgradeRaw
+          ? readPersistedStateForBackup({ rawSnapshot: preUpgradeRaw, now, deviceId, createId: browserId })
+          : currentDurableState());
         await snapshotRepository.save({
           kind: 'upgrade', appVersion: previousVersion || 'pre-2.0.2',
-          backup: buildSafeBackup({ state: preUpgradeState, baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() }),
+          backup: buildSafeBackup({ state: checkpointState, baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() }),
         });
         storage?.setItem?.(LAST_PROTECTED_VERSION_KEY, APP_VERSION);
+        try { delete globalThis.__ZOS_PRE_UPGRADE_RAW__; } catch { /* Optional cleanup. */ }
         await refreshSnapshotCount();
       } catch {
         runtime.protectionState = '请先下载安全备份';
@@ -1414,19 +1433,19 @@ export function createCeoOsApplication(config = {}) {
     });
     await snapshotRepository.save({ kind: 'pre-import', appVersion: APP_VERSION, backup: currentBackup });
     const merged = store.mergeSnapshot(parsed.state, { baseState: currentBackup.state });
-    mirrorLegacyWorkspace(merged);
+    const projectionComplete = projectLegacyWorkspace(merged);
     runtime.lastRestoreAt = now();
     await refreshSnapshotCount();
     signalLocalChange();
     renderAll();
-    return { state: merged, summary: parsed.summary, sourceVersion: parsed.sourceVersion };
+    return { state: merged, summary: parsed.summary, sourceVersion: parsed.sourceVersion, projectionComplete };
   }
 
   async function undoLastRestore() {
     const checkpoint = await snapshotRepository.latest('pre-import');
     if (!checkpoint?.backup?.state) throw new Error('restore_checkpoint_not_found');
     const restored = store.mergeSnapshot(checkpoint.backup.state, { baseState: currentDurableState() });
-    mirrorLegacyWorkspace(restored);
+    projectLegacyWorkspace(restored);
     runtime.lastRestoreAt = now();
     signalLocalChange();
     renderAll();
@@ -1449,8 +1468,10 @@ export function createCeoOsApplication(config = {}) {
         const confirmRestore = config.confirm || document?.defaultView?.confirm || globalThis.confirm;
         const approved = confirmRestore?.(`安全合并恢复\n\n来源版本：${preview.sourceVersion || '未知'}\n记录：${preview.summary.totalRecords} 条${counts ? `\n${counts}` : ''}\n\n保留当前数据，不自动删除。确认恢复吗？`);
         if (approved === false) return;
-        await importBackupText(text);
-        runtime.syncStatus = '备份已安全合并，正在自动同步';
+        const result = await importBackupText(text);
+        runtime.syncStatus = result.projectionComplete
+          ? '备份已安全合并，正在自动同步'
+          : '主数据已恢复，兼容页面正在自动重试刷新';
       } catch (error) {
         runtime.syncStatus = `恢复未执行：${error?.message || '备份文件无效'}`;
       }
@@ -1595,7 +1616,13 @@ export function createCeoOsApplication(config = {}) {
         else if (reliabilityRestore) restoreReliabilityItem(reliabilityRestore.dataset.reliabilityEntity, reliabilityRestore.dataset.reliabilityRestore);
         else if (exportBackup) exportSafeBackup();
         else if (importBackup) selectBackupFile();
-        else if (undoBackup) { await undoLastRestore(); runtime.syncStatus = '已恢复导入前版本，并保留后来新增内容'; renderAll(); }
+        else if (undoBackup) {
+          await undoLastRestore();
+          runtime.syncStatus = runtime.protectionState === '本机数据已保护'
+            ? '已恢复导入前版本，并保留后来新增内容'
+            : '主数据已恢复，兼容页面正在自动重试刷新';
+          renderAll();
+        }
         else if (previewButton) await previewDecision(previewButton.dataset.previewDecision);
         else if (executeButton) await executeApproval(executeButton.dataset.executeApproval);
         else if (refreshAllButton) await autoRefreshController?.refresh('manual');

@@ -230,6 +230,15 @@ test('service worker caches the complete transitive browser module graph', async
   assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.0\.2`/);
 });
 
+test('the shell captures raw pre-upgrade state before either application module can migrate it', async () => {
+  const root = new URL('../', import.meta.url);
+  const html = await readFile(new URL('index.html', root), 'utf8');
+  const capture = html.indexOf('window.__ZOS_PRE_UPGRADE_RAW__');
+  assert.ok(capture >= 0);
+  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.0.2'));
+  assert.ok(capture < html.indexOf('src/app.mjs?v=2.0.2'));
+});
+
 test('enabled closed-app reminders synchronize current tasks calendar deadlines and daily digests', async () => {
   const scheduled = [];
   const store = fakeStore();

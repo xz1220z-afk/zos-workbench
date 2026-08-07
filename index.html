@@ -915,6 +915,18 @@ if (window.location.protocol === 'file:') {
   <div class="modal" id="modalBody"></div>
 </div>
 
+<script>
+try {
+  if (localStorage.getItem('zos_last_protected_app_version') !== '2.0.2') {
+    window.__ZOS_PRE_UPGRADE_RAW__ = {};
+    [
+      'zos_ceo_os_state_v1_7', 'zos_ceo_os_state_v1_4', 'zos_ceo_os_state_v1_3',
+      'zos_ceo_os_base_revisions_v1_7', 'zos_ceo_os_base_revisions_v1_4', 'zos_ceo_os_base_revisions_v1_3',
+      'zos_tasks', 'zos_inbox', 'zos_projects', 'zos_commands', 'zos_tombstones', 'zos_device_id'
+    ].forEach(function(key) { window.__ZOS_PRE_UPGRADE_RAW__[key] = localStorage.getItem(key); });
+  }
+} catch (_) { window.__ZOS_PRE_UPGRADE_RAW__ = null; }
+</script>
 <script type="module" src="src/legacy-app.mjs?v=2.0.2"></script>
 <script type="module" src="src/app.mjs?v=2.0.2"></script>
 

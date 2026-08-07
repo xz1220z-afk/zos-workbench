@@ -40,7 +40,7 @@ test('durable backup covers every collection, counts records and excludes creden
   assert.deepEqual(backup.baseRevisions, { 'tasks:tasks-1': 3 });
 });
 
-test('durable view resolves live records and deletion markers by newest evidence', () => {
+test('durable view conservatively keeps live records when another surface has a deletion marker', () => {
   const current = { collections: { tasks: [{ id: 'deleted-later', title: '旧内容', updatedAt: '2026-08-01T00:00:00.000Z' }] } };
   const legacy = {
     collections: { tasks: [{ id: 'edited-later', title: '新内容', updatedAt: '2026-08-03T00:00:00.000Z' }] },
@@ -50,10 +50,10 @@ test('durable view resolves live records and deletion markers by newest evidence
     ],
   };
   const view = buildDurableStateView(current, legacy);
-  assert.equal(view.collections.tasks.some((item) => item.id === 'deleted-later'), false);
+  assert.equal(view.collections.tasks.some((item) => item.id === 'deleted-later'), true);
   assert.equal(view.collections.tasks.some((item) => item.id === 'edited-later'), true);
   assert.equal(view.tombstones.some((item) => item.id === 'deleted-later'), true);
-  assert.equal(view.tombstones.some((item) => item.id === 'edited-later'), false);
+  assert.equal(view.tombstones.some((item) => item.id === 'edited-later'), true);
 });
 
 test('backup parser validates malformed, unsupported, oversized and tampered inputs', () => {
@@ -72,7 +72,24 @@ test('backup creation and parsing reject malformed records and metadata', () => 
   assert.throws(() => createDurableBackup({ state: { auditLog: [null] } }), /invalid_audit_entry/);
   assert.throws(() => createDurableBackup({ state: { collections: [] } }), /invalid_collections/);
   assert.throws(() => createDurableBackup({ state: { tombstones: {} } }), /invalid_tombstones/);
+  assert.throws(() => createDurableBackup({ state: { tombstones: [{ id: 'x', deletedAt: now }] } }), /invalid_tombstone_entity/);
+  assert.throws(() => createDurableBackup({ state: { tombstones: [{ id: 'x', entity: 'tasks' }] } }), /missing_tombstone_deleted_at/);
+  assert.throws(() => createDurableBackup({ state: { collections: { tasks: [{ id: 'x', updatedAt: 'not-a-date' }] } } }), /invalid_timestamp/);
+  assert.throws(() => createDurableBackup({ state: { auditLog: [{}] } }), /invalid_audit_entry/);
   assert.throws(() => createDurableBackup({ state: fullState(), baseRevisions: [] }), /invalid_base_revisions/);
+  assert.throws(() => createDurableBackup({ state: fullState(), baseRevisions: { 'tasks:x': 1.5 } }), /invalid_base_revision/);
+});
+
+test('tombstone duplicate identity is scoped by entity', () => {
+  const backup = createDurableBackup({ state: { tombstones: [
+    { id: 'same', entity: 'tasks', deletedAt: now },
+    { id: 'same', entity: 'projects', deletedAt: now },
+  ] } });
+  assert.equal(backup.state.tombstones.length, 2);
+  assert.throws(() => createDurableBackup({ state: { tombstones: [
+    { id: 'same', entity: 'tasks', deletedAt: now },
+    { id: 'same', entity: 'tasks', deletedAt: now },
+  ] } }), /duplicate_tombstone/);
 });
 
 test('credential aliases are stripped from all nested backup content', () => {

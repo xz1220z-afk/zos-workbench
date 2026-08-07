@@ -82,7 +82,9 @@ function createContext(config = {}) {
 }
 
 export function readPersistedStateForBackup(config = {}) {
-  const storage = config.storage;
+  const storage = config.rawSnapshot
+    ? { getItem: (key) => config.rawSnapshot[key] ?? null }
+    : config.storage;
   if (!storage?.getItem) throw new Error('storage is required');
   const context = createContext(config);
   const current = [STATE_KEY, ...PREVIOUS_STATE_KEYS]
