@@ -52,8 +52,8 @@ test('durable view conservatively keeps live records when another surface has a 
   const view = buildDurableStateView(current, legacy);
   assert.equal(view.collections.tasks.some((item) => item.id === 'deleted-later'), true);
   assert.equal(view.collections.tasks.some((item) => item.id === 'edited-later'), true);
-  assert.equal(view.tombstones.some((item) => item.id === 'deleted-later'), true);
-  assert.equal(view.tombstones.some((item) => item.id === 'edited-later'), true);
+  assert.equal(view.tombstones.some((item) => item.id === 'deleted-later'), false);
+  assert.equal(view.tombstones.some((item) => item.id === 'edited-later'), false);
 });
 
 test('backup parser validates malformed, unsupported, oversized and tampered inputs', () => {

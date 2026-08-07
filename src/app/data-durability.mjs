@@ -264,5 +264,12 @@ export function buildDurableStateView(currentState = {}, legacyState = {}, optio
     const key = `${record.entity || ''}:${record.id}`;
     tombstones.set(key, latestRecord(tombstones.get(key), record));
   }
+  // Restore and backup views are intentionally non-destructive. A stale
+  // deletion marker from either compatibility surface must never shadow a
+  // record that is currently live; otherwise buildLocalSyncInput would turn
+  // the marker into the authoritative local value on the next sync.
+  for (const [key, record] of tombstones) {
+    if (collections[record.entity]?.some((item) => item.id === record.id)) tombstones.delete(key);
+  }
   return { ...current, deviceId, collections, tombstones: [...tombstones.values()] };
 }

@@ -6,6 +6,7 @@ import { createCeoOsApplication, persistSyncMeta } from '../src/app.mjs';
 import { createDurableBackup } from '../src/app/data-durability.mjs';
 import { createStateStore } from '../src/app/state-store.mjs';
 import { createMemorySnapshotAdapter, createSnapshotRepository } from '../src/app/snapshot-repository.mjs';
+import { buildLocalSyncInput } from '../src/sync-engine.mjs';
 
 function memoryStorage() {
   const values = new Map([['zos_device_id', 'mac-1']]);
@@ -143,6 +144,38 @@ test('complete backup includes newer legacy workspace records and restore mirror
   assert.ok(JSON.parse(storage.getItem('zos_tasks')).some((item) => item.id === 'restored'));
 });
 
+test('an unrelated restore cannot leave a stale deletion marker that later removes a current live record during sync', async () => {
+  const storage = memoryStorage();
+  const store = createStateStore({
+    storage, deviceId: 'mac-1', createId: () => 'generated-id',
+    now: () => '2026-08-07T03:00:00.000Z',
+  });
+  store.saveEntity('tasks', {
+    id: 'must-survive', title: '当前有效任务', revision: 5,
+    updatedAt: '2026-08-07T02:00:00.000Z',
+  });
+  storage.setItem('zos_tombstones', JSON.stringify([{
+    id: 'must-survive', entity: 'tasks', deletedAt: '2026-08-07T01:00:00.000Z',
+    updatedAt: '2026-08-07T01:00:00.000Z', revision: 4,
+  }]));
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} }, storage, store,
+    snapshotRepository: createSnapshotRepository({ adapter: createMemorySnapshotAdapter() }),
+    createOperatingRuntime: false, now: () => '2026-08-07T03:00:00.000Z',
+  });
+  const incoming = createDurableBackup({
+    state: { collections: { inbox: [{ id: 'unrelated', title: '无关恢复内容' }] } },
+    createdAt: '2026-08-01T00:00:00.000Z',
+  });
+
+  await app.importBackupText(JSON.stringify(incoming));
+  const persisted = store.load();
+  const syncInput = buildLocalSyncInput(persisted);
+  assert.equal(persisted.collections.tasks.some((item) => item.id === 'must-survive'), true);
+  assert.equal(persisted.tombstones.some((item) => item.entity === 'tasks' && item.id === 'must-survive'), false);
+  assert.equal(syncInput.tasks.find((item) => item.id === 'must-survive')?.deletedAt, null);
+});
+
 test('upgrade checkpoint captures the state from before startup migration', async () => {
   const storage = memoryStorage();
   const store = createStateStore({ storage, deviceId: 'mac-1', createId: () => 'generated-id', now: () => '2026-08-07T04:00:00.000Z' });
@@ -196,6 +229,44 @@ test('legacy projection quota failure keeps modular restore successful and retri
   assert.equal(app.runtime.protectionState, '主数据已安全保存，兼容页面稍后刷新');
   await retry();
   assert.equal(JSON.parse(storage.getItem('zos_inbox')).length, 0);
+  assert.equal(app.runtime.protectionState, '本机数据已保护');
+});
+
+test('legacy projection retry re-reads intervening edits and keeps retrying without claiming protection early', async () => {
+  const base = memoryStorage();
+  let failuresRemaining = 2;
+  const storage = {
+    getItem: base.getItem,
+    setItem(key, value) {
+      if (key === 'zos_tasks' && failuresRemaining > 0) {
+        failuresRemaining -= 1;
+        const error = new Error('quota');
+        error.name = 'QuotaExceededError';
+        throw error;
+      }
+      base.setItem(key, value);
+    },
+  };
+  const queued = [];
+  const store = createStateStore({ storage, deviceId: 'mac-1', createId: () => 'generated-id', now: () => '2026-08-07T06:00:00.000Z' });
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} }, storage, store,
+    snapshotRepository: createSnapshotRepository({ adapter: createMemorySnapshotAdapter(), createId: () => 'pre-import' }),
+    createOperatingRuntime: false, deferSafetyWork: (callback) => queued.push(callback),
+    legacyProjectionRetryDelays: [0, 0, 0],
+    now: () => '2026-08-07T06:00:00.000Z',
+  });
+  const incoming = createDurableBackup({ state: { collections: { tasks: [{ id: 'restored', title: '安全恢复' }] } } });
+
+  const result = await app.importBackupText(JSON.stringify(incoming));
+  assert.equal(result.projectionComplete, false);
+  base.setItem('zos_tasks', JSON.stringify([{ id: 'intervening', title: '重试前的新编辑', updatedAt: '2026-08-07T06:01:00.000Z' }]));
+  await queued.shift()();
+  assert.equal(app.runtime.protectionState, '主数据已安全保存，兼容页面稍后刷新');
+  assert.equal(queued.length, 1);
+  await queued.shift()();
+  assert.equal(store.load().collections.tasks.some((item) => item.id === 'intervening'), true);
+  assert.equal(JSON.parse(base.getItem('zos_tasks')).some((item) => item.id === 'intervening'), true);
   assert.equal(app.runtime.protectionState, '本机数据已保护');
 });
 

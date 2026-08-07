@@ -127,6 +127,11 @@ export function createCeoOsApplication(config = {}) {
     ? config.reminderScheduleRetryDelays : [5_000, 30_000, 120_000];
   const reminderClock = config.clock || document?.defaultView || globalThis;
   const notifiedReminderIds = new Set();
+  let legacyProjectionRetryTimer = null;
+  let legacyProjectionRetryQueued = false;
+  let legacyProjectionRetryAttempt = 0;
+  const legacyProjectionRetryDelays = Array.isArray(config.legacyProjectionRetryDelays)
+    ? config.legacyProjectionRetryDelays : [0, 5_000, 30_000, 120_000];
 
   function readJson(key, fallback) {
     try {
@@ -161,22 +166,58 @@ export function createCeoOsApplication(config = {}) {
     }
   }
 
-  function projectLegacyWorkspace(state) {
-    if (mirrorLegacyWorkspace(state)) return true;
-    runtime.protectionState = '主数据已安全保存，兼容页面稍后刷新';
-    deferSafetyWork(() => {
-      if (!mirrorLegacyWorkspace(state)) return;
-      runtime.protectionState = '本机数据已保护';
-      if (started) renderAll();
-    });
-    return false;
-  }
-
   function deferSafetyWork(callback) {
     if (typeof config.deferSafetyWork === 'function') return config.deferSafetyWork(callback);
     const browserWindow = document?.defaultView || globalThis;
     if (typeof browserWindow.requestIdleCallback === 'function') return browserWindow.requestIdleCallback(callback, { timeout: 1500 });
     return browserWindow.setTimeout?.(callback, 0);
+  }
+
+  function queueLegacyProjectionRetry() {
+    if (legacyProjectionRetryQueued || legacyProjectionRetryTimer != null) return;
+    const delay = legacyProjectionRetryDelays[Math.min(
+      legacyProjectionRetryAttempt,
+      Math.max(legacyProjectionRetryDelays.length - 1, 0),
+    )] || 0;
+    const enqueue = () => {
+      legacyProjectionRetryTimer = null;
+      legacyProjectionRetryQueued = true;
+      deferSafetyWork(() => {
+        legacyProjectionRetryQueued = false;
+        let latest;
+        try {
+          // Do not replay the snapshot captured by the failed projection. Old
+          // pages may have accepted edits meanwhile, so reconcile both current
+          // surfaces again and commit that union before mirroring it.
+          latest = store.replaceSnapshot(currentDurableState());
+        } catch {
+          legacyProjectionRetryAttempt += 1;
+          queueLegacyProjectionRetry();
+          return;
+        }
+        if (!mirrorLegacyWorkspace(latest)) {
+          legacyProjectionRetryAttempt += 1;
+          queueLegacyProjectionRetry();
+          return;
+        }
+        legacyProjectionRetryAttempt = 0;
+        runtime.protectionState = '本机数据已保护';
+        if (started) renderAll();
+      });
+    };
+    const browserWindow = document?.defaultView || globalThis;
+    if (delay > 0 && typeof browserWindow.setTimeout === 'function') {
+      legacyProjectionRetryTimer = browserWindow.setTimeout(enqueue, delay);
+    } else {
+      enqueue();
+    }
+  }
+
+  function projectLegacyWorkspace(state) {
+    if (mirrorLegacyWorkspace(state)) return true;
+    runtime.protectionState = '主数据已安全保存，兼容页面稍后刷新';
+    queueLegacyProjectionRetry();
+    return false;
   }
 
   async function refreshSnapshotCount() {
@@ -2175,6 +2216,9 @@ export function createCeoOsApplication(config = {}) {
     operatingRuntime?.syncController?.stop?.();
     if (reminderScheduleRetryTimer) reminderClock.clearTimeout?.(reminderScheduleRetryTimer);
     reminderScheduleRetryTimer = null;
+    if (legacyProjectionRetryTimer != null) browserWindow?.clearTimeout?.(legacyProjectionRetryTimer);
+    legacyProjectionRetryTimer = null;
+    legacyProjectionRetryQueued = false;
     started = false;
   }
 
