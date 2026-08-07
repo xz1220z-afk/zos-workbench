@@ -49,3 +49,11 @@ test('snapshot repository preserves quota failures for a fail-closed import flow
   });
   await assert.rejects(() => repository.save({ kind: 'pre-import', backup: backup('x') }), /snapshot_storage_failed/);
 });
+
+test('snapshot repository requires committed data to pass readback before reporting success', async () => {
+  const repository = createSnapshotRepository({
+    adapter: { put: async (value) => value, list: async () => [], get: async () => null, delete: async () => {} },
+    now: () => '2026-08-07T02:00:00.000Z', createId: () => 'snapshot-1',
+  });
+  await assert.rejects(() => repository.save({ kind: 'pre-import', backup: backup('x') }), /snapshot_storage_failed/);
+});

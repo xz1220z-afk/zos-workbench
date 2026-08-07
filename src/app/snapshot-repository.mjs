@@ -22,6 +22,14 @@ function requestPromise(request) {
   });
 }
 
+function transactionPromise(transaction) {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onabort = () => reject(transaction.error || new Error('indexeddb_transaction_aborted'));
+    transaction.onerror = () => reject(transaction.error || new Error('indexeddb_transaction_failed'));
+  });
+}
+
 export function createIndexedDbSnapshotAdapter(indexedDB, options = {}) {
   if (!indexedDB?.open) return null;
   let databasePromise;
@@ -38,15 +46,35 @@ export function createIndexedDbSnapshotAdapter(indexedDB, options = {}) {
     });
     return databasePromise;
   }
-  async function store(mode) {
+  async function transaction(mode) {
     const db = await database();
-    return db.transaction(STORE_NAME, mode).objectStore(STORE_NAME);
+    const tx = db.transaction(STORE_NAME, mode);
+    return { tx, objectStore: tx.objectStore(STORE_NAME) };
   }
   return {
-    async put(value) { return requestPromise((await store('readwrite')).put(clone(value))).then(() => clone(value)); },
-    async list() { return requestPromise((await store('readonly')).getAll()).then((rows) => rows.map(clone)); },
-    async get(id) { return requestPromise((await store('readonly')).get(id)).then((value) => clone(value || null)); },
-    async delete(id) { await requestPromise((await store('readwrite')).delete(id)); },
+    async put(value) {
+      const { tx, objectStore } = await transaction('readwrite');
+      const committed = transactionPromise(tx);
+      await Promise.all([requestPromise(objectStore.put(clone(value))), committed]);
+      return clone(value);
+    },
+    async list() {
+      const { tx, objectStore } = await transaction('readonly');
+      const committed = transactionPromise(tx);
+      const [rows] = await Promise.all([requestPromise(objectStore.getAll()), committed]);
+      return rows.map(clone);
+    },
+    async get(id) {
+      const { tx, objectStore } = await transaction('readonly');
+      const committed = transactionPromise(tx);
+      const [value] = await Promise.all([requestPromise(objectStore.get(id)), committed]);
+      return clone(value || null);
+    },
+    async delete(id) {
+      const { tx, objectStore } = await transaction('readwrite');
+      const committed = transactionPromise(tx);
+      await Promise.all([requestPromise(objectStore.delete(id)), committed]);
+    },
   };
 }
 
@@ -70,7 +98,7 @@ export function createSnapshotRepository(config = {}) {
 
   return {
     async save(input = {}) {
-      if (!adapter?.put || !adapter?.list || !adapter?.delete) throw new Error('snapshot_storage_unavailable');
+      if (!adapter?.put || !adapter?.list || !adapter?.get || !adapter?.delete) throw new Error('snapshot_storage_unavailable');
       const value = {
         id: input.id || createId(),
         kind: input.kind || 'manual',
@@ -81,6 +109,8 @@ export function createSnapshotRepository(config = {}) {
       if (!value.backup) throw new Error('snapshot_backup_required');
       try {
         await adapter.put(value);
+        const verified = await adapter.get(value.id);
+        if (!verified || verified.id !== value.id || !verified.backup) throw new Error('snapshot_readback_failed');
         await prune(value.kind);
       } catch (error) {
         const failure = new Error('snapshot_storage_failed');

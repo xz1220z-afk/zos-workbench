@@ -126,7 +126,7 @@ import { pageIdFromHash } from './app/router.mjs?v=2.0.2';
 
   const APP_VERSION = '2.0.2';
   const PUBLIC_APP_URL = new URL('.', window.location.href).href;
-  const APP_RELEASE_DATE = '2026-08-06';
+  const APP_RELEASE_DATE = '2026-08-07';
 
   // ==================== DATA LAYER ====================
   const KEYS = { TASKS:'zos_tasks', INBOX:'zos_inbox', PROJECTS:'zos_projects', COMMANDS:'zos_commands', TOMBSTONES:'zos_tombstones', ONBOARDED:'zos_onboarded', DEVICE:'zos_device_id', SCHEMA:'zos_schema_version', SYNC_CONFIG:'zos_supabase_config', SYNC_SESSION:'zos_supabase_session' };
@@ -963,7 +963,7 @@ import { pageIdFromHash } from './app/router.mjs?v=2.0.2';
     if (!app || !app.undoLastRestore) { toast('数据保护中心正在加载，请稍后再试'); return; }
     try {
       await app.undoLastRestore();
-      toast('已恢复到上次导入前的安全快照');
+      toast('已恢复导入前版本，并保留后来新增内容');
     } catch (error) {
       toast(error.message === 'restore_checkpoint_not_found' ? '暂无可撤销的恢复记录' : '撤销未完成，请重试');
     }
@@ -1001,6 +1001,15 @@ import { pageIdFromHash } from './app/router.mjs?v=2.0.2';
     renderBusinessDataStates();
     checkOnboarding();
   }
+
+  window.addEventListener?.('zos:durable-state-restored', function() {
+    tasks = load(KEYS.TASKS);
+    inbox = load(KEYS.INBOX);
+    projects = load(KEYS.PROJECTS);
+    commands = load(KEYS.COMMANDS);
+    tombstones = load(KEYS.TOMBSTONES);
+    refreshAll();
+  });
 
   window.exportData = exportData;
   window.importData = importData;

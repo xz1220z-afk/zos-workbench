@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  buildDurableStateView,
   buildSafeMergeSnapshot,
   createDurableBackup,
   parseBackupFile,
@@ -39,6 +40,22 @@ test('durable backup covers every collection, counts records and excludes creden
   assert.deepEqual(backup.baseRevisions, { 'tasks:tasks-1': 3 });
 });
 
+test('durable view resolves live records and deletion markers by newest evidence', () => {
+  const current = { collections: { tasks: [{ id: 'deleted-later', title: '旧内容', updatedAt: '2026-08-01T00:00:00.000Z' }] } };
+  const legacy = {
+    collections: { tasks: [{ id: 'edited-later', title: '新内容', updatedAt: '2026-08-03T00:00:00.000Z' }] },
+    tombstones: [
+      { id: 'deleted-later', entity: 'tasks', deletedAt: '2026-08-02T00:00:00.000Z', updatedAt: '2026-08-02T00:00:00.000Z' },
+      { id: 'edited-later', entity: 'tasks', deletedAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z' },
+    ],
+  };
+  const view = buildDurableStateView(current, legacy);
+  assert.equal(view.collections.tasks.some((item) => item.id === 'deleted-later'), false);
+  assert.equal(view.collections.tasks.some((item) => item.id === 'edited-later'), true);
+  assert.equal(view.tombstones.some((item) => item.id === 'deleted-later'), true);
+  assert.equal(view.tombstones.some((item) => item.id === 'edited-later'), false);
+});
+
 test('backup parser validates malformed, unsupported, oversized and tampered inputs', () => {
   assert.throws(() => parseBackupFile('{bad'), /invalid_json/);
   assert.throws(() => parseBackupFile(JSON.stringify({ hello: 'world' })), /unsupported_backup/);
@@ -46,6 +63,25 @@ test('backup parser validates malformed, unsupported, oversized and tampered inp
   const backup = createDurableBackup({ state: fullState(), createdAt: now });
   backup.state.collections.tasks[0].title = 'tampered';
   assert.throws(() => parseBackupFile(JSON.stringify(backup)), /integrity_mismatch/);
+});
+
+test('backup creation and parsing reject malformed records and metadata', () => {
+  assert.throws(() => createDurableBackup({ state: { collections: { tasks: [null] } } }), /invalid_record/);
+  assert.throws(() => createDurableBackup({ state: { collections: { tasks: [{ title: 'missing id' }] } } }), /missing_record_id/);
+  assert.throws(() => createDurableBackup({ state: { collections: { tasks: [{ id: 'same' }, { id: 'same' }] } } }), /duplicate_record_id/);
+  assert.throws(() => createDurableBackup({ state: { auditLog: [null] } }), /invalid_audit_entry/);
+  assert.throws(() => createDurableBackup({ state: { collections: [] } }), /invalid_collections/);
+  assert.throws(() => createDurableBackup({ state: { tombstones: {} } }), /invalid_tombstones/);
+  assert.throws(() => createDurableBackup({ state: fullState(), baseRevisions: [] }), /invalid_base_revisions/);
+});
+
+test('credential aliases are stripped from all nested backup content', () => {
+  const state = fullState();
+  Object.assign(state.collections.tasks[0], {
+    authToken: 'auth-secret', feishu_key: 'feishu-secret', supabaseToken: 'supabase-secret', encryption_key: 'crypto-secret',
+  });
+  const serialized = JSON.stringify(createDurableBackup({ state, createdAt: now }));
+  assert.doesNotMatch(serialized, /auth-secret|feishu-secret|supabase-secret|crypto-secret/);
 });
 
 test('legacy 1.0.4 backup is converted into the unified state contract', () => {

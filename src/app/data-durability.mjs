@@ -14,6 +14,15 @@ function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
 }
 
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function byteLength(value) {
+  if (typeof TextEncoder === 'function') return new TextEncoder().encode(value).byteLength;
+  return unescape(encodeURIComponent(value)).length;
+}
+
 function stableStringify(value) {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
   if (value && typeof value === 'object') {
@@ -35,22 +44,42 @@ function emptyCollections() {
   return Object.fromEntries(STATE_ENTITY_TYPES.map((type) => [type, []]));
 }
 
+function validateRecords(records, label) {
+  const ids = new Set();
+  return records.map((record, index) => {
+    if (!record || typeof record !== 'object' || Array.isArray(record)) throw new Error(`invalid_record:${label}:${index}`);
+    const id = typeof record.id === 'string' ? record.id.trim() : '';
+    if (!id) throw new Error(`missing_record_id:${label}:${index}`);
+    if (ids.has(id)) throw new Error(`duplicate_record_id:${label}:${id}`);
+    ids.add(id);
+    return { ...record, id };
+  });
+}
+
 function normalizedCollections(input = {}) {
+  if (!isPlainObject(input)) throw new Error('invalid_collections');
   const collections = emptyCollections();
   for (const type of STATE_ENTITY_TYPES) {
     if (input[type] != null && !Array.isArray(input[type])) throw new Error(`invalid_collection:${type}`);
-    collections[type] = sanitizeSensitiveFields(clone(Array.isArray(input[type]) ? input[type] : []));
+    collections[type] = sanitizeSensitiveFields(clone(validateRecords(Array.isArray(input[type]) ? input[type] : [], type)));
   }
   return collections;
 }
 
 function normalizedState(input = {}, options = {}) {
+  if (!isPlainObject(input)) throw new Error('invalid_state');
+  if (input.tombstones != null && !Array.isArray(input.tombstones)) throw new Error('invalid_tombstones');
+  if (input.auditLog != null && !Array.isArray(input.auditLog)) throw new Error('invalid_audit_log');
+  const auditLog = (Array.isArray(input.auditLog) ? input.auditLog : []).map((entry, index) => {
+    if (!isPlainObject(entry)) throw new Error(`invalid_audit_entry:${index}`);
+    return clone(entry);
+  });
   return sanitizeSensitiveFields({
     schemaVersion: input.schemaVersion || '1.7',
     deviceId: input.deviceId || options.deviceId || 'backup-device',
     collections: normalizedCollections(input.collections),
-    tombstones: Array.isArray(input.tombstones) ? clone(input.tombstones) : [],
-    auditLog: Array.isArray(input.auditLog) ? clone(input.auditLog) : [],
+    tombstones: Array.isArray(input.tombstones) ? validateRecords(clone(input.tombstones), 'tombstones') : [],
+    auditLog,
   });
 }
 
@@ -82,7 +111,8 @@ export function summarizeBackup(input = {}) {
 
 export function createDurableBackup({ state = {}, baseRevisions = {}, createdAt = new Date().toISOString(), appVersion = '2.0.2' } = {}) {
   const safeState = normalizedState(state);
-  const safeRevisions = sanitizeSensitiveFields(clone(baseRevisions && typeof baseRevisions === 'object' ? baseRevisions : {}));
+  if (!isPlainObject(baseRevisions)) throw new Error('invalid_base_revisions');
+  const safeRevisions = sanitizeSensitiveFields(clone(baseRevisions));
   const backup = {
     product: 'ZOS CEO Operating System',
     backupVersion: appVersion,
@@ -110,7 +140,7 @@ function parseLegacyBackup(value, options) {
 
 export function parseBackupFile(text, options = {}) {
   if (typeof text !== 'string') throw new Error('invalid_json');
-  if (text.length > (options.maxBytes || MAX_BACKUP_BYTES)) throw new Error('backup_too_large');
+  if (byteLength(text) > (options.maxBytes || MAX_BACKUP_BYTES)) throw new Error('backup_too_large');
   let value;
   try {
     value = JSON.parse(text);
@@ -124,6 +154,7 @@ export function parseBackupFile(text, options = {}) {
   if (!value.state?.collections || !value.integrity?.digest || value.integrity.algorithm !== 'fnv1a32') {
     throw new Error('unsupported_backup');
   }
+  if (!isPlainObject(value.baseRevisions || {})) throw new Error('invalid_base_revisions');
   const safe = {
     product: value.product,
     backupVersion: value.backupVersion,
@@ -179,4 +210,45 @@ export function buildSafeMergeSnapshot(currentState = {}, incomingState = {}, op
     tombstones: current.tombstones.filter((record) => !restoredKeys.has(`${record.entity}:${record.id}`)),
     auditLog: current.auditLog,
   };
+}
+
+function latestRecord(current, candidate) {
+  if (!current) return candidate;
+  const currentUpdated = String(current.updatedAt || current.createdAt || '');
+  const candidateUpdated = String(candidate.updatedAt || candidate.createdAt || '');
+  if (candidateUpdated !== currentUpdated) return candidateUpdated > currentUpdated ? candidate : current;
+  const currentRevision = Number(current.revision) || 0;
+  const candidateRevision = Number(candidate.revision) || 0;
+  if (candidateRevision !== currentRevision) return candidateRevision > currentRevision ? candidate : current;
+  return current;
+}
+
+export function buildDurableStateView(currentState = {}, legacyState = {}, options = {}) {
+  const deviceId = options.deviceId || currentState.deviceId || 'backup-device';
+  const current = normalizedState(currentState, { deviceId });
+  const legacy = normalizedState(legacyState, { deviceId });
+  const collections = emptyCollections();
+  for (const type of STATE_ENTITY_TYPES) {
+    const records = new Map(current.collections[type].map((record) => [record.id, record]));
+    for (const record of legacy.collections[type]) records.set(record.id, latestRecord(records.get(record.id), record));
+    collections[type] = [...records.values()];
+  }
+  const tombstones = new Map(current.tombstones.map((record) => [`${record.entity || ''}:${record.id}`, record]));
+  for (const record of legacy.tombstones) {
+    const key = `${record.entity || ''}:${record.id}`;
+    tombstones.set(key, latestRecord(tombstones.get(key), record));
+  }
+  for (const [key, tombstone] of [...tombstones]) {
+    const entity = tombstone.entity;
+    if (!STATE_ENTITY_TYPES.includes(entity)) continue;
+    const records = new Map(collections[entity].map((record) => [record.id, record]));
+    const live = records.get(tombstone.id);
+    if (!live) continue;
+    if (latestRecord(live, tombstone) === tombstone) {
+      collections[entity] = collections[entity].filter((record) => record.id !== tombstone.id);
+    } else {
+      tombstones.delete(key);
+    }
+  }
+  return { ...current, deviceId, collections, tombstones: [...tombstones.values()] };
 }

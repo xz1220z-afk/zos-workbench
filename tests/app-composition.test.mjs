@@ -227,6 +227,7 @@ test('service worker caches the complete transitive browser module graph', async
     'src/app/auto-refresh-controller.mjs',
     'src/app/daily-digest.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
+  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.0\.2`/);
 });
 
 test('enabled closed-app reminders synchronize current tasks calendar deadlines and daily digests', async () => {

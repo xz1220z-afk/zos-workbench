@@ -1,6 +1,6 @@
 import { createRecord, markDeleted, normalizeRecord, touchRecord } from '../data-model.mjs?v=2.0.2';
 import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.0.2';
-import { buildSafeMergeSnapshot, STATE_ENTITY_TYPES } from './data-durability.mjs?v=2.0.2';
+import { buildDurableStateView, buildSafeMergeSnapshot, STATE_ENTITY_TYPES } from './data-durability.mjs?v=2.0.2';
 
 const STATE_KEY = 'zos_ceo_os_state_v1_7';
 const PREVIOUS_STATE_KEYS = ['zos_ceo_os_state_v1_4', 'zos_ceo_os_state_v1_3'];
@@ -72,15 +72,30 @@ function migrateLegacy(storage, context) {
   }, context);
 }
 
-export function createStateStore(config = {}) {
-  const storage = config.storage;
-  if (!storage?.getItem || !storage?.setItem) throw new Error('storage is required');
-  const context = {
+function createContext(config = {}) {
+  return {
     now: config.now || (() => new Date().toISOString()),
     deviceId: config.deviceId || 'unknown-device',
     createId: config.createId || (() => globalThis.crypto.randomUUID()),
     auditLimit: Number.isFinite(config.auditLimit) ? config.auditLimit : 200,
   };
+}
+
+export function readPersistedStateForBackup(config = {}) {
+  const storage = config.storage;
+  if (!storage?.getItem) throw new Error('storage is required');
+  const context = createContext(config);
+  const current = [STATE_KEY, ...PREVIOUS_STATE_KEYS]
+    .map((key) => ({ key, value: parse(storage, key, null) }))
+    .find((candidate) => candidate.value);
+  const modular = current ? normalizeState(current.value, context) : migrateLegacy(storage, context);
+  return buildDurableStateView(modular, migrateLegacy(storage, context), { deviceId: context.deviceId });
+}
+
+export function createStateStore(config = {}) {
+  const storage = config.storage;
+  if (!storage?.getItem || !storage?.setItem) throw new Error('storage is required');
+  const context = createContext(config);
   const listeners = new Set();
   let stateStorageKey = STATE_KEY;
   let baseRevisionsStorageKey = BASE_REVISIONS_KEY;
@@ -209,8 +224,8 @@ export function createStateStore(config = {}) {
       publish();
       return clone(state);
     },
-    mergeSnapshot(snapshot) {
-      const merged = buildSafeMergeSnapshot(state, snapshot, {
+    mergeSnapshot(snapshot, options = {}) {
+      const merged = buildSafeMergeSnapshot(options.baseState || state, snapshot, {
         now: context.now(), deviceId: state.deviceId,
       });
       const record = { id: 'backup', title: '安全合并恢复' };

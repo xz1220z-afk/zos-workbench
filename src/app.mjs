@@ -1,4 +1,4 @@
-import { createStateStore } from './app/state-store.mjs?v=2.0.2';
+import { createStateStore, readPersistedStateForBackup } from './app/state-store.mjs?v=2.0.2';
 import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=2.0.2';
 import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.0.2';
 import { render as renderTargets } from './app/views/targets-view.mjs?v=2.0.2';
@@ -49,15 +49,30 @@ import { render as renderContentGrowth } from './app/views/content-growth-view.m
 import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.0.2';
 import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.0.2';
 import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.0.2';
-import { parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.0.2';
+import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.0.2';
 import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.0.2';
 
 export const APP_VERSION = '2.0.2';
 const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
 const SYNC_META_KEY = 'zos_sync_meta_v2';
+const LEGACY_COLLECTION_KEYS = Object.freeze({
+  tasks: 'zos_tasks', inbox: 'zos_inbox', projects: 'zos_projects', commands: 'zos_commands',
+});
+const LEGACY_TOMBSTONES_KEY = 'zos_tombstones';
 
 function browserId() {
   return globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
+}
+
+export function persistSyncMeta(storage, status = {}) {
+  if (!status.lastSuccessAt) return null;
+  const meta = { lastSuccessAt: status.lastSuccessAt };
+  try {
+    storage?.setItem?.(SYNC_META_KEY, JSON.stringify(meta));
+    return meta;
+  } catch {
+    return null;
+  }
 }
 
 export function createCeoOsApplication(config = {}) {
@@ -65,6 +80,9 @@ export function createCeoOsApplication(config = {}) {
   const storage = config.storage || globalThis.localStorage;
   const now = config.now || (() => new Date().toISOString());
   const deviceId = storage?.getItem?.('zos_device_id') || browserId();
+  const preUpgradeState = config.preUpgradeState || (!config.store
+    ? readPersistedStateForBackup({ storage, now, deviceId, createId: browserId })
+    : config.store.load());
   const store = config.store || createStateStore({ storage, now, deviceId, createId: browserId });
   const snapshotRepository = config.snapshotRepository || createSnapshotRepository({
     adapter: createIndexedDbSnapshotAdapter(document?.defaultView?.indexedDB || globalThis.indexedDB),
@@ -111,6 +129,34 @@ export function createCeoOsApplication(config = {}) {
   const reminderClock = config.clock || document?.defaultView || globalThis;
   const notifiedReminderIds = new Set();
 
+  function readJson(key, fallback) {
+    try {
+      const value = JSON.parse(storage?.getItem?.(key) || 'null');
+      return value == null ? fallback : value;
+    } catch { return fallback; }
+  }
+
+  function currentDurableState() {
+    const collections = Object.fromEntries(Object.entries(LEGACY_COLLECTION_KEYS)
+      .map(([type, key]) => [type, readJson(key, [])]));
+    return buildDurableStateView(store.load(), {
+      deviceId, collections, tombstones: readJson(LEGACY_TOMBSTONES_KEY, []), auditLog: [],
+    }, { deviceId });
+  }
+
+  function mirrorLegacyWorkspace(state) {
+    for (const [type, key] of Object.entries(LEGACY_COLLECTION_KEYS)) {
+      storage?.setItem?.(key, JSON.stringify(state.collections?.[type] || []));
+    }
+    const legacyTypes = new Set(Object.keys(LEGACY_COLLECTION_KEYS));
+    storage?.setItem?.(LEGACY_TOMBSTONES_KEY, JSON.stringify((state.tombstones || [])
+      .filter((record) => legacyTypes.has(record.entity))));
+    try {
+      const browserWindow = document?.defaultView;
+      browserWindow?.dispatchEvent?.(new browserWindow.CustomEvent('zos:durable-state-restored'));
+    } catch { /* The persisted projection is authoritative even when no live legacy view exists. */ }
+  }
+
   function deferSafetyWork(callback) {
     if (typeof config.deferSafetyWork === 'function') return config.deferSafetyWork(callback);
     const browserWindow = document?.defaultView || globalThis;
@@ -135,7 +181,7 @@ export function createCeoOsApplication(config = {}) {
         }
         await snapshotRepository.save({
           kind: 'upgrade', appVersion: previousVersion || 'pre-2.0.2',
-          backup: buildSafeBackup({ state: store.load(), baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() }),
+          backup: buildSafeBackup({ state: preUpgradeState, baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() }),
         });
         storage?.setItem?.(LAST_PROTECTED_VERSION_KEY, APP_VERSION);
         await refreshSnapshotCount();
@@ -1338,7 +1384,7 @@ export function createCeoOsApplication(config = {}) {
   }
 
   function exportSafeBackup() {
-    const backup = buildSafeBackup({ state: store.load(), baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() });
+    const backup = buildSafeBackup({ state: currentDurableState(), baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() });
     if (typeof config.downloadBackup === 'function') {
       config.downloadBackup(backup);
       return backup;
@@ -1364,10 +1410,11 @@ export function createCeoOsApplication(config = {}) {
   async function importBackupText(text) {
     const parsed = previewBackupText(text);
     const currentBackup = buildSafeBackup({
-      state: store.load(), baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now(),
+      state: currentDurableState(), baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now(),
     });
     await snapshotRepository.save({ kind: 'pre-import', appVersion: APP_VERSION, backup: currentBackup });
-    const merged = store.mergeSnapshot(parsed.state);
+    const merged = store.mergeSnapshot(parsed.state, { baseState: currentBackup.state });
+    mirrorLegacyWorkspace(merged);
     runtime.lastRestoreAt = now();
     await refreshSnapshotCount();
     signalLocalChange();
@@ -1378,8 +1425,8 @@ export function createCeoOsApplication(config = {}) {
   async function undoLastRestore() {
     const checkpoint = await snapshotRepository.latest('pre-import');
     if (!checkpoint?.backup?.state) throw new Error('restore_checkpoint_not_found');
-    const restored = store.replaceSnapshot(checkpoint.backup.state);
-    if (checkpoint.backup.baseRevisions) store.saveBaseRevisions(checkpoint.backup.baseRevisions);
+    const restored = store.mergeSnapshot(checkpoint.backup.state, { baseState: currentDurableState() });
+    mirrorLegacyWorkspace(restored);
     runtime.lastRestoreAt = now();
     signalLocalChange();
     renderAll();
@@ -1548,7 +1595,7 @@ export function createCeoOsApplication(config = {}) {
         else if (reliabilityRestore) restoreReliabilityItem(reliabilityRestore.dataset.reliabilityEntity, reliabilityRestore.dataset.reliabilityRestore);
         else if (exportBackup) exportSafeBackup();
         else if (importBackup) selectBackupFile();
-        else if (undoBackup) { await undoLastRestore(); runtime.syncStatus = '已撤销上次恢复，正在自动同步'; renderAll(); }
+        else if (undoBackup) { await undoLastRestore(); runtime.syncStatus = '已恢复导入前版本，并保留后来新增内容'; renderAll(); }
         else if (previewButton) await previewDecision(previewButton.dataset.previewDecision);
         else if (executeButton) await executeApproval(executeButton.dataset.executeApproval);
         else if (refreshAllButton) await autoRefreshController?.refresh('manual');
@@ -2010,10 +2057,7 @@ export function createCeoOsApplication(config = {}) {
         eventTarget: config.eventTarget || globalThis,
         document,
         onSyncStatus: (status) => {
-          if (status.phase === 'complete' && status.lastSuccessAt) {
-            syncMeta = { lastSuccessAt: status.lastSuccessAt };
-            storage?.setItem?.(SYNC_META_KEY, JSON.stringify(syncMeta));
-          }
+          syncMeta = persistSyncMeta(storage, status) || syncMeta;
           runtime.syncStatus = status.phase === 'complete' ? '跨端数据已同步'
             : status.phase === 'retry-wait' ? '同步暂未完成，系统会自动重试'
               : status.phase === 'offline' ? '当前离线，联网后自动补同步' : '正在同步';

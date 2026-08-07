@@ -88,7 +88,8 @@ const ASSETS_TO_CACHE = [
   'icons/icon-maskable-512x512.png',
   'icons/apple-touch-icon.png'
 ].map(function(asset) {
-  return new URL(asset, self.registration.scope).href;
+  const versionedAsset = asset.endsWith('.mjs') ? `${asset}?v=2.0.2` : asset;
+  return new URL(versionedAsset, self.registration.scope).href;
 });
 
 // Install: cache app shell
