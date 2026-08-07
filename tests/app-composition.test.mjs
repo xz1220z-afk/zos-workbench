@@ -228,6 +228,10 @@ test('decision confirmation keeps drawer open on failure and ignores duplicate b
   await assert.rejects(() => failedApp.confirmDecisionAction('确认'), /quota/);
   assert.equal(failedApp.runtime.decisionUi.action.decisionId, decision.id);
   assert.equal(failedApp.runtime.decisionUi.error, '保存失败，请重试；原记录未被删除。');
+
+  failedApp.openDecisionAction(decision.id, 'defer');
+  await assert.rejects(() => failedApp.confirmDecisionAction(''), /暂缓前请填写原因/);
+  assert.equal(failedApp.runtime.decisionUi.error, '暂缓前请填写原因。');
 });
 
 test('production application drives the authenticated operating loop on startup', async () => {
@@ -336,7 +340,7 @@ test('service worker caches the complete transitive browser module graph', async
     'src/app/auto-refresh-controller.mjs',
     'src/app/daily-digest.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.0\.3`/);
+  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.0\.4`/);
 });
 
 test('the shell captures raw pre-upgrade state before either application module can migrate it', async () => {
@@ -344,8 +348,8 @@ test('the shell captures raw pre-upgrade state before either application module 
   const html = await readFile(new URL('index.html', root), 'utf8');
   const capture = html.indexOf('window.__ZOS_PRE_UPGRADE_RAW__');
   assert.ok(capture >= 0);
-  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.0.3'));
-  assert.ok(capture < html.indexOf('src/app.mjs?v=2.0.3'));
+  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.0.4'));
+  assert.ok(capture < html.indexOf('src/app.mjs?v=2.0.4'));
 });
 
 test('enabled closed-app reminders synchronize current tasks calendar deadlines and daily digests', async () => {

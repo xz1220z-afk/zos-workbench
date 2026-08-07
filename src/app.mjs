@@ -1,59 +1,59 @@
-import { createStateStore, readPersistedStateForBackup } from './app/state-store.mjs?v=2.0.3';
-import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=2.0.3';
-import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.0.3';
-import { render as renderTargets } from './app/views/targets-view.mjs?v=2.0.3';
-import { render as renderHealth } from './app/views/health-view.mjs?v=2.0.3';
-import { render as renderMobile } from './app/views/mobile-view.mjs?v=2.0.3';
-import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.0.3';
-import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=2.0.3';
-import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=2.0.3';
-import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=2.0.3';
-import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=2.0.3';
-import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=2.0.3';
-import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=2.0.3';
-import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=2.0.3';
-import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=2.0.3';
-import { buildImportantDates } from './app/important-dates.mjs?v=2.0.3';
-import { queryAvailability } from './app/availability-center.mjs?v=2.0.3';
-import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=2.0.3';
-import { normalizeIntelligenceItem, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=2.0.3';
-import { summarizeLife } from './app/life-os.mjs?v=2.0.3';
-import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=2.0.3';
-import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=2.0.3';
-import { render as renderCalendar } from './app/views/calendar-view.mjs?v=2.0.3';
-import { render as renderLife } from './app/views/life-view.mjs?v=2.0.3';
-import { render as renderSearch } from './app/views/search-view.mjs?v=2.0.3';
-import { render as renderLingli } from './app/views/lingli-view.mjs?v=2.0.3';
-import { buildRelations } from './app/relation-center.mjs?v=2.0.3';
-import { createReviewDraft } from './app/review-center.mjs?v=2.0.3';
-import { render as renderRelations } from './app/views/relation-view.mjs?v=2.0.3';
-import { render as renderReviews } from './app/views/review-view.mjs?v=2.0.3';
-import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=2.0.3';
-import { render as renderTaskCenter } from './app/views/task-view.mjs?v=2.0.3';
-import { render as renderFocus } from './app/views/focus-view.mjs?v=2.0.3';
-import { render as renderAvailability } from './app/views/availability-view.mjs?v=2.0.3';
-import { render as renderMerchant } from './app/views/merchant-view.mjs?v=2.0.3';
-import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=2.0.3';
-import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=2.0.3';
-import { buildTodayTop3 } from './app/priority-engine.mjs?v=2.0.3';
-import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=2.0.3';
-import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=2.0.3';
-import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=2.0.3';
-import { runCompanyAgent } from './app/company-agent-hub.mjs?v=2.0.3';
-import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=2.0.3';
-import { contentOverview, contentPerformance, evaluateExperiment, normalizeContentItem, transitionContent, buildCompoundCandidate } from './app/content-growth.mjs?v=2.0.3';
-import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.0.3';
-import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.0.3';
-import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.0.3';
-import { render as renderContentGrowth } from './app/views/content-growth-view.mjs?v=2.0.3';
-import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.0.3';
-import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.0.3';
-import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.0.3';
-import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.0.3';
-import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.0.3';
-import { applyDecisionAction, partitionDecisions } from './app/decision-center.mjs?v=2.0.3';
+import { createStateStore, readPersistedStateForBackup } from './app/state-store.mjs?v=2.0.4';
+import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=2.0.4';
+import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.0.4';
+import { render as renderTargets } from './app/views/targets-view.mjs?v=2.0.4';
+import { render as renderHealth } from './app/views/health-view.mjs?v=2.0.4';
+import { render as renderMobile } from './app/views/mobile-view.mjs?v=2.0.4';
+import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.0.4';
+import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=2.0.4';
+import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=2.0.4';
+import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=2.0.4';
+import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=2.0.4';
+import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=2.0.4';
+import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=2.0.4';
+import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=2.0.4';
+import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=2.0.4';
+import { buildImportantDates } from './app/important-dates.mjs?v=2.0.4';
+import { queryAvailability } from './app/availability-center.mjs?v=2.0.4';
+import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=2.0.4';
+import { normalizeIntelligenceItem, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=2.0.4';
+import { summarizeLife } from './app/life-os.mjs?v=2.0.4';
+import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=2.0.4';
+import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=2.0.4';
+import { render as renderCalendar } from './app/views/calendar-view.mjs?v=2.0.4';
+import { render as renderLife } from './app/views/life-view.mjs?v=2.0.4';
+import { render as renderSearch } from './app/views/search-view.mjs?v=2.0.4';
+import { render as renderLingli } from './app/views/lingli-view.mjs?v=2.0.4';
+import { buildRelations } from './app/relation-center.mjs?v=2.0.4';
+import { createReviewDraft } from './app/review-center.mjs?v=2.0.4';
+import { render as renderRelations } from './app/views/relation-view.mjs?v=2.0.4';
+import { render as renderReviews } from './app/views/review-view.mjs?v=2.0.4';
+import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=2.0.4';
+import { render as renderTaskCenter } from './app/views/task-view.mjs?v=2.0.4';
+import { render as renderFocus } from './app/views/focus-view.mjs?v=2.0.4';
+import { render as renderAvailability } from './app/views/availability-view.mjs?v=2.0.4';
+import { render as renderMerchant } from './app/views/merchant-view.mjs?v=2.0.4';
+import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=2.0.4';
+import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=2.0.4';
+import { buildTodayTop3 } from './app/priority-engine.mjs?v=2.0.4';
+import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=2.0.4';
+import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=2.0.4';
+import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=2.0.4';
+import { runCompanyAgent } from './app/company-agent-hub.mjs?v=2.0.4';
+import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=2.0.4';
+import { contentOverview, contentPerformance, evaluateExperiment, normalizeContentItem, transitionContent, buildCompoundCandidate } from './app/content-growth.mjs?v=2.0.4';
+import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.0.4';
+import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.0.4';
+import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.0.4';
+import { render as renderContentGrowth } from './app/views/content-growth-view.mjs?v=2.0.4';
+import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.0.4';
+import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.0.4';
+import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.0.4';
+import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.0.4';
+import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.0.4';
+import { applyDecisionAction, partitionDecisions } from './app/decision-center.mjs?v=2.0.4';
 
-export const APP_VERSION = '2.0.3';
+export const APP_VERSION = '2.0.4';
 const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
 const SYNC_META_KEY = 'zos_sync_meta_v2';
 const LEGACY_COLLECTION_KEYS = Object.freeze({
@@ -139,6 +139,7 @@ export function createCeoOsApplication(config = {}) {
   let legacyProjectionGeneration = 0;
   let decisionUndoTimer = null;
   let decisionActionWork = null;
+  let decisionReturnFocus = null;
   const legacyProjectionRetryDelays = Array.isArray(config.legacyProjectionRetryDelays)
     ? config.legacyProjectionRetryDelays : [0, 5_000, 30_000, 120_000];
 
@@ -265,7 +266,7 @@ export function createCeoOsApplication(config = {}) {
           ? readPersistedStateForBackup({ rawSnapshot: preUpgradeRaw, now, deviceId, createId: browserId })
           : currentDurableState());
         await snapshotRepository.save({
-          kind: 'upgrade', appVersion: previousVersion || 'pre-2.0.3',
+          kind: 'upgrade', appVersion: previousVersion || 'pre-2.0.4',
           backup: buildSafeBackup({ state: checkpointState, baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() }),
         });
         storage?.setItem?.(LAST_PROTECTED_VERSION_KEY, APP_VERSION);
@@ -669,7 +670,9 @@ export function createCeoOsApplication(config = {}) {
     if (!decision) throw new Error('找不到这条决策记录');
     runtime.decisionUi.action = { decisionId, action, note: '' };
     runtime.decisionUi.error = null;
+    decisionReturnFocus = { decisionId, action };
     renderAll();
+    document?.querySelector?.('.decision-action-drawer [data-decision-close]')?.focus?.();
     return structuredClone(runtime.decisionUi.action);
   }
 
@@ -678,6 +681,14 @@ export function createCeoOsApplication(config = {}) {
     runtime.decisionUi.action = null;
     runtime.decisionUi.error = null;
     renderAll();
+    const focus = decisionReturnFocus;
+    decisionReturnFocus = null;
+    const candidates = focus?.action === 'source'
+      ? document?.querySelectorAll?.('[data-decision-source]')
+      : document?.querySelectorAll?.('[data-decision-action]');
+    [...(candidates || [])].find((item) => (focus?.action === 'source'
+      ? item.dataset.decisionSource === focus.decisionId
+      : item.dataset.decisionId === focus?.decisionId && item.dataset.decisionAction === focus?.action))?.focus?.();
     return true;
   }
 
@@ -700,6 +711,11 @@ export function createCeoOsApplication(config = {}) {
     if (!selected || selected.action === 'source') throw new Error('请先选择处理动作');
     const before = decisionById(selected.decisionId);
     if (!before) throw new Error('找不到这条决策记录');
+    if (selected.action === 'defer' && !String(note || '').trim()) {
+      runtime.decisionUi.error = '暂缓前请填写原因。';
+      renderAll();
+      throw new Error('暂缓前请填写原因');
+    }
     runtime.decisionUi.busy = true;
     runtime.decisionUi.error = null;
     renderAll();
@@ -1814,7 +1830,7 @@ export function createCeoOsApplication(config = {}) {
         else if (decisionUndo) await undoDecisionAction();
         else if (decisionLoadMore) loadMoreDecisions(decisionLoadMore.dataset.decisionLoadMore);
         else if (decisionJump) document?.getElementById?.(`decision-${decisionJump.dataset.decisionJump}`)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-        else if (previewButton) await previewDecision(previewButton.dataset.previewDecision);
+        else if (previewButton) { closeDecisionAction(); await previewDecision(previewButton.dataset.previewDecision); }
         else if (executeButton) await executeApproval(executeButton.dataset.executeApproval);
         else if (refreshAllButton) await autoRefreshController?.refresh('manual');
         else if (refreshButton) await refreshSource(refreshButton.dataset.refreshSource);
@@ -2119,7 +2135,15 @@ export function createCeoOsApplication(config = {}) {
     });
     document.addEventListener('keydown', (event) => {
       const target = event.target?.closest?.('[data-calendar-select-date]');
-      if (target && ['Enter', ' '].includes(event.key)) {
+      if (event.key === 'Tab' && runtime.decisionUi.action) {
+        const focusable = [...(document?.querySelectorAll?.('.decision-action-drawer button:not([disabled]), .decision-action-drawer a[href], .decision-action-drawer textarea:not([disabled]), .decision-action-drawer input:not([disabled]), .decision-action-drawer select:not([disabled])') || [])];
+        if (focusable.length) {
+          const first = focusable[0];
+          const last = focusable.at(-1);
+          if (event.shiftKey && document.activeElement === first) { event.preventDefault?.(); last.focus?.(); }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault?.(); first.focus?.(); }
+        }
+      } else if (target && ['Enter', ' '].includes(event.key)) {
         event.preventDefault?.();
         beginCalendarSelection(target.dataset.calendarSelectDate);
         commitCalendarSelection();

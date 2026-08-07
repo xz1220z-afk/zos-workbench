@@ -1,7 +1,7 @@
 {
   "name": "ZOS CEO OS",
   "short_name": "CEO OS",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "ZOS CEO OS · 三家公司经营、内容增长、知识阅读、社媒洞察、受控 Agent、日历与个人生活的一体化工作台",
   "start_url": "./",
   "scope": "./",

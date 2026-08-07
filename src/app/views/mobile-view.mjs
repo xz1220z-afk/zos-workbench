@@ -1,5 +1,5 @@
-import { escapeHtml } from './view-utils.mjs?v=2.0.3';
-import { partitionDecisions } from '../decision-center.mjs?v=2.0.3';
+import { escapeHtml } from './view-utils.mjs?v=2.0.4';
+import { partitionDecisions } from '../decision-center.mjs?v=2.0.4';
 
 function count(items) { return Array.isArray(items) ? items.length : 0; }
 
