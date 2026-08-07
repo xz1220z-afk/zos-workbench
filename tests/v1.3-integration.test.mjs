@@ -85,6 +85,19 @@ test('operating loop hydrates synchronized decisions and briefs without duplicat
 
   assert.equal(loop.getState().decisions.length, 1);
   assert.equal(loop.getState().briefs.length, 1);
+
+  const updated = loop.updateDecision({
+    ...loop.getState().decisions[0],
+    decisionScope: 'owner',
+    requiresCeoDecision: false,
+    revision: 2,
+  });
+  assert.equal(updated.decisionScope, 'owner');
+  assert.equal(loop.getState().decisions[0].revision, 2);
+  updated.decisionScope = 'ceo';
+  assert.equal(loop.getState().decisions[0].decisionScope, 'owner', 'returned decisions must be cloned');
+  assert.throws(() => loop.updateDecision({ id: 'missing', status: 'open' }), /decision not found/);
+  assert.throws(() => loop.updateDecision({ id: '', status: 'open' }), /decision id is required/);
 });
 
 test('operating loop expands nested source records and regenerates today brief with tasks and decisions', async () => {

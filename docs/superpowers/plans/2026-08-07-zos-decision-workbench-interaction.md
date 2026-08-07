@@ -49,6 +49,7 @@ test('decision actions approve, delegate, defer, resolve, reopen and escalate wi
   assert.equal(applyDecisionAction(open, 'defer', '下周再看', { now: NOW, ...callbacks }).status, 'deferred');
   assert.equal(applyDecisionAction({ ...open, status: 'pending_resolution' }, 'resolve', '确认解除', { now: NOW, ...callbacks }).status, 'resolved');
   assert.equal(applyDecisionAction({ ...open, status: 'pending_resolution' }, 'reopen', '仍需处理', { now: NOW, ...callbacks }).status, 'open');
+  assert.equal(applyDecisionAction({ ...open, status: 'deferred' }, 'reopen', '提前恢复', { now: NOW, ...callbacks }).status, 'open');
   assert.equal(applyDecisionAction({ ...open, decisionScope: 'owner' }, 'escalate', '需要朱帅拍板', { now: NOW, ...callbacks }).decisionScope, 'ceo');
 });
 ```
@@ -88,6 +89,8 @@ export function applyDecisionAction(decision, action, note = '', options = {}) {
 ```
 
 Add `updateDecision(decision)` to the operating loop, replacing only the matching ID and returning a clone.
+
+The lifecycle must explicitly allow `deferred -> open`, because reopening a deferred decision is part of the approved history workflow.
 
 - [ ] **Step 4: Run focused tests and verify GREEN**
 

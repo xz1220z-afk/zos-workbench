@@ -77,6 +77,14 @@ export function createOperatingLoop({
   return {
     getState() { return clone(state); },
 
+    updateDecision(decision) {
+      const id = required(decision?.id, 'decision id');
+      const index = state.decisions.findIndex((item) => item.id === id);
+      if (index === -1) throw new Error(`decision not found: ${id}`);
+      state.decisions[index] = clone(decision);
+      return clone(state.decisions[index]);
+    },
+
     async refresh(source) {
       const facts = await refreshBusiness(source);
       state.sources[source] = clone(facts);

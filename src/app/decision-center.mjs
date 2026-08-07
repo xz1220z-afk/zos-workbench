@@ -6,7 +6,7 @@ const TRANSITIONS = Object.freeze({
   pending_resolution: new Set(['resolved', 'open']),
   approved: new Set(),
   rejected: new Set(),
-  deferred: new Set(),
+  deferred: new Set(['open']),
   resolved: new Set(),
 });
 
@@ -120,6 +120,36 @@ export function transitionDecision(decision, nextStatus, note = '', options = {}
       ? requiredText(options.now, 'now')
       : decision.decidedAt || null,
   }, { now: requiredText(options.now, 'now'), deviceId: options.deviceId || 'decision-engine' });
+}
+
+export function applyDecisionAction(decision, action, note = '', options = {}) {
+  requiredText(decision?.id, 'decision id');
+  const next = requiredText(action, 'decision action');
+  if (next === 'approve') return transitionDecision(decision, 'approved', note, options);
+  if (next === 'defer') return transitionDecision(decision, 'deferred', note, options);
+  if (next === 'resolve') return transitionDecision(decision, 'resolved', note, options);
+  if (next === 'reopen') return transitionDecision(decision, 'open', note, options);
+
+  const current = requiredText(decision?.status, 'decision status');
+  const { touchRecord } = callbacks(options);
+  const at = { now: requiredText(options.now, 'now'), deviceId: options.deviceId || 'decision-engine' };
+  if (next === 'delegate' && current === 'open') {
+    return touchRecord({
+      ...decision,
+      decisionScope: 'owner',
+      requiresCeoDecision: false,
+      decisionNote: String(note || '').trim(),
+    }, at);
+  }
+  if (next === 'escalate' && current === 'open') {
+    return touchRecord({
+      ...decision,
+      decisionScope: 'ceo',
+      requiresCeoDecision: true,
+      decisionNote: String(note || '').trim(),
+    }, at);
+  }
+  throw new Error(`invalid decision action: ${next}`);
 }
 
 export function reconcileDecisions(existing = [], currentItems = [], options = {}) {

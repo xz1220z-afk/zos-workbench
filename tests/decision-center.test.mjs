@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  applyDecisionAction,
   classifyDecision,
   decisionKey,
   deriveDecisions,
@@ -200,4 +201,39 @@ test('transitionDecision allows only the documented lifecycle', () => {
     () => transitionDecision({ ...openDecision, status: 'approved' }, 'open', '', { now: NOW, ...callbacks }),
     /invalid decision transition/,
   );
+});
+
+test('decision actions approve, delegate, defer, resolve, reopen and escalate without deleting identity', () => {
+  const [open] = deriveDecisions({ risks: [risk] }, { now: NOW, ...callbacks });
+  const at = '2026-08-02T09:00:00.000Z';
+
+  const approved = applyDecisionAction(open, 'approve', '按建议推进', { now: at, ...callbacks });
+  assert.equal(approved.status, 'approved');
+  assert.equal(approved.id, open.id);
+
+  const delegated = applyDecisionAction(open, 'delegate', '交阿涛跟进', { now: at, ...callbacks });
+  assert.equal(delegated.status, 'open');
+  assert.equal(delegated.decisionScope, 'owner');
+  assert.equal(delegated.requiresCeoDecision, false);
+  assert.equal(delegated.decisionNote, '交阿涛跟进');
+  assert.equal(delegated.id, open.id);
+
+  assert.equal(applyDecisionAction(open, 'defer', '下周再看', { now: at, ...callbacks }).status, 'deferred');
+  assert.equal(applyDecisionAction({ ...open, status: 'pending_resolution' }, 'resolve', '确认解除', { now: at, ...callbacks }).status, 'resolved');
+  assert.equal(applyDecisionAction({ ...open, status: 'pending_resolution' }, 'reopen', '仍需处理', { now: at, ...callbacks }).status, 'open');
+  assert.equal(applyDecisionAction({ ...open, status: 'deferred' }, 'reopen', '提前恢复', { now: at, ...callbacks }).status, 'open');
+
+  const escalated = applyDecisionAction({ ...open, decisionScope: 'owner', requiresCeoDecision: false }, 'escalate', '需要朱帅拍板', { now: at, ...callbacks });
+  assert.equal(escalated.decisionScope, 'ceo');
+  assert.equal(escalated.requiresCeoDecision, true);
+  assert.equal(escalated.id, open.id);
+});
+
+test('decision actions reject invalid action and status pairs and require identity', () => {
+  const [open] = deriveDecisions({ risks: [risk] }, { now: NOW, ...callbacks });
+
+  assert.throws(() => applyDecisionAction(open, 'resolve', '', { now: NOW, ...callbacks }), /invalid decision transition/);
+  assert.throws(() => applyDecisionAction({ ...open, status: 'approved' }, 'delegate', '', { now: NOW, ...callbacks }), /invalid decision action/);
+  assert.throws(() => applyDecisionAction(open, 'unknown', '', { now: NOW, ...callbacks }), /invalid decision action/);
+  assert.throws(() => applyDecisionAction({ ...open, id: '' }, 'delegate', '', { now: NOW, ...callbacks }), /decision id is required/);
 });
