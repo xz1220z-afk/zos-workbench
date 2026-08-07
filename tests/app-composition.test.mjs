@@ -4,13 +4,13 @@ import { readFile } from 'node:fs/promises';
 
 import { createCeoOsApplication } from '../src/app.mjs';
 
-function fakeStore(targets = []) {
+function fakeStore(targets = [], decisions = []) {
   const listeners = new Set();
   let sequence = 0;
   const state = {
     schemaVersion: '1.4', deviceId: 'device-1', tombstones: [],
     collections: {
-      tasks: [], inbox: [], projects: [], commands: [], decisions: [], targets,
+      tasks: [], inbox: [], projects: [], commands: [], decisions, targets,
       intelligence: [], calendar: [], life: [], focus_sessions: [], countdowns: [],
     },
   };
@@ -54,6 +54,20 @@ function fakeStore(targets = []) {
       state.collections[entityType] = [...state.collections[entityType], restored];
       listeners.forEach((listener) => listener(structuredClone(state)));
       return structuredClone(restored);
+    },
+  };
+}
+
+function decisionLoop(initialDecision) {
+  let decisions = [structuredClone(initialDecision)];
+  return {
+    async refresh() {}, confirmTargets() {}, ensureDailyBrief() { return null; },
+    updateDecision(decision) {
+      decisions = decisions.map((item) => item.id === decision.id ? structuredClone(decision) : item);
+      return structuredClone(decision);
+    },
+    getState() {
+      return { decisions: structuredClone(decisions), targets: [], gaps: [], briefs: [], health: [], conflicts: [], approvals: [], sources: {} };
     },
   };
 }
@@ -148,6 +162,72 @@ test('application badge counts only decisions that require CEO judgment', async 
 
   assert.equal(document.nodes.get('decisionBadge').textContent, '1');
   assert.equal(document.nodes.get('decisionBadge').style.display, '');
+});
+
+test('decision actions persist, move between queues and undo as a newer revision', async () => {
+  const decision = {
+    id: 'decision-action-1', status: 'open', source: 'wanjia', sourceRecordId: 'rec-1',
+    category: 'revenue_pending', severity: 'high', factSummary: '确认待回款方案',
+    recommendedAction: '按回款计划推进', decisionScope: 'ceo', requiresCeoDecision: true,
+    revision: 1,
+  };
+  const store = fakeStore([], [decision]);
+  const operatingLoop = decisionLoop(decision);
+  const app = createCeoOsApplication({
+    document: renderDocument(), storage: { getItem: () => 'device-1', setItem() {} }, store,
+    operatingRuntime: { operatingLoop, syncController: { start() {} } },
+    now: () => '2026-08-07T10:00:00.000Z',
+  });
+  await app.start(); await app.whenIdle();
+
+  app.openDecisionAction(decision.id, 'delegate');
+  await app.confirmDecisionAction('交负责人跟进');
+  assert.equal(app.viewModel().decisionQueues.ceo.length, 0);
+  assert.equal(app.viewModel().decisionQueues.followUp.length, 1);
+  assert.equal(store.load().collections.decisions[0].decisionScope, 'owner');
+  assert.equal(operatingLoop.getState().decisions[0].requiresCeoDecision, false);
+
+  const delegatedRevision = store.load().collections.decisions[0].revision;
+  await app.undoDecisionAction();
+  const restored = store.load().collections.decisions[0];
+  assert.equal(restored.decisionScope, 'ceo');
+  assert.equal(restored.requiresCeoDecision, true);
+  assert.ok(restored.revision > delegatedRevision);
+});
+
+test('decision confirmation keeps drawer open on failure and ignores duplicate busy confirmation', async () => {
+  const decision = {
+    id: 'decision-action-2', status: 'open', source: 'huahuo', sourceRecordId: 'rec-2',
+    category: 'high_risk', factSummary: '确认交付资源', recommendedAction: '安排负责人', revision: 1,
+  };
+  const working = fakeStore([], [decision]);
+  let saves = 0;
+  const countedStore = {
+    ...working,
+    saveEntity(...args) { saves += 1; return working.saveEntity(...args); },
+  };
+  const app = createCeoOsApplication({
+    document: renderDocument(), storage: { getItem: () => 'device-1', setItem() {} }, store: countedStore,
+    operatingRuntime: { operatingLoop: decisionLoop(decision), syncController: { start() {} } },
+  });
+  await app.start(); await app.whenIdle();
+  app.openDecisionAction(decision.id, 'approve');
+  const first = app.confirmDecisionAction('确认');
+  const second = app.confirmDecisionAction('确认');
+  await Promise.all([first, second]);
+  assert.equal(saves, 1);
+
+  const failing = fakeStore([], [decision]);
+  const failedApp = createCeoOsApplication({
+    document: renderDocument(), storage: { getItem: () => 'device-1', setItem() {} },
+    store: { ...failing, saveEntity() { throw new Error('quota'); } },
+    operatingRuntime: { operatingLoop: decisionLoop(decision), syncController: { start() {} } },
+  });
+  await failedApp.start(); await failedApp.whenIdle();
+  failedApp.openDecisionAction(decision.id, 'approve');
+  await assert.rejects(() => failedApp.confirmDecisionAction('确认'), /quota/);
+  assert.equal(failedApp.runtime.decisionUi.action.decisionId, decision.id);
+  assert.equal(failedApp.runtime.decisionUi.error, '保存失败，请重试；原记录未被删除。');
 });
 
 test('production application drives the authenticated operating loop on startup', async () => {

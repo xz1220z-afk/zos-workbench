@@ -53,10 +53,48 @@ test('decision surfaces separate CEO choices from owner follow-up and resolved h
   renderDecisions(center, { state: 'ready', decisions });
   assert.match(center.innerHTML, /需要你决定[\s\S]*1/);
   assert.match(center.innerHTML, /负责人跟进[\s\S]*1/);
-  assert.match(center.innerHTML, /已解除历史[\s\S]*1/);
-  assert.equal((center.innerHTML.match(/data-preview-decision=/g) || []).length, 1);
+  assert.match(center.innerHTML, /处理历史[\s\S]*1/);
+  assert.match(center.innerHTML, /data-decision-action="approve"/);
+  assert.match(center.innerHTML, /data-decision-action="delegate"/);
+  assert.match(center.innerHTML, /data-decision-action="defer"/);
+  assert.match(center.innerHTML, /data-decision-source="ceo"/);
+  assert.equal((center.innerHTML.match(/data-preview-decision=/g) || []).length, 0);
 
   const mobile = { innerHTML: '' };
   renderMobile(mobile, { decisions });
   assert.match(mobile.innerHTML, /1 项需要确认/);
+});
+
+test('decision inbox limits history, exposes load more and renders a safe action drawer', () => {
+  const history = Array.from({ length: 20 }, (_, index) => ({
+    id: `history-${index}`, status: index === 0 ? 'pending_resolution' : 'approved',
+    severity: 'medium', factSummary: `历史事项 ${index}`, decisionNote: '已处理',
+  }));
+  const container = { innerHTML: '' };
+  renderDecisions(container, {
+    state: 'ready',
+    decisions: [
+      { id: 'ceo', status: 'open', category: 'revenue_pending', severity: 'high', factSummary: '待确认回款', recommendedAction: '确认方案' },
+      ...history,
+    ],
+    decisionUi: {
+      action: { decisionId: 'ceo', action: 'approve' }, busy: false, error: null,
+      search: '', company: 'all', status: 'all', followUpLimit: 6, historyLimit: 6,
+    },
+  });
+
+  assert.equal((container.innerHTML.match(/class="decision-history-row/g) || []).length, 6);
+  assert.match(container.innerHTML, /data-decision-load-more="history"/);
+  assert.match(container.innerHTML, /role="dialog"/);
+  assert.match(container.innerHTML, /data-decision-confirm/);
+  assert.doesNotMatch(container.innerHTML, /历史事项 19/);
+
+  const pending = { innerHTML: '' };
+  renderDecisions(pending, {
+    state: 'ready', decisions: [history[0]],
+    decisionUi: { action: null, search: '', company: 'all', status: 'all', followUpLimit: 6, historyLimit: 6 },
+  });
+  assert.match(pending.innerHTML, /data-decision-action="resolve"/);
+  assert.match(pending.innerHTML, /data-decision-action="reopen"/);
+  assert.doesNotMatch(pending.innerHTML, /data-preview-decision/);
 });

@@ -51,7 +51,7 @@ import { render as renderSocialInsights } from './app/views/social-insights-view
 import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.0.3';
 import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.0.3';
 import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.0.3';
-import { partitionDecisions } from './app/decision-center.mjs?v=2.0.3';
+import { applyDecisionAction, partitionDecisions } from './app/decision-center.mjs?v=2.0.3';
 
 export const APP_VERSION = '2.0.3';
 const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
@@ -112,6 +112,10 @@ export function createCeoOsApplication(config = {}) {
       phase: 'idle', reason: null, lastAttemptAt: null, lastSuccessAt: null,
       succeeded: [], failed: [],
     },
+    decisionUi: {
+      action: null, busy: false, error: null, search: '', company: 'all', status: 'all',
+      followUpLimit: 6, historyLimit: 6, undo: null,
+    },
   };
   let operatingRuntime = config.operatingRuntime || null;
   let autoRefreshController = null;
@@ -133,6 +137,8 @@ export function createCeoOsApplication(config = {}) {
   let legacyProjectionRetryQueued = false;
   let legacyProjectionRetryAttempt = 0;
   let legacyProjectionGeneration = 0;
+  let decisionUndoTimer = null;
+  let decisionActionWork = null;
   const legacyProjectionRetryDelays = Array.isArray(config.legacyProjectionRetryDelays)
     ? config.legacyProjectionRetryDelays : [0, 5_000, 30_000, 120_000];
 
@@ -371,6 +377,7 @@ export function createCeoOsApplication(config = {}) {
     return {
       ...runtime,
       decisions,
+      decisionQueues: partitionDecisions(decisions),
       targets: runtime.loopConnected ? runtime.targets : (state.collections.targets || []),
       tasks: state.collections.tasks || [],
       inbox: state.collections.inbox || [],
@@ -651,6 +658,115 @@ export function createCeoOsApplication(config = {}) {
     runtime.preview = null;
     renderAll();
     return result;
+  }
+
+  function decisionById(id) {
+    return viewModel().decisions.find((item) => item.id === id) || null;
+  }
+
+  function openDecisionAction(decisionId, action) {
+    const decision = decisionById(decisionId);
+    if (!decision) throw new Error('找不到这条决策记录');
+    runtime.decisionUi.action = { decisionId, action, note: '' };
+    runtime.decisionUi.error = null;
+    renderAll();
+    return structuredClone(runtime.decisionUi.action);
+  }
+
+  function closeDecisionAction() {
+    if (runtime.decisionUi.busy) return false;
+    runtime.decisionUi.action = null;
+    runtime.decisionUi.error = null;
+    renderAll();
+    return true;
+  }
+
+  function decisionBusinessFields(record) {
+    const next = structuredClone(record);
+    for (const key of ['revision', 'createdAt', 'updatedAt', 'deviceId', 'deletedAt']) delete next[key];
+    return next;
+  }
+
+  function clearDecisionUndo() {
+    const clock = document?.defaultView || globalThis;
+    if (decisionUndoTimer != null) clock.clearTimeout?.(decisionUndoTimer);
+    decisionUndoTimer = null;
+    runtime.decisionUi.undo = null;
+  }
+
+  async function confirmDecisionAction(note = '') {
+    if (decisionActionWork) return decisionActionWork;
+    const selected = runtime.decisionUi.action;
+    if (!selected || selected.action === 'source') throw new Error('请先选择处理动作');
+    const before = decisionById(selected.decisionId);
+    if (!before) throw new Error('找不到这条决策记录');
+    runtime.decisionUi.busy = true;
+    runtime.decisionUi.error = null;
+    renderAll();
+    decisionActionWork = (async () => {
+      await Promise.resolve();
+      try {
+        const changed = applyDecisionAction(before, selected.action, note, { now: now(), deviceId });
+        const saved = store.saveEntity('decisions', changed, { action: `decision_${selected.action}` });
+        operatingRuntime?.operatingLoop?.updateDecision?.(saved);
+        if (operatingRuntime?.operatingLoop) updateFromOperatingLoop();
+        else runtime.decisions = store.load().collections.decisions || [];
+        clearDecisionUndo();
+        runtime.decisionUi.undo = {
+          before: decisionBusinessFields(before),
+          afterId: saved.id,
+          message: `${selected.action === 'delegate' ? '已交负责人跟进' : '决策已保存'}，8 秒内可撤销`,
+        };
+        const clock = document?.defaultView || globalThis;
+        decisionUndoTimer = clock.setTimeout?.(() => {
+          decisionUndoTimer = null;
+          runtime.decisionUi.undo = null;
+          if (started) renderAll();
+        }, 8_000);
+        decisionUndoTimer?.unref?.();
+        runtime.decisionUi.action = null;
+        signalLocalChange();
+        renderAll();
+        return saved;
+      } catch (error) {
+        runtime.decisionUi.error = '保存失败，请重试；原记录未被删除。';
+        renderAll();
+        throw error;
+      } finally {
+        runtime.decisionUi.busy = false;
+        decisionActionWork = null;
+        if (started) renderAll();
+      }
+    })();
+    return decisionActionWork;
+  }
+
+  async function undoDecisionAction() {
+    const undo = runtime.decisionUi.undo;
+    if (!undo?.before) return null;
+    const restored = store.saveEntity('decisions', undo.before, { action: 'decision_undo' });
+    operatingRuntime?.operatingLoop?.updateDecision?.(restored);
+    if (operatingRuntime?.operatingLoop) updateFromOperatingLoop();
+    else runtime.decisions = store.load().collections.decisions || [];
+    clearDecisionUndo();
+    signalLocalChange();
+    renderAll();
+    return restored;
+  }
+
+  function setDecisionFilter(kind, value) {
+    if (!['search', 'company', 'status'].includes(kind)) throw new Error('unsupported decision filter');
+    runtime.decisionUi[kind] = String(value || (kind === 'search' ? '' : 'all'));
+    runtime.decisionUi.followUpLimit = 6;
+    runtime.decisionUi.historyLimit = 6;
+    renderAll();
+  }
+
+  function loadMoreDecisions(bucket) {
+    const key = bucket === 'followUp' ? 'followUpLimit' : 'historyLimit';
+    runtime.decisionUi[key] += 12;
+    renderAll();
+    return runtime.decisionUi[key];
   }
 
   function quickCapture(title) {
@@ -1546,6 +1662,13 @@ export function createCeoOsApplication(config = {}) {
     actionsBound = true;
     document.addEventListener('click', async (event) => {
       const previewButton = event.target?.closest?.('[data-preview-decision]');
+      const decisionAction = event.target?.closest?.('[data-decision-action]');
+      const decisionSource = event.target?.closest?.('[data-decision-source]');
+      const decisionConfirm = event.target?.closest?.('[data-decision-confirm]');
+      const decisionClose = event.target?.closest?.('[data-decision-close]');
+      const decisionUndo = event.target?.closest?.('[data-decision-undo]');
+      const decisionLoadMore = event.target?.closest?.('[data-decision-load-more]');
+      const decisionJump = event.target?.closest?.('[data-decision-jump]');
       const executeButton = event.target?.closest?.('[data-execute-approval]');
       const refreshButton = event.target?.closest?.('[data-refresh-source]');
       const refreshAllButton = event.target?.closest?.('[data-refresh-all]');
@@ -1684,6 +1807,13 @@ export function createCeoOsApplication(config = {}) {
             : '主数据已恢复，兼容页面正在自动重试刷新';
           renderAll();
         }
+        else if (decisionAction) openDecisionAction(decisionAction.dataset.decisionId, decisionAction.dataset.decisionAction);
+        else if (decisionSource) openDecisionAction(decisionSource.dataset.decisionSource, 'source');
+        else if (decisionConfirm) await confirmDecisionAction(document?.querySelector?.('[data-decision-note]')?.value || '');
+        else if (decisionClose) closeDecisionAction();
+        else if (decisionUndo) await undoDecisionAction();
+        else if (decisionLoadMore) loadMoreDecisions(decisionLoadMore.dataset.decisionLoadMore);
+        else if (decisionJump) document?.getElementById?.(`decision-${decisionJump.dataset.decisionJump}`)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
         else if (previewButton) await previewDecision(previewButton.dataset.previewDecision);
         else if (executeButton) await executeApproval(executeButton.dataset.executeApproval);
         else if (refreshAllButton) await autoRefreshController?.refresh('manual');
@@ -1923,6 +2053,10 @@ export function createCeoOsApplication(config = {}) {
       } catch { runtime.syncStatus = '目标保存失败，请检查数值和登录状态'; renderAll(); }
     });
     document.addEventListener('change', (event) => {
+      if (event.target?.matches?.('[data-decision-filter]')) {
+        setDecisionFilter(event.target.dataset.decisionFilter, event.target.value);
+        return;
+      }
       if (event.target?.matches?.('[data-calendar-anchor]')) {
         runtime.calendarAnchor = event.target.value || now().slice(0, 10);
         runtime.calendarPanel = null;
@@ -1936,6 +2070,9 @@ export function createCeoOsApplication(config = {}) {
         if (active?.state === 'planned') store.saveEntity('focus_sessions', { ...active, taskId: runtime.focusTaskId });
         renderAll();
       }
+    });
+    document.addEventListener('input', (event) => {
+      if (event.target?.matches?.('[data-decision-search]')) setDecisionFilter('search', event.target.value);
     });
     document.addEventListener('pointerdown', (event) => {
       const target = event.target?.closest?.('[data-calendar-select-date]');
@@ -1986,6 +2123,8 @@ export function createCeoOsApplication(config = {}) {
         event.preventDefault?.();
         beginCalendarSelection(target.dataset.calendarSelectDate);
         commitCalendarSelection();
+      } else if (event.key === 'Escape' && runtime.decisionUi.action) {
+        closeDecisionAction();
       } else if (event.key === 'Escape' && (runtime.calendarSelecting || runtime.calendarPanel)) {
         closeCalendarPanel();
       }
@@ -2242,12 +2381,14 @@ export function createCeoOsApplication(config = {}) {
     cancelSafetyWork(legacyProjectionIdleHandle);
     legacyProjectionIdleHandle = null;
     legacyProjectionRetryQueued = false;
+    clearDecisionUndo();
     started = false;
   }
 
   return {
     start, stop, whenIdle: () => Promise.all([startupWork, reminderScheduleWork]).then(() => viewModel()), render: renderAll, store, runtime, viewModel,
     refreshSource, refreshAllSources, notifyCurrentReminders, confirmTarget, previewDecision, executeApproval,
+    openDecisionAction, closeDecisionAction, confirmDecisionAction, undoDecisionAction, setDecisionFilter, loadMoreDecisions,
     quickCapture, captureCalendar, saveCalendar, deleteCalendar, restoreCalendar, copyCalendar, moveCalendar,
     deleteTask, restoreTask, toggleTask, copyTask, moveTask,
     setCalendarView, navigateCalendar, goToCalendarToday, refreshCalendarRange,
