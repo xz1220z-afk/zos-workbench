@@ -270,6 +270,44 @@ test('legacy projection retry re-reads intervening edits and keeps retrying with
   assert.equal(app.runtime.protectionState, '本机数据已保护');
 });
 
+test('stopping the application cancels a queued legacy projection and stale callbacks cannot write or claim success', async () => {
+  const base = memoryStorage();
+  let writeCount = 0;
+  const storage = {
+    getItem: base.getItem,
+    setItem(key, value) {
+      writeCount += 1;
+      if (key === 'zos_tasks') {
+        const error = new Error('quota');
+        error.name = 'QuotaExceededError';
+        throw error;
+      }
+      base.setItem(key, value);
+    },
+  };
+  let deferred;
+  let cancelled = null;
+  const store = createStateStore({ storage, deviceId: 'mac-1', createId: () => 'generated-id', now: () => '2026-08-07T07:00:00.000Z' });
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} }, storage, store,
+    snapshotRepository: createSnapshotRepository({ adapter: createMemorySnapshotAdapter(), createId: () => 'pre-import' }),
+    createOperatingRuntime: false,
+    deferSafetyWork(callback) { deferred = callback; return 'idle-1'; },
+    cancelSafetyWork(handle) { cancelled = handle; },
+    now: () => '2026-08-07T07:00:00.000Z',
+  });
+  const incoming = createDurableBackup({ state: { collections: { tasks: [{ id: 'restored', title: '安全恢复' }] } } });
+  await app.importBackupText(JSON.stringify(incoming));
+  assert.equal(app.runtime.protectionState, '主数据已安全保存，兼容页面稍后刷新');
+
+  app.stop();
+  const writesAtStop = writeCount;
+  await deferred();
+  assert.equal(cancelled, 'idle-1');
+  assert.equal(writeCount, writesAtStop);
+  assert.equal(app.runtime.protectionState, '主数据已安全保存，兼容页面稍后刷新');
+});
+
 test('sync metadata keeps the last success during attention states and storage failures never break sync UI', () => {
   const writes = [];
   assert.deepEqual(persistSyncMeta({ setItem: (key, value) => writes.push([key, value]) }, {

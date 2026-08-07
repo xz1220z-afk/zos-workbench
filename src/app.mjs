@@ -128,8 +128,10 @@ export function createCeoOsApplication(config = {}) {
   const reminderClock = config.clock || document?.defaultView || globalThis;
   const notifiedReminderIds = new Set();
   let legacyProjectionRetryTimer = null;
+  let legacyProjectionIdleHandle = null;
   let legacyProjectionRetryQueued = false;
   let legacyProjectionRetryAttempt = 0;
+  let legacyProjectionGeneration = 0;
   const legacyProjectionRetryDelays = Array.isArray(config.legacyProjectionRetryDelays)
     ? config.legacyProjectionRetryDelays : [0, 5_000, 30_000, 120_000];
 
@@ -173,6 +175,20 @@ export function createCeoOsApplication(config = {}) {
     return browserWindow.setTimeout?.(callback, 0);
   }
 
+  function cancelSafetyWork(handle) {
+    if (handle == null) return;
+    if (typeof config.cancelSafetyWork === 'function') {
+      config.cancelSafetyWork(handle);
+      return;
+    }
+    const browserWindow = document?.defaultView || globalThis;
+    if (typeof browserWindow.cancelIdleCallback === 'function' && typeof browserWindow.requestIdleCallback === 'function') {
+      browserWindow.cancelIdleCallback(handle);
+      return;
+    }
+    browserWindow.clearTimeout?.(handle);
+  }
+
   function queueLegacyProjectionRetry() {
     if (legacyProjectionRetryQueued || legacyProjectionRetryTimer != null) return;
     const delay = legacyProjectionRetryDelays[Math.min(
@@ -182,7 +198,10 @@ export function createCeoOsApplication(config = {}) {
     const enqueue = () => {
       legacyProjectionRetryTimer = null;
       legacyProjectionRetryQueued = true;
-      deferSafetyWork(() => {
+      const generation = legacyProjectionGeneration;
+      legacyProjectionIdleHandle = deferSafetyWork(() => {
+        legacyProjectionIdleHandle = null;
+        if (generation !== legacyProjectionGeneration) return;
         legacyProjectionRetryQueued = false;
         let latest;
         try {
@@ -2218,6 +2237,9 @@ export function createCeoOsApplication(config = {}) {
     reminderScheduleRetryTimer = null;
     if (legacyProjectionRetryTimer != null) browserWindow?.clearTimeout?.(legacyProjectionRetryTimer);
     legacyProjectionRetryTimer = null;
+    legacyProjectionGeneration += 1;
+    cancelSafetyWork(legacyProjectionIdleHandle);
+    legacyProjectionIdleHandle = null;
     legacyProjectionRetryQueued = false;
     started = false;
   }
