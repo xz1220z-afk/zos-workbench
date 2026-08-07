@@ -11,7 +11,7 @@ test('health view renders sync, conflicts, reminder check, recycle, audit and ba
     reliability: {
       label: '正在重试', online: true, deviceId: 'mac-1', pendingUploads: 2,
       attempts: 1, nextRetryAt: '2026-08-06T08:05:00Z', lastSuccessAt: '2026-08-06T07:00:00Z',
-      conflicts: 1, restorable: 1, auditEntries: 1,
+      conflicts: 1, restorable: 1, auditEntries: 1, snapshotCount: 3, protectionState: '本机数据已保护',
     },
     syncConflicts: [{
       id: 'targets:t1', entityType: 'targets',
@@ -31,6 +31,10 @@ test('health view renders sync, conflicts, reminder check, recycle, audit and ba
   assert.match(container.innerHTML, /data-reminder-snooze="10m"/);
   assert.match(container.innerHTML, /data-reliability-restore="task-2"/);
   assert.match(container.innerHTML, /data-export-backup/);
+  assert.match(container.innerHTML, /data-import-backup/);
+  assert.match(container.innerHTML, /data-undo-backup/);
+  assert.match(container.innerHTML, /本机数据已保护/);
+  assert.match(container.innerHTML, /安全快照/);
   assert.match(container.innerHTML, /最近操作/);
   assert.match(container.innerHTML, /提醒已开启/);
   assert.match(container.innerHTML, /排程已同步/);

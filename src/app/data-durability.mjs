@@ -1,4 +1,4 @@
-import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.0.1';
+import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.0.2';
 
 export const STATE_ENTITY_TYPES = Object.freeze([
   'tasks', 'inbox', 'projects', 'commands', 'decisions', 'targets',

@@ -1,5 +1,5 @@
-import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.0.1';
-import { isSensitiveFieldName } from '../sensitive-fields.mjs?v=2.0.1';
+import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.0.2';
+import { isSensitiveFieldName } from '../sensitive-fields.mjs?v=2.0.2';
 
 export { VIEW_STATES };
 
@@ -77,8 +77,10 @@ export function render(container, viewModel = {}) {
         <div><span>待同步</span><strong>${displayValue(reliability.pendingUploads, '0')}</strong></div>
         <div><span>需处理冲突</span><strong>${displayValue(reliability.conflicts, '0')}</strong></div>
         <div><span>可恢复</span><strong>${displayValue(reliability.restorable, '0')}</strong></div>
+        <div><span>数据保护</span><strong>${escapeHtml(reliability.protectionState || '本机数据已保护')}</strong></div>
+        <div><span>安全快照</span><strong>${displayValue(reliability.snapshotCount, '0')}</strong></div>
       </div>
-      <div class="v111-toolbar"><button class="v13-action primary" data-sync-now>立即同步</button><button class="v13-action" data-refresh-all>刷新全部来源</button><button class="v13-action" data-export-backup>导出安全备份</button></div>
+      <div class="v111-toolbar"><button class="v13-action primary" data-sync-now>立即同步</button><button class="v13-action" data-refresh-all>刷新全部来源</button><button class="v13-action" data-export-backup>下载完整备份</button><button class="v13-action" data-import-backup>安全合并恢复</button><button class="v13-action" data-undo-backup>撤销上次恢复</button></div>
       <p class="v111-muted">最近成功：${displayValue(reliability.lastSuccessAt)}${reliability.nextRetryAt ? ` · 下次自动重试：${displayValue(reliability.nextRetryAt)}` : ''}</p>
     </article>
 

@@ -1,4 +1,4 @@
-import { pageIdFromHash } from './app/router.mjs?v=2.0.1';
+import { pageIdFromHash } from './app/router.mjs?v=2.0.2';
 
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
@@ -124,7 +124,7 @@ import { pageIdFromHash } from './app/router.mjs?v=2.0.1';
 (function() {
   'use strict';
 
-  const APP_VERSION = '2.0.1';
+  const APP_VERSION = '2.0.2';
   const PUBLIC_APP_URL = new URL('.', window.location.href).href;
   const APP_RELEASE_DATE = '2026-08-06';
 
@@ -907,96 +907,45 @@ import { pageIdFromHash } from './app/router.mjs?v=2.0.1';
 
   // ==================== DATA IMPORT/EXPORT ====================
   function exportData() {
-    var data = {
-      version: '1.0.4',
-      exportedAt: now(),
-      tasks: tasks,
-      inbox: inbox,
-      projects: projects,
-      commands: commands
-    };
-    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    var dateStr = todayStr();
-    a.download = 'ZOS_Backup_' + dateStr + '.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    toast('数据已导出');
+    if (!window.ZOS_CEO_OS || !window.ZOS_CEO_OS.exportSafeBackup) {
+      toast('数据保护中心正在加载，请稍后再试');
+      return;
+    }
+    window.ZOS_CEO_OS.exportSafeBackup();
+    toast('完整安全备份已下载');
   }
 
   function importData(event) {
     var file = event.target.files[0];
     if (!file) return;
-
-    // File size check
     if (file.size > 10 * 1024 * 1024) { toast('文件过大，最大支持 10MB'); event.target.value = ''; return; }
-
     var reader = new FileReader();
     reader.onload = function(e) {
       try {
-        var data = JSON.parse(e.target.result);
-
-        // Validate structure
-        var errors = [];
-        if (!data || typeof data !== 'object') { errors.push('文件内容不是有效的 JSON 对象'); }
-        else {
-          if (!Array.isArray(data.tasks)) errors.push('缺少 tasks 数组');
-          if (!Array.isArray(data.inbox)) errors.push('缺少 inbox 数组');
-          if (!Array.isArray(data.projects)) errors.push('缺少 projects 数组');
-          if (!Array.isArray(data.commands)) errors.push('缺少 commands 数组');
-
-          // Validate data types
-          if (Array.isArray(data.tasks)) {
-            data.tasks.forEach(function(t, i) {
-              if (!t.id || !t.title) errors.push('tasks[' + i + '] 缺少 id 或 title');
-            });
-          }
-        }
-
-        if (errors.length) {
-          openModal('导入失败 — 格式校验未通过',
-            '<div style="font-size:13px;color:var(--red);margin-bottom:12px;">文件格式不正确，请检查以下问题：</div>' +
-            '<ul style="font-size:13px;color:var(--text-secondary);padding-left:20px;line-height:1.8;">' +
-            errors.map(function(e) { return '<li>' + escapeHtml(e) + '</li>'; }).join('') +
-            '</ul>',
-            function() {}, '关闭');
-          return;
-        }
-
-        // Build overwrite summary
-        var summary = '';
-        if (data.tasks.length) summary += '· 任务：' + data.tasks.length + ' 条<br>';
-        if (data.inbox.length) summary += '· 收集箱：' + data.inbox.length + ' 条<br>';
-        if (data.projects.length) summary += '· 项目：' + data.projects.length + ' 条<br>';
-        if (data.commands.length) summary += '· AI 指令：' + data.commands.length + ' 条<br>';
-        if (data.version) summary += '<br>来源版本：' + escapeHtml(data.version);
-        if (data.exportedAt) summary += '<br>导出时间：' + escapeHtml(data.exportedAt.slice(0, 10));
-
-        confirmDialog('确认导入数据',
-          '<p style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:8px;">⚠️ 导入将覆盖当前所有本地数据！</p>' +
-          '<p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">导入文件包含以下数据：</p>' +
-          '<p style="font-size:13px;color:var(--text);">' + summary + '</p>' +
-          '<p style="font-size:12px;color:var(--text-muted);margin-top:8px;">当前数据将被完全替换。建议先导出备份。</p>',
-          function() {
-            tasks = data.tasks;
-            inbox = data.inbox;
-            projects = data.projects;
-            commands = data.commands;
-            // Migrate dueDate for older data
-            tasks.forEach(function(t) { if (!t.dueDate) t.dueDate = null; });
-            save(KEYS.TASKS, tasks);
-            save(KEYS.INBOX, inbox);
-            save(KEYS.PROJECTS, projects);
-            save(KEYS.COMMANDS, commands);
-            refreshAll();
-            checkOnboarding();
-            toast('数据已导入（共 ' + (data.tasks.length + data.inbox.length + data.projects.length + data.commands.length) + ' 条记录）');
+        var app = window.ZOS_CEO_OS;
+        if (!app || !app.previewBackupText || !app.importBackupText) throw new Error('数据保护中心正在加载');
+        var preview = app.previewBackupText(e.target.result);
+        var summary = Object.keys(preview.summary.collections).filter(function(type) {
+          return preview.summary.collections[type] > 0;
+        }).map(function(type) {
+          return '· ' + type + '：' + preview.summary.collections[type] + ' 条';
+        }).join('<br>');
+        confirmDialog('确认安全合并恢复',
+          '<p style="font-size:13px;color:var(--green);font-weight:600;margin-bottom:8px;">✓ 保留当前数据，不自动删除</p>' +
+          '<p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">导入前会自动创建可撤销快照。</p>' +
+          '<p style="font-size:13px;color:var(--text);">共 ' + preview.summary.totalRecords + ' 条记录<br>' + summary + '</p>' +
+          '<p style="font-size:12px;color:var(--text-muted);margin-top:8px;">来源版本：' + escapeHtml(preview.sourceVersion || '未知') + '</p>',
+          async function() {
+            try {
+              await app.importBackupText(e.target.result);
+              toast('安全合并恢复完成；当前数据均已保留');
+            } catch (error) {
+              toast('恢复未执行：' + (error.message || '请先下载安全备份'));
+            }
           });
       } catch(err) {
-        openModal('导入失败 — 文件解析错误',
-          '<div style="font-size:13px;color:var(--red);margin-bottom:8px;">文件无法解析为有效的 JSON 格式。</div>' +
+        openModal('恢复未执行 — 文件校验失败',
+          '<div style="font-size:13px;color:var(--red);margin-bottom:8px;">当前数据未发生任何变化。</div>' +
           '<div style="font-size:13px;color:var(--text-secondary);font-family:monospace;background:#f5f5f5;padding:8px;border-radius:6px;word-break:break-all;">' + escapeHtml(err.message) + '</div>' +
           '<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">请确认文件是通过 ZOS 工作台导出的 .json 文件。</div>',
           function() {}, '关闭');
@@ -1007,6 +956,17 @@ import { pageIdFromHash } from './app/router.mjs?v=2.0.1';
     };
     reader.readAsText(file);
     event.target.value = '';
+  }
+
+  async function undoBackupRestore() {
+    var app = window.ZOS_CEO_OS;
+    if (!app || !app.undoLastRestore) { toast('数据保护中心正在加载，请稍后再试'); return; }
+    try {
+      await app.undoLastRestore();
+      toast('已恢复到上次导入前的安全快照');
+    } catch (error) {
+      toast(error.message === 'restore_checkpoint_not_found' ? '暂无可撤销的恢复记录' : '撤销未完成，请重试');
+    }
   }
 
   function clearAllData() {
@@ -1044,6 +1004,7 @@ import { pageIdFromHash } from './app/router.mjs?v=2.0.1';
 
   window.exportData = exportData;
   window.importData = importData;
+  window.undoBackupRestore = undoBackupRestore;
   window.clearAllData = clearAllData;
 
   // ==================== PRIVATE CLOUD SYNC ====================

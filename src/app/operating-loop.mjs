@@ -1,11 +1,11 @@
-import { detectRisks } from '../risk-detector.mjs?v=2.0.1';
-import { reconcileDecisions } from './decision-center.mjs?v=2.0.1';
+import { detectRisks } from '../risk-detector.mjs?v=2.0.2';
+import { reconcileDecisions } from './decision-center.mjs?v=2.0.2';
 import {
   METRIC_CATALOG, actualMetrics, buildDailySnapshots, calculateGap, validateTarget,
-} from './targets.mjs?v=2.0.1';
-import { classifySourceHealth } from './source-health.mjs?v=2.0.1';
-import { generateCeoBrief, shouldGenerateBrief } from './daily-brief.mjs?v=2.0.1';
-import { humanText } from './value-utils.mjs?v=2.0.1';
+} from './targets.mjs?v=2.0.2';
+import { classifySourceHealth } from './source-health.mjs?v=2.0.2';
+import { generateCeoBrief, shouldGenerateBrief } from './daily-brief.mjs?v=2.0.2';
+import { humanText } from './value-utils.mjs?v=2.0.2';
 
 function required(value, name) {
   if (!value) throw new Error(`${name} is required`);

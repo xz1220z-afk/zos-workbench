@@ -1,4 +1,4 @@
-import { createDurableBackup } from './data-durability.mjs?v=2.0.1';
+import { createDurableBackup } from './data-durability.mjs?v=2.0.2';
 
 export function listRestorableItems(tombstones = [], options = {}) {
   const nowMs = new Date(options.now || new Date().toISOString()).getTime();
@@ -56,5 +56,7 @@ export function buildReliabilityOverview(input = {}) {
     conflicts: Array.isArray(input.conflicts) ? input.conflicts.length : 0,
     restorable: listRestorableItems(input.tombstones, { now: input.now }).length,
     auditEntries: Array.isArray(input.auditLog) ? input.auditLog.length : 0,
+    snapshotCount: Number(input.snapshotCount) || 0,
+    protectionState: input.protectionState || '本机数据已保护',
   };
 }
