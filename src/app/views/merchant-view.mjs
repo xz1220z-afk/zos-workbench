@@ -1,4 +1,4 @@
-import { escapeHtml } from './view-utils.mjs?v=2.0.2';
+import { escapeHtml } from './view-utils.mjs?v=2.0.3';
 
 function money(value) {
   return `¥${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(Number(value) || 0)}`;

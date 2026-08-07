@@ -24,8 +24,8 @@ test('desktop and mobile navigation expose the approved CEO OS information archi
 });
 
 test('HTML is a modular shell with external design and application entrypoints', () => {
-  assert.match(indexHtml, /<link rel="stylesheet" href="assets\/app\.css\?v=2\.0\.2"\s*\/?>/);
-  assert.match(indexHtml, /<script type="module" src="src\/app\.mjs\?v=2\.0\.2"><\/script>/);
+  assert.match(indexHtml, /<link rel="stylesheet" href="assets\/app\.css\?v=2\.0\.3"\s*\/?>/);
+  assert.match(indexHtml, /<script type="module" src="src\/app\.mjs\?v=2\.0\.3"><\/script>/);
   assert.doesNotMatch(indexHtml, /<style>/);
   assert.doesNotMatch(indexHtml, /<script type="module">[\s\S]*?\/functions\/v1\/zos-business-data/);
 });
@@ -40,6 +40,8 @@ test('responsive CSS preserves dark tokens, safe areas and four-device touch con
   assert.match(css, /@media\s*\(max-width:\s*375px\)/);
   assert.match(css, /@media\s*\(min-width:\s*768px\)/);
   assert.match(css, /@media\s*\(min-width:\s*1280px\)/);
+  assert.match(css, /\.v14-kpi-grid\.decision-center-summary\s*\{[^}]*repeat\(3,/s);
+  assert.match(css, /@media \(max-width: 760px\)\s*\{[\s\S]{0,160}\.v14-kpi-grid\.decision-center-summary\s*\{[^}]*grid-template-columns:\s*1fr/s);
   assert.doesNotMatch(css, /\.v13-mobile-dashboard\s*\{\s*display:\s*block/, 'mobile must not duplicate the responsive CEO dashboard');
 });
 

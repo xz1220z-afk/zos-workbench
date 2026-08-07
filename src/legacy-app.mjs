@@ -1,4 +1,4 @@
-import { pageIdFromHash } from './app/router.mjs?v=2.0.2';
+import { pageIdFromHash } from './app/router.mjs?v=2.0.3';
 
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
@@ -124,7 +124,7 @@ import { pageIdFromHash } from './app/router.mjs?v=2.0.2';
 (function() {
   'use strict';
 
-  const APP_VERSION = '2.0.2';
+  const APP_VERSION = '2.0.3';
   const PUBLIC_APP_URL = new URL('.', window.location.href).href;
   const APP_RELEASE_DATE = '2026-08-07';
 

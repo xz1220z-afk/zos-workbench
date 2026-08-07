@@ -150,7 +150,7 @@ export const REPORT_VERSION = '2.0';
 export const REPORT_SECTIONS = ['keyFocus', 'projectRisks', 'decisions', 'suggestions'];
 
 // Re-export the risk engine so callers have a single import surface.
-import { detectRisks, isDone, bucketRisks, riskLevelFromReasons } from './risk-detector.mjs?v=2.0.2';
+import { detectRisks, isDone, bucketRisks, riskLevelFromReasons } from './risk-detector.mjs?v=2.0.3';
 export { detectRisks, isDone, bucketRisks, riskLevelFromReasons };
 
 // Normalize an arbitrary source payload to a plain records array.
@@ -226,7 +226,7 @@ export function generateDailyReport(sources = {}, context = {}) {
     title: `${owner}经营日报`,
     date,
     owner,
-    generatedAt: new Date().toISOString(),
+    generatedAt: new Date(asOf).toISOString(),
     reviewRequired: true,
     disclaimer: '本日报由 AI 生成，须人工审核后方可执行；AI 不直接修改数据库、知识库或发送外部消息。',
     risksCount: allRisks.length,
@@ -273,4 +273,3 @@ export function reportToMarkdown(report) {
   lines.push(`> ${report.disclaimer}`);
   return lines.join('\n');
 }
-

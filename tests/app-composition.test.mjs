@@ -256,7 +256,7 @@ test('service worker caches the complete transitive browser module graph', async
     'src/app/auto-refresh-controller.mjs',
     'src/app/daily-digest.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.0\.2`/);
+  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.0\.3`/);
 });
 
 test('the shell captures raw pre-upgrade state before either application module can migrate it', async () => {
@@ -264,8 +264,8 @@ test('the shell captures raw pre-upgrade state before either application module 
   const html = await readFile(new URL('index.html', root), 'utf8');
   const capture = html.indexOf('window.__ZOS_PRE_UPGRADE_RAW__');
   assert.ok(capture >= 0);
-  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.0.2'));
-  assert.ok(capture < html.indexOf('src/app.mjs?v=2.0.2'));
+  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.0.3'));
+  assert.ok(capture < html.indexOf('src/app.mjs?v=2.0.3'));
 });
 
 test('enabled closed-app reminders synchronize current tasks calendar deadlines and daily digests', async () => {
