@@ -41,11 +41,13 @@
 
 真实交互链：点击“问这条情报” → 输入“Astra 是什么？” → 点击“回答” → 显示“当前可确认”、已知事实、不确定性与来源 → 点击“关闭”；全部通过。按钮高度 44px，控制台 error=0。
 
-## PWA 与版本回读
+## PWA、生产部署与版本回读
 
-- 本地 `index.html`、`manifest.json`、`sw.js`、`src/app.mjs` 均通过 `scripts/verify-release-readback.mjs` 的 v2.4.0 HTTP 回读。
+- GitHub Actions `ZOS Workbench CI` 与 `pages build and deployment` 均在提交 `f4428cd` 上完成且结论为 `success`。
+- 正式站 `index.html`、`manifest.json`、`sw.js`、`src/app.mjs` 均返回 HTTP 200，并通过 `scripts/verify-release-readback.mjs` 的 v2.4.0 回读。
 - Service Worker 包含 `intelligence-explainer.mjs` 与 `navigation-preferences.mjs`，所有浏览器模块引用统一带 `?v=2.4.0`。
-- 正式站回读与 Git 标签只在 GitHub Pages 部署成功后补充，推送本身不算上线。
+- 正式站再次完成 1440×900、834×1194、390×844 三尺寸检查：正文非空、无横向溢出、控制台 error=0。
+- 正式站情报问答真实点击通过：临时验收卡只写入页面运行时，未写本机持久层或云端；回答、证据边界、来源和关闭动作均正常。
 
 ## 已知边界
 
@@ -56,4 +58,3 @@
 ## 回滚
 
 如生产验收失败，从 `zos-workbench-v2.3.1` 新建恢复分支并生成新的回滚提交，重新提升 Service Worker 缓存号后发布；禁止强推或删除用户数据。回滚后重新执行完整回归、三尺寸检查和生产资源回读。
-
