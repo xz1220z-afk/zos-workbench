@@ -1,4 +1,5 @@
-import { pageIdFromHash } from './app/router.mjs?v=2.3.1';
+import { pageIdFromHash } from './app/router.mjs?v=2.4.0';
+import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAGES } from './app/navigation-preferences.mjs?v=2.4.0';
 
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
@@ -124,7 +125,7 @@ import { pageIdFromHash } from './app/router.mjs?v=2.3.1';
 (function() {
   'use strict';
 
-  const APP_VERSION = '2.3.1';
+  const APP_VERSION = '2.4.0';
   const PUBLIC_APP_URL = new URL('.', window.location.href).href;
   const APP_RELEASE_DATE = '2026-08-08';
 
@@ -2137,7 +2138,30 @@ import { pageIdFromHash } from './app/router.mjs?v=2.3.1';
 
   let currentPage = 'dashboard';
   let sidebarCollapsed = false;
+  const navigationPreferenceKey = 'zos_navigation_mode_v1';
+  let navigationMode = normalizeNavigationMode(localStorage.getItem(navigationPreferenceKey));
       const mobileMorePageIds = ['dashboard', 'decisions', 'life', 'local-life', 'spark-media', 'lingli', 'intelligence', 'content-growth', 'agent-workbench', 'search', 'relations', 'reviews', 'enterprise', 'targets', 'health', 'inbox', 'tasks', 'zos-brain', 'risk', 'privacy', 'settings'];
+
+  document.querySelectorAll('.sidebar-nav .nav-item[data-page]').forEach(function(item) {
+    item.dataset.navPriority = PRIMARY_NAVIGATION_PAGES.has(item.dataset.page) ? 'primary' : 'secondary';
+  });
+
+  function applyNavigationMode(pageId) {
+    const expanded = shouldExpandNavigation({ mode: navigationMode, pageId: pageId || currentPage });
+    sidebar.classList.toggle('show-all-navigation', expanded);
+    const toggle = document.getElementById('navDensityToggle');
+    if (!toggle) return;
+    toggle.setAttribute('aria-expanded', String(expanded));
+    const label = toggle.querySelector('[data-nav-toggle-label]');
+    if (label) label.textContent = navigationMode === 'all' ? '收起导航' : '全部功能';
+  }
+
+  document.getElementById('navDensityToggle')?.addEventListener('click', function() {
+    navigationMode = navigationMode === 'all' ? 'focused' : 'all';
+    try { localStorage.setItem(navigationPreferenceKey, navigationMode); } catch { /* Preference remains in memory. */ }
+    applyNavigationMode(currentPage);
+  });
+  applyNavigationMode(currentPage);
 
   function closeMobileMoreMenu(returnFocus) {
     const menu = document.getElementById('mobileMoreMenu');
@@ -2184,6 +2208,12 @@ import { pageIdFromHash } from './app/router.mjs?v=2.3.1';
 
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     target.classList.add('active');
+    target.classList.remove('is-entering');
+    void target.offsetWidth;
+    target.classList.add('is-entering');
+    requestAnimationFrame(function() {
+      window.setTimeout(function() { target.classList.remove('is-entering'); }, 260);
+    });
 
     document.querySelectorAll('#bottomNav .bottom-nav-item[data-page]').forEach(el => {
       el.classList.toggle('active', el.dataset.page === pageId);
@@ -2192,6 +2222,7 @@ import { pageIdFromHash } from './app/router.mjs?v=2.3.1';
 
     pageTitle.textContent = pageTitles[pageId] || pageId;
     currentPage = pageId;
+    applyNavigationMode(pageId);
 
     if (!options.fromLocation && window.location.hash !== '#' + pageId) {
       window.history.pushState(null, '', '#' + pageId);

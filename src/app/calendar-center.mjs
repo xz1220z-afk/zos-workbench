@@ -1,5 +1,5 @@
-import { calendarVisibleRange } from './calendar-range.mjs?v=2.3.1';
-import { expandRecurringEvents } from './calendar-recurrence.mjs?v=2.3.1';
+import { calendarVisibleRange } from './calendar-range.mjs?v=2.4.0';
+import { expandRecurringEvents } from './calendar-recurrence.mjs?v=2.4.0';
 
 function iso(value) {
   if (!value) return null;

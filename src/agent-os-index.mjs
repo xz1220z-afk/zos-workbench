@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { relative, resolve, sep } from 'node:path';
-import { AGENT_OS_INDEX_SCHEMA_VERSION, validateAgentOsIndex } from './app/agent-os-index-contract.mjs?v=2.3.1';
+import { AGENT_OS_INDEX_SCHEMA_VERSION, validateAgentOsIndex } from './app/agent-os-index-contract.mjs?v=2.4.0';
 
 const DIRECTORY_DEFINITIONS = Object.freeze([
   { directory: '02 Agents', collection: 'agents', idKey: 'agent_id', outputKey: 'agentId' },

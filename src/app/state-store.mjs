@@ -1,6 +1,6 @@
-import { createRecord, markDeleted, normalizeRecord, touchRecord } from '../data-model.mjs?v=2.3.1';
-import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.3.1';
-import { buildDurableStateView, buildSafeMergeSnapshot, STATE_ENTITY_TYPES } from './data-durability.mjs?v=2.3.1';
+import { createRecord, markDeleted, normalizeRecord, touchRecord } from '../data-model.mjs?v=2.4.0';
+import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.4.0';
+import { buildDurableStateView, buildSafeMergeSnapshot, STATE_ENTITY_TYPES } from './data-durability.mjs?v=2.4.0';
 
 const STATE_KEY = 'zos_ceo_os_state_v1_7';
 const PREVIOUS_STATE_KEYS = ['zos_ceo_os_state_v1_4', 'zos_ceo_os_state_v1_3'];

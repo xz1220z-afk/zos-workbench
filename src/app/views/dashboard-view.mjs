@@ -1,6 +1,6 @@
-import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.3.1';
-import { formatCurrency, humanText } from '../value-utils.mjs?v=2.3.1';
-import { partitionDecisions } from '../decision-center.mjs?v=2.3.1';
+import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.4.0';
+import { formatCurrency, humanText } from '../value-utils.mjs?v=2.4.0';
+import { partitionDecisions } from '../decision-center.mjs?v=2.4.0';
 
 export { VIEW_STATES };
 
@@ -54,8 +54,9 @@ function syncRail(autoRefresh = {}) {
   }).join('');
   const time = autoRefresh.lastSuccessAt ? new Date(autoRefresh.lastSuccessAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '尚无完整时间';
   return `<section class="v15-sync-rail" data-sync-phase="${escapeHtml(phase)}">
-    <div><span class="v15-sync-dot"></span><strong>数据自动更新 · ${statusText}</strong><small>最近成功 ${escapeHtml(time)} · 前台每 15 分钟检查</small></div>
-    <div class="v15-sync-sources">${sourceItems}</div>
+    <details class="v15-sync-disclosure"><summary><span class="v15-sync-dot"></span><span><strong>数据自动更新 · ${statusText}</strong><small>最近成功 ${escapeHtml(time)} · 前台每 15 分钟检查</small></span><em>查看来源</em></summary>
+      <div class="v15-sync-sources">${sourceItems}</div>
+    </details>
     <button class="v13-action" data-refresh-all ${phase === 'refreshing' ? 'disabled' : ''}>${phase === 'refreshing' ? '更新中…' : '全部刷新'}</button>
   </section>`;
 }
@@ -75,7 +76,7 @@ export function render(container, viewModel = {}) {
   const workDates = viewModel.importantDates?.work || [];
   container.innerHTML = `<div class="v14-dashboard">
     ${syncRail(viewModel.autoRefresh)}
-    <section class="v14-hero"><div><span class="v14-kicker">CEO COMMAND CENTER · ${escapeHtml(viewModel.today || '')}</span><h2>今天，先处理最重要的事</h2><p>事实来自飞书与 Supabase；AI 只做建议，所有正式写入须确认。</p><div class="v14-hero-actions"><button class="v13-action v13-action-primary" data-quick-capture>＋ 快速收集</button><button class="v13-action" data-agent-draft="ceo">生成 CEO 建议</button><button class="v13-action" data-page="tasks">新建任务</button><button class="v13-action" data-page="enterprise">查看项目</button></div></div><blockquote>战略决定方向，<br>系统决定效率，<br>执行决定结果。</blockquote></section>
+    <section class="v14-hero"><div><span class="v14-kicker">CEO COMMAND CENTER · ${escapeHtml(viewModel.today || '')}</span><h2>今天，先处理最重要的事</h2><p>事实来自飞书与 Supabase；AI 只做建议，所有正式写入须确认。</p><div class="v14-hero-actions"><button class="v13-action v13-action-primary" data-quick-capture>＋ 快速收集</button><details class="v14-quick-menu"><summary>更多操作</summary><div><button class="v13-action" data-agent-draft="ceo">生成 CEO 建议</button><button class="v13-action" data-page="tasks">新建任务</button><button class="v13-action" data-page="enterprise">查看项目</button></div></details></div></div><blockquote>战略决定方向，<br>系统决定效率，<br>执行决定结果。</blockquote></section>
     <div class="v14-kpi-grid">
       <article><span>待我决策</span><strong>${displayValue(activeDecisions.length)}</strong><small>需本人判断</small></article>
       <article><span>目标差距</span><strong>${displayValue(viewModel.gaps?.length)}</strong><small>仅确认目标</small></article>
@@ -87,6 +88,8 @@ export function render(container, viewModel = {}) {
     <div class="v14-main-grid">
       <article class="v13-panel v14-span-2 v14-today-panel"><div class="v14-section-head"><h3>◎ 今日 Top 3 <span class="v13-chip">${displayValue(viewModel.reminderQueue?.length)} 条提醒</span></h3><button class="v13-action" data-page="today">查看行动</button></div>${(viewModel.todayTop3 || []).length ? `<div class="v13-list">${viewModel.todayTop3.slice(0, 3).map((item, index) => `<div class="v13-row"><div><strong>0${index + 1} · ${escapeHtml(humanText(item.title || item.factSummary || item.id, '待确认行动'))}</strong><div class="v13-meta">${escapeHtml(humanText(item.reason, '待确认优先原因'))}${item.dueAt ? ` · ${escapeHtml(item.dueAt)}` : ''}</div></div><div>${item.sourceType === 'decision' ? `<button class="v13-action" data-preview-decision="${escapeHtml(item.sourceId)}">预览催办</button>` : ''}<span class="v13-chip">${escapeHtml(humanText(item.sourceType, '行动'))}</span></div></div>`).join('')}</div>` : renderState('empty', '今日行动')}</article>
       <article class="v13-panel"><div class="v14-section-head"><h3>◎ 待我决策</h3><button class="v13-action" data-page="decisions">全部</button></div>${decisionRows(activeDecisions)}</article>
+    </div>
+    <section class="v14-secondary-region" aria-label="经营与支持信息"><div class="v14-main-grid">
       <article class="v13-panel v14-span-2"><div class="v14-section-head"><h3>◫ 三家公司经营全景</h3><span>真实来源</span></div><div class="company-overview">
         <button data-page="local-life"><span>万嘉网络</span><strong>${formatCurrency(companies.wanjia?.businessVolume?.value ?? viewModel.sources?.wanjia?.summary?.paymentGmv)}</strong><small>支付 GMV · 非收入</small></button>
         <button data-page="spark-media"><span>花火影像</span><strong>${formatCurrency(companies.huahuo?.finance?.outstanding?.value ?? viewModel.sources?.huahuo?.summary?.outstandingAmount)}</strong><small>待回款</small></button>
@@ -97,5 +100,5 @@ export function render(container, viewModel = {}) {
       <article class="v13-panel"><div class="v14-section-head"><h3>⏳ 关键期限</h3><button class="v13-action" data-important-dates-open="work">查看全部</button></div>${importantDateRows(workDates)}</article>
       <article class="v13-panel"><div class="v14-section-head"><h3>☀ 晨间简报</h3><span>07:30</span></div><p>${escapeHtml(viewModel.morningDigest?.body || '等待今日数据')}</p><div class="v14-section-head"><h3>☾ 晚间简报</h3><span>21:30</span></div><p>${escapeHtml(viewModel.eveningDigest?.body || '等待今日数据')}</p><small>仅在你开启系统提醒后推送，不会自动外发。</small></article>
       <article class="v13-panel"><h3>◉ 系统健康</h3><div class="v13-value">${synced}/${health.length || '—'}</div><p>${escapeHtml(viewModel.syncStatus || '等待同步')}</p></article>
-    </div>${importantDatesDrawer(viewModel, workDates)}</div><div id="mobileDashboardRoot" class="v13-mobile-dashboard"></div>`;
+    </div></section>${importantDatesDrawer(viewModel, workDates)}</div><div id="mobileDashboardRoot" class="v13-mobile-dashboard"></div>`;
 }
