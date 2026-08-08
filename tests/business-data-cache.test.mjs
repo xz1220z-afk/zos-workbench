@@ -55,6 +55,31 @@ test('storage quota failure never turns a successful read-only refresh into a da
   assert.match(result.message, /本次页面/);
 });
 
+test('large read-only data is compacted before the first localStorage write', () => {
+  const attempts = [];
+  const storage = {
+    getItem() { return null; },
+    setItem(key, value) {
+      attempts.push({ key, bytes: String(value).length });
+      if (String(value).length > 2_400) throw new Error('quota exceeded');
+    },
+  };
+  const cache = createBusinessDataCache({ storage, maxPersistedBytes: 1_800 });
+  const records = Array.from({ length: 80 }, (_, index) => ({
+    merchantName: `商家 ${index + 1}`,
+    merchantId: `merchant-${index + 1}`,
+    rawPayload: 'x'.repeat(500),
+  }));
+
+  const result = cache.save({ wanjia: { records, fetchedAt: '2026-08-08T00:00:00.000Z' } });
+
+  assert.equal(result.persisted, true);
+  assert.equal(result.compacted, true);
+  assert.equal(attempts.length, 1, 'large source payload must never be tried as a full browser cache write');
+  assert.ok(attempts[0].bytes <= 1_800);
+  assert.equal(cache.load().wanjia.records.length, 80, 'the in-memory page data remains complete');
+});
+
 test('legacy source refresh routes cache writes through the quota-safe cache store', async () => {
   const source = await readFile(new URL('../src/legacy-app.mjs', import.meta.url), 'utf8');
   assert.match(source, /saveBusinessDataCache\(cache, source\)/);

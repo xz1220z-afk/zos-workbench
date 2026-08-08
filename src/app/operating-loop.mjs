@@ -1,11 +1,11 @@
-import { detectRisks } from '../risk-detector.mjs?v=2.7.0';
-import { reconcileDecisions } from './decision-center.mjs?v=2.7.0';
+import { detectRisks } from '../risk-detector.mjs?v=2.7.1';
+import { reconcileDecisions } from './decision-center.mjs?v=2.7.1';
 import {
   METRIC_CATALOG, actualMetrics, buildDailySnapshots, calculateGap, validateTarget,
-} from './targets.mjs?v=2.7.0';
-import { classifySourceHealth } from './source-health.mjs?v=2.7.0';
-import { generateCeoBrief, shouldGenerateBrief } from './daily-brief.mjs?v=2.7.0';
-import { humanText } from './value-utils.mjs?v=2.7.0';
+} from './targets.mjs?v=2.7.1';
+import { classifySourceHealth } from './source-health.mjs?v=2.7.1';
+import { generateCeoBrief, shouldGenerateBrief } from './daily-brief.mjs?v=2.7.1';
+import { humanText } from './value-utils.mjs?v=2.7.1';
 
 function required(value, name) {
   if (!value) throw new Error(`${name} is required`);
@@ -105,10 +105,12 @@ export function createOperatingLoop({
         : [];
       const existingForSource = state.decisions.filter((item) => item.source === source);
       const otherSources = state.decisions.filter((item) => item.source !== source);
+      // Empty or partial source data must not bulk-close open decisions.
+      const sourceCoverage = facts?.health?.coverageComplete === true || facts?.dataStatus?.coverageComplete === true;
       const reconciled = reconcileDecisions(
         existingForSource,
         decisionItems(source, sourceRecords, sourceRisks),
-        { now: now(), deviceId },
+        { now: now(), deviceId, sourceCoverage },
       );
       state.decisions = [...otherSources, ...reconciled].sort((left, right) => left.id.localeCompare(right.id, 'zh-CN'));
       return clone(facts);

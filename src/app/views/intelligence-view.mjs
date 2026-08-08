@@ -1,4 +1,4 @@
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.7.0';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.7.1';
 
 const COMPANY_LABELS = { wanjia: '万嘉', huahuo: '花火', lingli: '玲丽', ceo: 'CEO' };
 const SOURCE_LABELS = {
@@ -47,7 +47,7 @@ function card(item) {
     if (item.status === 'actioned' || item.status === 'knowledge_pending') return '';
     return `${item.status === 'candidate' ? `<button class="v13-action" data-intelligence-status="read" data-intelligence-id="${escapeHtml(item.externalId)}">标记已读</button>` : ''}<button class="v13-action v13-action-quiet" data-intelligence-status="ignored" data-intelligence-id="${escapeHtml(item.externalId)}">忽略</button><button class="v13-action v13-action-primary" data-intelligence-status="actioned" data-intelligence-id="${escapeHtml(item.externalId)}">转为行动</button>`;
   })();
-  return `<article class="intelligence-card ${item.status === 'candidate' ? 'is-unread' : ''}" data-intelligence-id="${escapeHtml(item.externalId)}">
+  return `<article class="intelligence-card ${item.status === 'candidate' ? 'is-unread' : ''}" data-intelligence-id="${escapeHtml(item.externalId)}" data-intelligence-open="${escapeHtml(item.externalId)}" role="button" tabindex="0" aria-label="打开情报：${escapeHtml(item.title)}">
     <div class="intelligence-card-head"><span class="source-pill">${escapeHtml(item.sourceName)}</span><span class="v13-chip">${escapeHtml(companies)}</span></div>
     <h3>${escapeHtml(item.title)}</h3>
     <p class="intelligence-fact"><strong>事实</strong>${escapeHtml(item.factSummary)}</p>

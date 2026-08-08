@@ -1,4 +1,5 @@
 export const BUSINESS_DATA_CACHE_KEY = 'zos_business_data_cache_v1';
+export const DEFAULT_MAX_PERSISTED_BYTES = 160 * 1024;
 
 const LARGE_FIELD = /(?:raw|payload|content|body|text|markdown|html|attachment|image|media)/i;
 const MAX_STRING_LENGTH = 180;
@@ -102,16 +103,28 @@ export function createBusinessDataCache({ storage = globalThis.localStorage, key
     },
     save(cache) {
       sessionCache = cache || {};
+      const maxBytes = Number.isFinite(maxPersistedBytes) && maxPersistedBytes > 0
+        ? maxPersistedBytes : DEFAULT_MAX_PERSISTED_BYTES;
+      const fullText = JSON.stringify(sessionCache);
+      // The browser copy is an offline convenience, never the live source of truth.
+      // Do not first try a full 300+ merchant response and create a quota warning.
+      const bounded = fullText.length > maxBytes
+        ? buildCompactBusinessCache(sessionCache, { maxPersistedBytes: maxBytes })
+        : sessionCache;
+      const compacted = bounded !== sessionCache;
       try {
-        storage.setItem(key, JSON.stringify(sessionCache));
-        return { persisted: true, compacted: false, sessionOnly: false, message: '' };
+        storage.setItem(key, JSON.stringify(bounded));
+        return {
+          persisted: true, compacted, sessionOnly: false,
+          message: compacted ? '已读取最新数据；已保存精简离线副本，完整数据仅用于本次页面。' : '',
+        };
       } catch {
-        const compact = buildCompactBusinessCache(sessionCache, { maxPersistedBytes });
+        const compact = buildCompactBusinessCache(sessionCache, { maxPersistedBytes: Math.min(maxBytes, 48 * 1024) });
         try {
           storage.setItem(key, JSON.stringify(compact));
-          return { persisted: true, compacted: true, sessionOnly: false, message: '本机只读缓存空间不足，已保存精简副本；本次页面继续使用完整已读取数据。' };
+          return { persisted: true, compacted: true, sessionOnly: false, message: '已读取最新数据；浏览器空间有限，已保存精简离线副本。' };
         } catch {
-          return { persisted: false, compacted: true, sessionOnly: true, message: '本机只读缓存空间不足，本次页面继续使用已读取数据；关闭页面后请重新刷新。' };
+          return { persisted: false, compacted: true, sessionOnly: true, message: '已读取最新数据；浏览器未能保存离线副本，本次页面仍可正常使用。' };
         }
       }
     },

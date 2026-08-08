@@ -1,11 +1,11 @@
-const CACHE_NAME = 'zos-workbench-v2.7.0';
+const CACHE_NAME = 'zos-workbench-v2.7.1';
 // Resolve from the service worker scope so the PWA works both at a domain root
 // and from a GitHub Pages project path such as /zos-workbench/.
 const ASSETS_TO_CACHE = [
   './',
   'index.html',
   'manifest.json',
-  'assets/app.css?v=2.7.0',
+  'assets/app.css?v=2.7.1',
   'src/data-model.mjs',
   'src/legacy-app.mjs',
   'src/app.mjs',
@@ -105,7 +105,7 @@ const ASSETS_TO_CACHE = [
   'icons/icon-maskable-512x512.png',
   'icons/apple-touch-icon.png'
 ].map(function(asset) {
-  const versionedAsset = asset.endsWith('.mjs') ? `${asset}?v=2.7.0` : asset;
+  const versionedAsset = asset.endsWith('.mjs') ? `${asset}?v=2.7.1` : asset;
   return new URL(versionedAsset, self.registration.scope).href;
 });
 

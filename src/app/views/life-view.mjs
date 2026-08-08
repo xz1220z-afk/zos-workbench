@@ -1,5 +1,5 @@
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.7.0';
-import { buildLifeHomepagePresence } from '../homepage-presence.mjs?v=2.7.0';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.7.1';
+import { buildLifeHomepagePresence } from '../homepage-presence.mjs?v=2.7.1';
 
 function primaryAction(action = {}) {
   if (action.target === 'important-dates') return `<button class="v13-action v13-action-primary" data-important-dates-open="life">${escapeHtml(action.label)}</button>`;
@@ -31,9 +31,10 @@ export function render(container, viewModel = {}) {
   const privateDateSource = viewModel.privateDateSource || { state: 'idle', count: 0 };
   const weather = viewModel.weather || {};
   const presence = buildLifeHomepagePresence(viewModel);
+  const weatherAction = '<button class="v13-action v13-action-quiet" type="button" data-weather-location>使用当前位置</button>';
   const weatherCard = weather.state === 'ready'
-    ? `<article class="life-weather-card"><span>☀</span><div><strong>${escapeHtml(weather.location?.name || '天气')} · ${escapeHtml(weather.summary || '待确认')}</strong><p>${escapeHtml(`${weather.temperatureC ?? '—'}°C`)}${weather.apparentTemperatureC != null ? ` · 体感 ${escapeHtml(`${weather.apparentTemperatureC}°C`)}` : ''}</p><small>公开预报 · 不读取定位</small></div></article>`
-    : `<article class="life-weather-card is-pending"><span>☀</span><div><strong>今日天气${weather.state === 'loading' ? '读取中' : '暂不可用'}</strong><small>不读取设备定位</small></div></article>`;
+    ? `<article class="life-weather-card"><span>☀</span><div><strong>${escapeHtml(weather.location?.name || '天气')} · ${escapeHtml(weather.summary || '待确认')}</strong><p>${escapeHtml(`${weather.temperatureC ?? '—'}°C`)}${weather.apparentTemperatureC != null ? ` · 体感 ${escapeHtml(`${weather.apparentTemperatureC}°C`)}` : ''}</p>${weatherAction}<small>公开预报 · 仅在点击后请求定位，不保存精确位置</small></div></article>`
+    : `<article class="life-weather-card is-pending"><span>☀</span><div><strong>今日天气${weather.state === 'loading' || weather.state === 'locating' ? '读取中' : '暂不可用'}</strong>${weatherAction}<small>${escapeHtml(weather.message || '拒绝定位后继续使用默认城市')}</small></div></article>`;
   const dateRows = importantDates.length ? `<div class="v13-list">${importantDates.slice(0, 6).map((item) => `<div class="v13-row"><div><strong>${escapeHtml(item.title)}</strong><div class="v13-meta">${escapeHtml(item.occurrence)} · 仅自己可见</div></div><span class="v13-chip">${item.days === 0 ? '今天' : `${item.days} 天`}</span></div>`).join('')}</div>` : renderState('empty', '重要日子');
   const drawer = viewModel.importantDatesPanel === 'life' ? `<aside class="important-dates-drawer" role="dialog" aria-modal="true" aria-label="全部重要日子"><header><div><small>仅自己可见</small><h2>重要日子</h2></div><button data-important-dates-close aria-label="关闭">×</button></header>${dateRows}<footer><button class="v13-action v13-action-primary" data-countdown-capture>＋ 新增重要日子</button></footer></aside><div class="task-drawer-backdrop" data-important-dates-close></div>` : '';
   const agendaRows = nextSevenDays.length ? `<div class="v13-list">${nextSevenDays.map((item) => `<div class="v13-row"><div><strong>${escapeHtml(item.title)}</strong><div class="v13-meta">${escapeHtml(item.occurrence)} · ${escapeHtml(item.category || item.area || '生活')}</div></div><span class="v13-chip">${item.daysUntil === 0 ? '今天' : `${item.daysUntil} 天后`}</span></div>`).join('')}</div>` : renderState('empty', '未来 7 天');

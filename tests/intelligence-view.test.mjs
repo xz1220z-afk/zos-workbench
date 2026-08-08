@@ -84,4 +84,5 @@ test('intelligence workbench renders combined filters, sort, result count and ig
   assert.match(container.innerHTML, /1 \/ 12 条/);
   assert.match(container.innerHTML, /data-intelligence-reset/);
   assert.match(container.innerHTML, /data-intelligence-status="ignored"/);
+  assert.match(container.innerHTML, /data-intelligence-open="new-1"/);
 });

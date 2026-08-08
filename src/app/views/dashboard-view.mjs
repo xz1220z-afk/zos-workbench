@@ -1,7 +1,7 @@
-import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.7.0';
-import { formatCurrency, humanText } from '../value-utils.mjs?v=2.7.0';
-import { partitionDecisions } from '../decision-center.mjs?v=2.7.0';
-import { buildWorkHomepagePresence } from '../homepage-presence.mjs?v=2.7.0';
+import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.7.1';
+import { formatCurrency, humanText } from '../value-utils.mjs?v=2.7.1';
+import { partitionDecisions } from '../decision-center.mjs?v=2.7.1';
+import { buildWorkHomepagePresence } from '../homepage-presence.mjs?v=2.7.1';
 
 export { VIEW_STATES };
 
@@ -63,8 +63,9 @@ function syncRail(autoRefresh = {}) {
 }
 
 function weatherSummary(weather = {}) {
-  if (weather.state === 'ready') return `<aside class="v15-weather" aria-label="今日天气"><span>☀</span><div><strong>${escapeHtml(weather.location?.name || '天气')} · ${escapeHtml(weather.summary || '待确认')}</strong><small>${escapeHtml(`${weather.temperatureC ?? '—'}°C`)}${weather.apparentTemperatureC != null ? ` · 体感 ${escapeHtml(`${weather.apparentTemperatureC}°C`)}` : ''}</small></div></aside>`;
-  return `<aside class="v15-weather is-pending" aria-label="今日天气"><span>☀</span><div><strong>天气${weather.state === 'loading' ? '读取中' : '暂不可用'}</strong><small>不读取设备定位</small></div></aside>`;
+  const locationAction = `<button class="v13-action v13-action-quiet weather-location-action" type="button" data-weather-location>使用当前位置</button>`;
+  if (weather.state === 'ready') return `<aside class="v15-weather" aria-label="今日天气"><span>☀</span><div><strong>${escapeHtml(weather.location?.name || '天气')} · ${escapeHtml(weather.summary || '待确认')}</strong><small>${escapeHtml(`${weather.temperatureC ?? '—'}°C`)}${weather.apparentTemperatureC != null ? ` · 体感 ${escapeHtml(`${weather.apparentTemperatureC}°C`)}` : ''}</small>${locationAction}<small>仅在点击后请求本机定位，不保存精确位置</small></div></aside>`;
+  return `<aside class="v15-weather is-pending" aria-label="今日天气"><span>☀</span><div><strong>天气${weather.state === 'loading' || weather.state === 'locating' ? '读取中' : '暂不可用'}</strong>${locationAction}<small>${weather.message || '仅在点击后请求本机定位；拒绝后继续使用默认城市'}</small></div></aside>`;
 }
 
 export function render(container, viewModel = {}) {

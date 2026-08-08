@@ -1,5 +1,5 @@
-import { createRecord as defaultCreateRecord, touchRecord as defaultTouchRecord } from '../data-model.mjs?v=2.7.0';
-import { humanText } from './value-utils.mjs?v=2.7.0';
+import { createRecord as defaultCreateRecord, touchRecord as defaultTouchRecord } from '../data-model.mjs?v=2.7.1';
+import { humanText } from './value-utils.mjs?v=2.7.1';
 
 const TRANSITIONS = Object.freeze({
   open: new Set(['approved', 'rejected', 'deferred', 'pending_resolution']),
@@ -191,6 +191,7 @@ export function applyDecisionBatch(decisions = [], action, note = '', options = 
 export function reconcileDecisions(existing = [], currentItems = [], options = {}) {
   const now = requiredText(options.now, 'now');
   const { createRecord, touchRecord } = callbacks(options);
+  const sourceCoverage = options.sourceCoverage !== false;
   const currentByKey = new Map();
   for (const item of currentItems) {
     const candidate = toCandidate(item);
@@ -205,7 +206,7 @@ export function reconcileDecisions(existing = [], currentItems = [], options = {
     const candidate = currentByKey.get(key);
 
     if (!candidate) {
-      if (decision.status === 'open') {
+      if (decision.status === 'open' && sourceCoverage) {
         reconciled.push(transitionDecision(decision, 'pending_resolution', '来源风险已消失，等待人工确认解除', {
           ...options,
           now,

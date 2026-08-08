@@ -7,6 +7,34 @@ const WMO_SUMMARY = Object.freeze({
 
 function number(value) { return Number.isFinite(Number(value)) ? Number(value) : null; }
 
+function locationError(code = '') {
+  if (Number(code) === 1 || code === 'PERMISSION_DENIED') return new Error('geolocation_denied');
+  if (Number(code) === 2 || code === 'POSITION_UNAVAILABLE') return new Error('geolocation_unavailable');
+  if (Number(code) === 3 || code === 'TIMEOUT') return new Error('geolocation_timeout');
+  return new Error('geolocation_unavailable');
+}
+
+export function requestCurrentWeatherLocation({
+  geolocation = globalThis.navigator?.geolocation,
+  timezone = 'Asia/Shanghai',
+} = {}) {
+  if (!geolocation || typeof geolocation.getCurrentPosition !== 'function') {
+    return Promise.reject(new Error('geolocation_unavailable'));
+  }
+  return new Promise((resolve, reject) => {
+    geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = number(position?.coords?.latitude);
+        const longitude = number(position?.coords?.longitude);
+        if (latitude == null || longitude == null) return reject(new Error('geolocation_invalid'));
+        return resolve({ name: '当前位置', latitude, longitude, timezone });
+      },
+      (error) => reject(locationError(error?.code)),
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60 * 1000 },
+    );
+  });
+}
+
 export function normalizeWeather(payload = {}, location = DEFAULT_WEATHER_LOCATION, fetchedAt = new Date().toISOString()) {
   const current = payload?.current || {};
   const temperatureC = number(current.temperature_2m);

@@ -53,7 +53,7 @@ test('decision surfaces separate CEO choices from owner follow-up and resolved h
   renderDecisions(center, { state: 'ready', decisions });
   assert.match(center.innerHTML, /需要你决定[\s\S]*1/);
   assert.match(center.innerHTML, /负责人跟进[\s\S]*1/);
-  assert.match(center.innerHTML, /处理历史[\s\S]*1/);
+  assert.match(center.innerHTML, /已归档历史[\s\S]*1/);
   assert.match(center.innerHTML, /data-decision-action="approve"/);
   assert.match(center.innerHTML, /data-decision-action="delegate"/);
   assert.match(center.innerHTML, /data-decision-action="defer"/);

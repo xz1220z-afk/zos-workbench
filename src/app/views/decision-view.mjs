@@ -1,6 +1,6 @@
-import { escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.7.0';
-import { humanText } from '../value-utils.mjs?v=2.7.0';
-import { classifyDecision, partitionDecisions } from '../decision-center.mjs?v=2.7.0';
+import { escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.7.1';
+import { humanText } from '../value-utils.mjs?v=2.7.1';
+import { classifyDecision, partitionDecisions } from '../decision-center.mjs?v=2.7.1';
 
 export { VIEW_STATES };
 
@@ -135,7 +135,7 @@ export function render(container, viewModel = {}) {
       <section class="decision-center-summary v14-kpi-grid">
         <button type="button" data-decision-jump="ceo"><span>需要你决定</span><strong>${queues.ceo.length}</strong><small>价格、回款、资源与重大交付</small></button>
         <button type="button" data-decision-jump="owner"><span>负责人跟进</span><strong>${queues.followUp.length}</strong><small>不占用 CEO 决策提醒</small></button>
-        <button type="button" data-decision-jump="history"><span>处理历史</span><strong>${queues.history.length}</strong><small>记录不删除，可重新打开</small></button>
+        <button type="button" data-decision-jump="history"><span>已归档历史</span><strong>查看</strong><small>${queues.history.length ? `共 ${queues.history.length} 条，不占用待办` : '暂无历史记录'}</small></button>
       </section>
       <section class="decision-toolbar" aria-label="决策筛选">
         <input type="search" data-decision-search value="${escapeHtml(ui.search)}" placeholder="搜索事实、建议或来源">
@@ -145,7 +145,7 @@ export function render(container, viewModel = {}) {
       ${selectedIds.size ? `<section class="decision-batch-bar" aria-label="批量处理"><strong>已选择 ${selectedIds.size} 条</strong><div><button class="v13-action v13-action-primary" type="button" data-decision-batch="review_history" ${ui.batchBusy ? 'disabled' : ''}>标记已复核</button><button class="v13-action" type="button" data-decision-batch="reopen" ${ui.batchBusy ? 'disabled' : ''}>批量重新打开</button><button class="v13-action v13-action-quiet" type="button" data-decision-selection-clear>取消选择</button></div>${ui.batchError ? `<p role="alert">${escapeHtml(ui.batchError)}</p>` : ''}</section>` : ''}
       ${section('需要你决定', queues.ceo.length, filtered.ceo, 'ceo', '只保留真正需要你拍板的事项。', filtered.ceo.length, selectedIds)}
       ${section('负责人跟进', queues.followUp.length, visibleFollowUp, 'owner', '由负责人推进，可随时转回你拍板。', filtered.followUp.length, selectedIds)}
-      ${section('处理历史', queues.history.length, visibleHistory, 'history', '历史完整保留，不删除原始数据。', filtered.history.length, selectedIds)}
+      ${section('已归档历史', queues.history.length, visibleHistory, 'history', '来源变化和已处理记录会保留在这里，不进入待我决策或提醒。', filtered.history.length, selectedIds)}
     </div>
     ${drawer(decisions, ui)}
     ${ui.undo ? `<div class="decision-undo-toast" role="status"><span>${escapeHtml(humanText(ui.undo.message, '处理已保存'))}</span><button class="v13-action" type="button" data-decision-undo>撤销</button></div>` : ''}

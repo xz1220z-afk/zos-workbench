@@ -32,3 +32,22 @@ test('contextual intelligence questions use the injected assistant and preserve 
   assert.equal(app.runtime.intelligenceQuestion, null);
   assert.equal(app.runtime.intelligenceAnswer, null);
 });
+
+test('marking an intelligence card read updates the visible running list immediately', () => {
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} }, storage: memoryStorage(),
+    now: () => '2026-08-08T08:00:00.000Z', createOperatingRuntime: false,
+  });
+  app.store.saveEntity('intelligence', {
+    id: 'intelligence:astra', externalId: 'astra', title: 'Astra 延期', sourceName: '行业媒体',
+    factSummary: '安全评估仍在进行。', credibility: 'medium', relevantCompanies: ['ceo'],
+    capturedAt: '2026-08-08T08:00:00Z', status: 'candidate',
+  });
+  app.runtime.intelligence = app.store.load().collections.intelligence;
+
+  const next = app.updateIntelligenceStatus('astra', 'read');
+
+  assert.equal(next.status, 'read');
+  assert.equal(app.viewModel().intelligenceAll.find((item) => item.externalId === 'astra').status, 'read');
+  assert.equal(app.store.load().collections.intelligence[0].status, 'read');
+});

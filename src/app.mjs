@@ -1,77 +1,77 @@
-import { createStateStore, readPersistedStateForBackup } from './app/state-store.mjs?v=2.7.0';
-import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=2.7.0';
-import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.7.0';
-import { render as renderTargets } from './app/views/targets-view.mjs?v=2.7.0';
-import { render as renderHealth } from './app/views/health-view.mjs?v=2.7.0';
-import { render as renderMobile } from './app/views/mobile-view.mjs?v=2.7.0';
-import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.7.0';
-import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=2.7.0';
-import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=2.7.0';
-import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=2.7.0';
-import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=2.7.0';
-import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=2.7.0';
-import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=2.7.0';
-import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=2.7.0';
-import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=2.7.0';
-import { buildImportantDates } from './app/important-dates.mjs?v=2.7.0';
-import { queryAvailability } from './app/availability-center.mjs?v=2.7.0';
-import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=2.7.0';
-import { buildMerchantDiagnostic, buildWanjiaOpsModel } from './app/wanjia-ops-center.mjs?v=2.7.0';
-import { filterIntelligence, normalizeIntelligenceItem, sortIntelligence, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=2.7.0';
-import { buildIntelligenceAnswer } from './app/intelligence-explainer.mjs?v=2.7.0';
-import { fetchSelectedWeather, DEFAULT_WEATHER_LOCATION } from './app/weather-center.mjs?v=2.7.0';
-import { normalizeKnowledgeContextIndex } from './knowledge-context-index.mjs?v=2.7.0';
-import { buildLifeAgenda, summarizeLife } from './app/life-os.mjs?v=2.7.0';
-import { upcomingRituals } from './app/ritual-calendar.mjs?v=2.7.0';
-import { parsePrivateDateMetadata } from './app/private-date-import.mjs?v=2.7.0';
-import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=2.7.0';
-import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=2.7.0';
-import { render as renderCalendar } from './app/views/calendar-view.mjs?v=2.7.0';
-import { render as renderLife } from './app/views/life-view.mjs?v=2.7.0';
-import { render as renderSearch } from './app/views/search-view.mjs?v=2.7.0';
-import { render as renderLingli } from './app/views/lingli-view.mjs?v=2.7.0';
-import { buildRelations } from './app/relation-center.mjs?v=2.7.0';
-import { createReviewDraft } from './app/review-center.mjs?v=2.7.0';
-import { render as renderRelations } from './app/views/relation-view.mjs?v=2.7.0';
-import { render as renderReviews } from './app/views/review-view.mjs?v=2.7.0';
-import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=2.7.0';
-import { render as renderTaskCenter } from './app/views/task-view.mjs?v=2.7.0';
-import { render as renderFocus } from './app/views/focus-view.mjs?v=2.7.0';
-import { render as renderAvailability } from './app/views/availability-view.mjs?v=2.7.0';
-import { render as renderMerchant } from './app/views/merchant-view.mjs?v=2.7.0';
-import { render as renderWanjiaOps } from './app/views/wanjia-ops-view.mjs?v=2.7.0';
-import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=2.7.0';
-import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=2.7.0';
-import { buildCompanyCockpit } from './app/company-cockpit.mjs?v=2.7.0';
-import { render as renderCompanyCockpit } from './app/views/company-cockpit-view.mjs?v=2.7.0';
-import { buildTodayTop3 } from './app/priority-engine.mjs?v=2.7.0';
-import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=2.7.0';
-import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=2.7.0';
-import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=2.7.0';
-import { runCompanyAgent } from './app/company-agent-hub.mjs?v=2.7.0';
-import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=2.7.0';
-import { contentOverview, contentPerformance, evaluateExperiment, normalizeContentItem, transitionContent, buildCompoundCandidate } from './app/content-growth.mjs?v=2.7.0';
-import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.7.0';
-import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.7.0';
-import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.7.0';
-import { validateAgentOsIndex } from './app/agent-os-index-contract.mjs?v=2.7.0';
+import { createStateStore, readPersistedStateForBackup } from './app/state-store.mjs?v=2.7.1';
+import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=2.7.1';
+import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.7.1';
+import { render as renderTargets } from './app/views/targets-view.mjs?v=2.7.1';
+import { render as renderHealth } from './app/views/health-view.mjs?v=2.7.1';
+import { render as renderMobile } from './app/views/mobile-view.mjs?v=2.7.1';
+import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.7.1';
+import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=2.7.1';
+import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=2.7.1';
+import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=2.7.1';
+import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=2.7.1';
+import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=2.7.1';
+import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=2.7.1';
+import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=2.7.1';
+import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=2.7.1';
+import { buildImportantDates } from './app/important-dates.mjs?v=2.7.1';
+import { queryAvailability } from './app/availability-center.mjs?v=2.7.1';
+import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=2.7.1';
+import { buildMerchantDiagnostic, buildWanjiaOpsModel } from './app/wanjia-ops-center.mjs?v=2.7.1';
+import { filterIntelligence, normalizeIntelligenceItem, sortIntelligence, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=2.7.1';
+import { buildIntelligenceAnswer } from './app/intelligence-explainer.mjs?v=2.7.1';
+import { fetchSelectedWeather, requestCurrentWeatherLocation, DEFAULT_WEATHER_LOCATION } from './app/weather-center.mjs?v=2.7.1';
+import { normalizeKnowledgeContextIndex } from './knowledge-context-index.mjs?v=2.7.1';
+import { buildLifeAgenda, summarizeLife } from './app/life-os.mjs?v=2.7.1';
+import { upcomingRituals } from './app/ritual-calendar.mjs?v=2.7.1';
+import { parsePrivateDateMetadata } from './app/private-date-import.mjs?v=2.7.1';
+import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=2.7.1';
+import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=2.7.1';
+import { render as renderCalendar } from './app/views/calendar-view.mjs?v=2.7.1';
+import { render as renderLife } from './app/views/life-view.mjs?v=2.7.1';
+import { render as renderSearch } from './app/views/search-view.mjs?v=2.7.1';
+import { render as renderLingli } from './app/views/lingli-view.mjs?v=2.7.1';
+import { buildRelations } from './app/relation-center.mjs?v=2.7.1';
+import { createReviewDraft } from './app/review-center.mjs?v=2.7.1';
+import { render as renderRelations } from './app/views/relation-view.mjs?v=2.7.1';
+import { render as renderReviews } from './app/views/review-view.mjs?v=2.7.1';
+import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=2.7.1';
+import { render as renderTaskCenter } from './app/views/task-view.mjs?v=2.7.1';
+import { render as renderFocus } from './app/views/focus-view.mjs?v=2.7.1';
+import { render as renderAvailability } from './app/views/availability-view.mjs?v=2.7.1';
+import { render as renderMerchant } from './app/views/merchant-view.mjs?v=2.7.1';
+import { render as renderWanjiaOps } from './app/views/wanjia-ops-view.mjs?v=2.7.1';
+import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=2.7.1';
+import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=2.7.1';
+import { buildCompanyCockpit } from './app/company-cockpit.mjs?v=2.7.1';
+import { render as renderCompanyCockpit } from './app/views/company-cockpit-view.mjs?v=2.7.1';
+import { buildTodayTop3 } from './app/priority-engine.mjs?v=2.7.1';
+import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=2.7.1';
+import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=2.7.1';
+import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=2.7.1';
+import { runCompanyAgent } from './app/company-agent-hub.mjs?v=2.7.1';
+import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=2.7.1';
+import { contentOverview, contentPerformance, evaluateExperiment, normalizeContentItem, transitionContent, buildCompoundCandidate } from './app/content-growth.mjs?v=2.7.1';
+import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.7.1';
+import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.7.1';
+import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.7.1';
+import { validateAgentOsIndex } from './app/agent-os-index-contract.mjs?v=2.7.1';
 import {
   agentDetails, buildAgentAnalysisRequest, buildAgentInvocationDraft, buildAgentOsOverview, buildRelationReminderDrafts,
   compareAgentOsIndexes, visibleAgents,
-} from './app/agent-os-center.mjs?v=2.7.0';
+} from './app/agent-os-center.mjs?v=2.7.1';
 import {
   agentRuntimeAvailability, completeAgentTaskArchive, confirmContextCandidate,
   confirmedContextForAgent, createAgentTaskArchive, createContextCandidate, rejectContextCandidate,
-} from './app/agent-task-context.mjs?v=2.7.0';
-import { render as renderContentGrowth } from './app/views/content-growth-view.mjs?v=2.7.0';
-import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.7.0';
-import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.7.0';
-import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.7.0';
-import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.7.0';
-import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.7.0';
-import { applyDecisionAction, applyDecisionBatch, partitionDecisions } from './app/decision-center.mjs?v=2.7.0';
+} from './app/agent-task-context.mjs?v=2.7.1';
+import { render as renderContentGrowth } from './app/views/content-growth-view.mjs?v=2.7.1';
+import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.7.1';
+import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.7.1';
+import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.7.1';
+import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.7.1';
+import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.7.1';
+import { applyDecisionAction, applyDecisionBatch, partitionDecisions } from './app/decision-center.mjs?v=2.7.1';
 
-export const APP_VERSION = '2.7.0';
+export const APP_VERSION = '2.7.1';
 const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
 const SYNC_META_KEY = 'zos_sync_meta_v2';
 const LEGACY_COLLECTION_KEYS = Object.freeze({
@@ -295,7 +295,7 @@ export function createCeoOsApplication(config = {}) {
           ? readPersistedStateForBackup({ rawSnapshot: preUpgradeRaw, now, deviceId, createId: browserId })
           : currentDurableState());
         await snapshotRepository.save({
-          kind: 'upgrade', appVersion: previousVersion || 'pre-2.7.0',
+          kind: 'upgrade', appVersion: previousVersion || 'pre-2.7.1',
           backup: buildSafeBackup({ state: checkpointState, baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() }),
         });
         storage?.setItem?.(LAST_PROTECTED_VERSION_KEY, APP_VERSION);
@@ -951,6 +951,20 @@ export function createCeoOsApplication(config = {}) {
     runtime.intelligenceCompany = 'all';
     renderAll();
     return { ...runtime.intelligenceFilters };
+  }
+
+  function updateIntelligenceStatus(externalId, status) {
+    const id = String(externalId || '').trim();
+    const current = viewModel().intelligenceAll.find((item) => item.externalId === id);
+    if (!current) throw new Error('intelligence_not_found');
+    const next = transitionIntelligence(current, status);
+    const saved = store.saveEntity('intelligence', { ...next, id: `intelligence:${next.externalId}` });
+    const runningItems = runtime.intelligence.length ? runtime.intelligence : (store.load().collections.intelligence || []);
+    runtime.intelligence = runningItems.map((item) => item.externalId === saved.externalId ? saved : item);
+    if (next.status === 'actioned') convertIntelligenceToTask(next);
+    signalLocalChange();
+    renderAll();
+    return saved;
   }
 
   function openIntelligenceQuestion(externalId) {
@@ -2312,9 +2326,11 @@ export function createCeoOsApplication(config = {}) {
       const pageButton = event.target?.closest?.('[data-page]');
       const intelligenceButton = event.target?.closest?.('[data-intelligence-status]');
       const intelligenceAsk = event.target?.closest?.('[data-intelligence-ask]');
+      const intelligenceOpen = event.target?.closest?.('[data-intelligence-open]');
       const intelligenceQuestionClose = event.target?.closest?.('[data-intelligence-question-close]');
       const intelligenceRefresh = event.target?.closest?.('[data-refresh-intelligence]');
       const intelligenceReset = event.target?.closest?.('[data-intelligence-reset]');
+      const weatherLocation = event.target?.closest?.('[data-weather-location]');
       const lifeCapture = event.target?.closest?.('[data-life-capture]');
       const ritualConvert = event.target?.closest?.('[data-ritual-convert]');
       const ritualIgnore = event.target?.closest?.('[data-ritual-ignore]');
@@ -2494,10 +2510,9 @@ export function createCeoOsApplication(config = {}) {
         else if (intelligenceAsk) openIntelligenceQuestion(intelligenceAsk.dataset.intelligenceAsk);
         else if (intelligenceQuestionClose) closeIntelligenceQuestion();
         else if (intelligenceButton) {
-          const current = viewModel().intelligence.find((item) => item.externalId === intelligenceButton.dataset.intelligenceId);
-          const next = transitionIntelligence(current, intelligenceButton.dataset.intelligenceStatus);
-          store.saveEntity('intelligence', { ...next, id: `intelligence:${next.externalId}` });
-          if (next.status === 'actioned') convertIntelligenceToTask(next);
+          updateIntelligenceStatus(intelligenceButton.dataset.intelligenceId, intelligenceButton.dataset.intelligenceStatus);
+        } else if (intelligenceOpen) {
+          openIntelligenceQuestion(intelligenceOpen.dataset.intelligenceOpen);
         } else if (intelligenceRefresh) {
           if (!operatingRuntime?.loadIntelligence) {
             runtime.intelligenceState = 'authentication_required'; renderAll();
@@ -2510,6 +2525,8 @@ export function createCeoOsApplication(config = {}) {
           setIntelligenceFilter('company', intelligenceCompany.dataset.intelligenceCompany || 'all');
         } else if (intelligenceReset) {
           resetIntelligenceFilters();
+        } else if (weatherLocation) {
+          await useCurrentWeatherLocation();
         } else if (calendarKind) {
           setCalendarDraftKind(calendarKind.dataset.calendarKind);
         } else if (calendarView) {
@@ -2862,6 +2879,7 @@ export function createCeoOsApplication(config = {}) {
     });
     document.addEventListener('keydown', (event) => {
       const target = event.target?.closest?.('[data-calendar-select-date]');
+      const intelligenceCard = event.target?.closest?.('[data-intelligence-open]');
       if (event.key === 'Tab' && runtime.decisionUi.action) {
         const focusable = [...(document?.querySelectorAll?.('.decision-action-drawer button:not([disabled]), .decision-action-drawer a[href], .decision-action-drawer textarea:not([disabled]), .decision-action-drawer input:not([disabled]), .decision-action-drawer select:not([disabled])') || [])];
         if (focusable.length) {
@@ -2870,6 +2888,9 @@ export function createCeoOsApplication(config = {}) {
           if (event.shiftKey && document.activeElement === first) { event.preventDefault?.(); last.focus?.(); }
           else if (!event.shiftKey && document.activeElement === last) { event.preventDefault?.(); first.focus?.(); }
         }
+      } else if (intelligenceCard && ['Enter', ' '].includes(event.key)) {
+        event.preventDefault?.();
+        openIntelligenceQuestion(intelligenceCard.dataset.intelligenceOpen);
       } else if (target && ['Enter', ' '].includes(event.key)) {
         event.preventDefault?.();
         beginCalendarSelection(target.dataset.calendarSelectDate);
@@ -3102,13 +3123,32 @@ export function createCeoOsApplication(config = {}) {
     return viewModel();
   }
 
-  async function refreshWeather() {
-    runtime.weather = { ...runtime.weather, state: 'loading' };
+  async function refreshWeather({ location = runtime.weather?.location || DEFAULT_WEATHER_LOCATION } = {}) {
+    runtime.weather = { ...runtime.weather, state: 'loading', location, message: null };
     renderAll();
-    try { runtime.weather = await fetchSelectedWeather({ fetchImpl: config.weatherFetchImpl || config.fetchImpl || globalThis.fetch, fetchedAt: now() }); }
-    catch { runtime.weather = { ...runtime.weather, state: 'unavailable', message: '天气暂不可用' }; }
+    try { runtime.weather = await fetchSelectedWeather({ location, fetchImpl: config.weatherFetchImpl || config.fetchImpl || globalThis.fetch, fetchedAt: now() }); }
+    catch { runtime.weather = { ...runtime.weather, state: 'unavailable', location, message: '天气暂不可用' }; }
     renderAll();
     return runtime.weather;
+  }
+
+  async function useCurrentWeatherLocation() {
+    const previous = runtime.weather;
+    runtime.weather = { ...previous, state: 'locating', message: '正在请求本机定位…' };
+    renderAll();
+    try {
+      const geolocation = config.geolocation || document?.defaultView?.navigator?.geolocation || globalThis.navigator?.geolocation;
+      const location = await requestCurrentWeatherLocation({ geolocation, timezone: 'Asia/Shanghai' });
+      return await refreshWeather({ location });
+    } catch (error) {
+      const code = String(error?.message || 'geolocation_unavailable');
+      const message = code === 'geolocation_denied'
+        ? '未获定位授权，继续使用默认城市。'
+        : '暂时无法获取当前位置，继续使用默认城市。';
+      runtime.weather = { ...previous, state: previous?.state === 'ready' ? 'ready' : 'unavailable', message };
+      renderAll();
+      return runtime.weather;
+    }
   }
 
   async function start() {
@@ -3173,9 +3213,9 @@ export function createCeoOsApplication(config = {}) {
     quickCapture, captureCalendar, saveCalendar, deleteCalendar, restoreCalendar, copyCalendar, moveCalendar,
     ignoreRitual, convertRitualToLifeTask, importPrivateDateText, selectPrivateDateFile,
     importAgentOsIndexText, selectAgentOsIndexFile, selectKnowledgeContextFile, setAgentOsFilter, openAgentDetails, closeAgentDetails, invokeAgent, analyzeAgent, analyzeAgentTask, confirmAgentContext, rejectAgentContext,
-    setIntelligenceFilter, resetIntelligenceFilters, openIntelligenceQuestion, askIntelligenceQuestion, closeIntelligenceQuestion,
+    setIntelligenceFilter, resetIntelligenceFilters, updateIntelligenceStatus, openIntelligenceQuestion, askIntelligenceQuestion, closeIntelligenceQuestion,
     deleteTask, restoreTask, toggleTask, copyTask, moveTask,
-    setCalendarView, navigateCalendar, goToCalendarToday, refreshCalendarRange, refreshWeather,
+    setCalendarView, navigateCalendar, goToCalendarToday, refreshCalendarRange, refreshWeather, useCurrentWeatherLocation,
     selectCalendar, openCalendarEditor, closeCalendarPanel, requestCalendarMutation, applyCalendarSeriesScope,
     requestCalendarDeletion, confirmCalendarDeletion, restoreCalendarEntity, undoCalendarDelete, setCalendarFilter,
     beginCalendarSelection, extendCalendarSelection, commitCalendarSelection, setCalendarDraftKind,

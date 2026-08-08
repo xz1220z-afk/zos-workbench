@@ -149,6 +149,18 @@ test('a disappeared risk becomes pending_resolution instead of being deleted', (
   assert.equal(result[0].revision, 2);
 });
 
+test('an incomplete source refresh never bulk-converts open decisions into history', () => {
+  const [openDecision] = deriveDecisions({ risks: [risk] }, { now: NOW, ...callbacks });
+  const result = reconcileDecisions(
+    [openDecision],
+    [],
+    { now: '2026-08-03T08:00:00.000Z', sourceCoverage: false, ...callbacks },
+  );
+
+  assert.equal(result[0].status, 'open');
+  assert.equal(result[0].revision, openDecision.revision);
+});
+
 test('reconcile preserves a completed human decision and refreshes a matching open fact', () => {
   const [openDecision] = deriveDecisions({ risks: [risk] }, { now: NOW, ...callbacks });
   const approved = transitionDecision(openDecision, 'approved', '按建议推进', {
