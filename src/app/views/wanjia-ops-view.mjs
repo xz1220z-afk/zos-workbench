@@ -22,10 +22,12 @@ function binaryOptions(selected) {
 
 function statusPanel(status = {}) {
   const tableText = status.sourceTables?.length ? status.sourceTables.join('、') : '尚未声明今日校验表';
+  const missingText = status.missingPreferredTables?.length
+    ? `<small class="wanjia-source-gap">尚未发现：${escapeHtml(status.missingPreferredTables.join('、'))}；相关指标继续显示待同步。</small>` : '';
   return `<section class="wanjia-status-panel" data-state="${escapeHtml(status.state || 'pending_sync')}">
     <div><span class="v14-kicker">WANJIA DATA TRUST</span><h2>万嘉本地生活运营总控台</h2><p>${escapeHtml(status.message || '今日经营数据待同步。')}</p></div>
     <dl><div><dt>数据来源</dt><dd>${safe(status.sourceLabel)}</dd></div><div><dt>数据日期</dt><dd>${safe(status.dataDate)}</dd></div><div><dt>最后同步</dt><dd>${safe(status.lastSyncedAt)}</dd></div><div><dt>同步状态</dt><dd>${safe(status.label)}</dd></div><div><dt>数据可信</dt><dd>${status.trustworthy ? '可用于运营参考' : '暂不可作为今日事实'}</dd></div></dl>
-    <small>本次校验表：${escapeHtml(tableText)}</small>
+    <small>本次校验表：${escapeHtml(tableText)}</small>${missingText}
   </section>`;
 }
 

@@ -80,6 +80,7 @@ export function buildWanjiaDataStatus(source = null, options = {}) {
     state, label: STATUS_LABELS[state], message, dataDate, lastSyncedAt,
     sourceLabel: declared.sourceLabel || (state === 'historical_snapshot' ? '旧林客快照 / 历史月报' : '万嘉 ERP / 林客每日数据'),
     sourceTables: Array.isArray(declared.sourceTables) ? declared.sourceTables : [],
+    missingPreferredTables: Array.isArray(declared.missingPreferredTables) ? declared.missingPreferredTables : [],
     preferredTables: [...PREFERRED_TABLES],
     trustworthy: state === 'realtime_validated',
   };

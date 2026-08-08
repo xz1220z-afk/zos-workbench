@@ -44,12 +44,36 @@ function feishuList(value: unknown) {
   return [...new Set(text.split(/[、,，;；]/).map((item) => item.trim()).filter(Boolean))];
 }
 
+function shanghaiDate(value = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(value);
+}
+
+function feishuDate(value: unknown) {
+  const text = feishuText(value).trim();
+  const iso = text.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (iso) return iso;
+  const numeric = Number(text);
+  if (!Number.isFinite(numeric) || numeric <= 0) return null;
+  const milliseconds = numeric < 10_000_000_000 ? numeric * 1000 : numeric;
+  const date = new Date(milliseconds);
+  return Number.isNaN(date.getTime()) ? null : shanghaiDate(date);
+}
+
 function summarizeWanjia(records: FeishuRecord[]) {
+  const paymentGmv = roundMoney(sum(records, '支付GMV'));
+  const redeemedGmv = roundMoney(sum(records, '核销GMV'));
+  const exceptions = records.filter((record) => Boolean(feishuText(pick(record, '异常标记')))).length;
   return {
     totalMerchants: records.length,
-    activeMerchants: records.filter((record) => ['true', '是', '已动销'].includes(feishuText(fieldsOf(record)['是否动销']))).length,
-    paymentGmv: roundMoney(sum(records, '支付GMV')),
-    redeemedGmv: roundMoney(sum(records, '核销GMV')),
+    activeMerchants: records.filter((record) => feishuNumber(pick(record, '支付GMV')) > 0).length,
+    paymentGmv,
+    redeemedGmv,
+    todayPaymentGmv: paymentGmv,
+    todayRedeemedGmv: redeemedGmv,
+    averageRedemptionRate: paymentGmv > 0 ? redeemedGmv / paymentGmv : null,
+    exceptionMerchants: exceptions,
+    pendingExceptions: exceptions,
+    completedTasksToday: null,
     videoPosts: sum(records, '视频投稿数'),
     liveSessions: sum(records, '直播场次数'),
     estimatedCommission: roundMoney(sum(records, '总预估佣金')),
@@ -57,8 +81,26 @@ function summarizeWanjia(records: FeishuRecord[]) {
 }
 
 function latestWanjiaDataDate(records: FeishuRecord[]) {
-  return records.map((record) => sourceUpdatedAt(record, pick(record, '数据日期', '业务日期', '最近更新时间', '更新时间')))
-    .filter(Boolean).sort().at(-1)?.slice(0, 10) || null;
+  return records.map((record) => feishuDate(pick(record, '数据日期', '业务日期')))
+    .filter(Boolean).sort().at(-1) || null;
+}
+
+function validateWanjiaCurrentState(records: FeishuRecord[], completedAt: string) {
+  const today = shanghaiDate(new Date(completedAt));
+  const todayRecords = records.filter((record) => feishuDate(pick(record, '数据日期', '业务日期')) === today);
+  const dataDate = todayRecords.length ? today : latestWanjiaDataDate(records);
+  if (!todayRecords.length) return { state: 'pending_sync', validation: 'pending', dataDate, records: [] as FeishuRecord[] };
+  const identifiers = todayRecords.map((record) => feishuText(pick(record, '林客商家 ID', '林客商家ID'))).filter(Boolean);
+  const complete = todayRecords.every((record) => Boolean(
+    feishuText(pick(record, '商家名称'))
+    && feishuText(pick(record, '林客商家 ID', '林客商家ID'))
+    && feishuText(pick(record, '数据日期'))
+    && feishuText(pick(record, '同步批次号'))
+    && feishuText(pick(record, '同步时间'))
+  ));
+  const unique = identifiers.length === todayRecords.length && new Set(identifiers).size === identifiers.length;
+  if (!complete || !unique) return { state: 'validation_failed', validation: 'failed', dataDate, records: [] as FeishuRecord[] };
+  return { state: 'realtime_validated', validation: 'passed', dataDate, records: todayRecords };
 }
 
 function summarizeHuahuo(projects: FeishuRecord[], deliveries: FeishuRecord[], receipts: FeishuRecord[]) {
@@ -89,17 +131,25 @@ function buildWanjiaRecords(records: FeishuRecord[]) {
         writeAvailable: Boolean(record.record_id),
         contractVersion: '1.3',
         merchantName: feishuText(fields['商家名称'], '未知商家'),
-        merchantId: feishuText(pick(record, '商家ID', '记录ID'), record.record_id || `wanjia-${index}`),
+        merchantId: feishuText(pick(record, '林客商家 ID', '林客商家ID', '商家ID', '记录ID'), record.record_id || `wanjia-${index}`),
         industry: feishuText(fields['行业']),
         category: feishuText(fields['类目']),
         businessUnit: feishuText(fields['经营单元']),
         tier: feishuText(fields['商家分层']),
         isListed: ['true', '是', '已上团'].includes(feishuText(fields['是否上团']).toLowerCase()),
-        isActive: ['true', '是', '已动销'].includes(feishuText(fields['是否动销']).toLowerCase()),
+        isActive: ['true', '是', '已动销'].includes(feishuText(fields['是否动销']).toLowerCase()) || feishuNumber(fields['支付GMV']) > 0,
         businessScore: feishuNumber(fields['商家经营分']),
         paymentGmv: roundMoney(feishuNumber(fields['支付GMV'])),
         redeemedGmv: roundMoney(feishuNumber(fields['核销GMV'])),
         refundGmv: roundMoney(feishuNumber(fields['退款GMV'])),
+        videoDirectPaymentGmv: roundMoney(feishuNumber(fields['视频直接支付GMV'])),
+        livePaymentGmv: roundMoney(feishuNumber(fields['直播支付GMV'])),
+        hasVideo: feishuNumber(fields['视频直接支付GMV']) > 0,
+        hasLive: feishuNumber(fields['直播支付GMV']) > 0,
+        dataDate: feishuDate(pick(record, '数据日期')),
+        syncBatchId: feishuText(pick(record, '同步批次号')) || null,
+        syncTime: feishuText(pick(record, '同步时间')) || null,
+        anomalyFlag: feishuText(pick(record, '异常标记')) || null,
         paymentCoupons: feishuNumber(fields['支付券数']),
         redeemedCoupons: feishuNumber(fields['核销券数']),
         refundCoupons: feishuNumber(fields['退款券数']),
@@ -113,7 +163,7 @@ function buildWanjiaRecords(records: FeishuRecord[]) {
           status: 'todo', dueAt: null, source: 'feishu',
         }] : [],
         expectedActionLabels: feishuList(pick(record, '标准运营动作', '预期动作', '运营动作清单')),
-        riskLevel: feishuText(pick(record, '风险等级', '风险'), '低'),
+        riskLevel: feishuText(pick(record, '风险等级', '风险')) || (feishuText(pick(record, '异常标记')) ? '高' : '低'),
         revenueStatus: feishuText(pick(record, '收入状态', '收款状态', '回款状态'), '未提供'),
       };
     }),
@@ -214,12 +264,15 @@ export async function readBusinessSources(requestedSource: BusinessSource = 'all
   const needsWanjia = ['all', 'wanjia', 'projects'].includes(requestedSource);
   const needsHuahuo = ['all', 'huahuo', 'projects'].includes(requestedSource);
   const needsLingli = ['all', 'lingli', 'projects'].includes(requestedSource);
-  const merchants = needsWanjia ? await listRecords(accessToken, FEISHU_TARGETS.wanjia.merchant, [
-    '商家名称', '商家ID', '行业', '类目', '经营单元', '商家分层', '合作模式', '跟进人',
-    '是否上团', '是否动销', '商家经营分', '支付GMV', '核销GMV', '退款GMV', '支付券数', '核销券数', '退款券数',
-    '当前阶段', '阶段', '合作阶段', '项目负责人', '负责人', '对接人',
-    '下一步动作', '待办事项', '后续动作', '风险等级', '风险', '收入状态', '收款状态', '回款状态',
-    '标准运营动作', '预期动作', '运营动作清单',
+  const wanjiaAppToken = FEISHU_TARGETS.wanjia.merchant.appToken;
+  const wanjiaTables = needsWanjia ? await listTables(accessToken, wanjiaAppToken) : [];
+  const wanjiaCurrentTarget = needsWanjia ? resolveTableByNames(wanjiaAppToken, wanjiaTables, [
+    '01.04.03｜林客商家当前经营状态',
+  ]) : null;
+  const merchants = needsWanjia ? await listRecordsFlexible(accessToken, wanjiaCurrentTarget!, [
+    '记录名称', '商家名称', '林客商家 ID', '数据日期', '数据周期', '行业', '类目', '合作模式', '跟进人',
+    '商家经营分', '支付GMV', '核销GMV', '退款GMV', '视频直接支付GMV', '直播支付GMV',
+    '总预估佣金', '服务商预估佣金', '异常标记', '同步批次号', '同步时间',
   ]) : [];
   const [projects, deliveries, receipts] = needsHuahuo ? await Promise.all([
     listRecords(accessToken, FEISHU_TARGETS.huahuo.project, [
@@ -266,17 +319,20 @@ export async function readBusinessSources(requestedSource: BusinessSource = 'all
     ]),
   ]) : [[], [], [], [], [], []];
   const completedAt = new Date().toISOString();
+  const wanjiaValidation = validateWanjiaCurrentState(merchants, completedAt);
+  const currentWanjia = wanjiaValidation.records;
   const durationMs = Date.now() - startedAt;
   const health = (recordCount: number) => ({ recordCount, durationMs, lastSuccessAt: completedAt, safeCode: null });
   return {
     wanjia: {
-      summary: summarizeWanjia(merchants), records: buildWanjiaRecords(merchants),
-      health: health(merchants.length), contractVersion: '1.4',
+      summary: summarizeWanjia(currentWanjia), records: buildWanjiaRecords(currentWanjia),
+      health: health(currentWanjia.length), contractVersion: '1.4',
       dataStatus: {
-        state: 'historical_snapshot', validation: 'not_applicable',
-        dataDate: latestWanjiaDataDate(merchants), lastSyncedAt: completedAt,
-        sourceLabel: '旧林客快照 / 历史月报',
-        sourceTables: ['01.04 商家管理（定时收集）'],
+        state: wanjiaValidation.state, validation: wanjiaValidation.validation,
+        dataDate: wanjiaValidation.dataDate, lastSyncedAt: completedAt,
+        sourceLabel: '万嘉 ERP / 林客当前经营状态',
+        sourceTables: ['01.04.03｜林客商家当前经营状态'],
+        missingPreferredTables: ['01.04.04｜林客每日汇总', '01.04.05｜林客异常与待办'],
       },
     },
     huahuo: { summary: summarizeHuahuo(projects, deliveries, receipts), records: buildHuahuoRecords(projects), health: health(projects.length + deliveries.length + receipts.length), contractVersion: '1.3' },
