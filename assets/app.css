@@ -2292,7 +2292,8 @@ body { overflow-x: hidden; }
 }
 
 /* ===== v2.3 WanJia local-life operations console ===== */
-.wanjia-shell { display: grid; gap: 14px; color: var(--cc-text); }
+.wanjia-shell { display: grid; min-width: 0; gap: 14px; color: var(--cc-text); }
+.wanjia-shell > * { min-width: 0; }
 .wanjia-status-panel, .wanjia-section, .wanjia-history-reference {
   border: 1px solid var(--cc-border); border-radius: 16px;
   background: linear-gradient(155deg, rgba(17,28,46,.98), rgba(8,15,27,.98));
@@ -2338,7 +2339,7 @@ body { overflow-x: hidden; }
 .wanjia-urgent-card footer { flex-wrap: wrap; }
 .wanjia-filter-bar { display: grid; grid-template-columns: minmax(220px, 1.5fr) repeat(4, minmax(110px, .7fr)); gap: 8px; margin: 14px 0; }
 .wanjia-filter-bar input, .wanjia-filter-bar select { min-width: 0; min-height: 42px; padding: 8px 10px; border: 1px solid var(--cc-border); border-radius: 9px; background: #07101d; color: var(--cc-text); color-scheme: dark; }
-.wanjia-table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--cc-border); border-radius: 12px; }
+.wanjia-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; border: 1px solid var(--cc-border); border-radius: 12px; }
 .wanjia-table-wrap table { width: 100%; min-width: 1180px; border-collapse: collapse; }
 .wanjia-table-wrap th, .wanjia-table-wrap td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--cc-border); font-size: 12px; vertical-align: top; }
 .wanjia-table-wrap th { position: sticky; top: 0; z-index: 2; color: var(--cc-text-muted); background: #0a1423; }

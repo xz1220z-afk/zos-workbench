@@ -1,4 +1,4 @@
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.3.0';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.3.1';
 
 export function render(container, viewModel = {}) {
   if (!container) return;

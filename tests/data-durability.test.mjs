@@ -27,9 +27,9 @@ function fullState() {
 
 test('durable backup covers every collection, counts records and excludes credentials', () => {
   const backup = createDurableBackup({
-    state: fullState(), baseRevisions: { 'tasks:tasks-1': 3 }, createdAt: now, appVersion: '2.3.0',
+    state: fullState(), baseRevisions: { 'tasks:tasks-1': 3 }, createdAt: now, appVersion: '2.3.1',
   });
-  assert.equal(backup.backupVersion, '2.3.0');
+  assert.equal(backup.backupVersion, '2.3.1');
   assert.equal(backup.createdAt, now);
   assert.deepEqual(Object.keys(backup.state.collections).sort(), [...STATE_ENTITY_TYPES].sort());
   assert.equal(backup.summary.totalRecords, STATE_ENTITY_TYPES.length);

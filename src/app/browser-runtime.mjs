@@ -1,11 +1,11 @@
-import { fetchBusinessData, fetchWanjiaSchema } from '../business-data-client.mjs?v=2.3.0';
-import { createSupabaseAuth } from '../supabase-auth.mjs?v=2.3.0';
-import { createSupabaseTransport } from '../supabase-transport.mjs?v=2.3.0';
-import { createFeishuApprovalClient } from './feishu-approvals.mjs?v=2.3.0';
-import { createOperatingLoop } from './operating-loop.mjs?v=2.3.0';
-import { createSyncController } from './sync-controller.mjs?v=2.3.0';
-import { createPushClient } from './push-notifications.mjs?v=2.3.0';
-import { buildLocalSyncInput, LOCAL_ONLY_ENTITY_TYPES } from '../sync-engine.mjs?v=2.3.0';
+import { fetchBusinessData, fetchWanjiaSchema } from '../business-data-client.mjs?v=2.3.1';
+import { createSupabaseAuth } from '../supabase-auth.mjs?v=2.3.1';
+import { createSupabaseTransport } from '../supabase-transport.mjs?v=2.3.1';
+import { createFeishuApprovalClient } from './feishu-approvals.mjs?v=2.3.1';
+import { createOperatingLoop } from './operating-loop.mjs?v=2.3.1';
+import { createSyncController } from './sync-controller.mjs?v=2.3.1';
+import { createPushClient } from './push-notifications.mjs?v=2.3.1';
+import { buildLocalSyncInput, LOCAL_ONLY_ENTITY_TYPES } from '../sync-engine.mjs?v=2.3.1';
 
 const DEFAULT_CONFIG = Object.freeze({
   url: 'https://dtwvyramgbwtlyhmkhkd.supabase.co',
