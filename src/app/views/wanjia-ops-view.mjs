@@ -1,4 +1,4 @@
-import { escapeHtml } from './view-utils.mjs?v=2.7.1';
+import { escapeHtml } from './view-utils.mjs?v=2.7.2';
 
 function safe(value, fallback = '待同步') {
   return value === null || value === undefined || value === '' ? fallback : escapeHtml(String(value));
@@ -63,6 +63,9 @@ function historyToolbar(history = {}) {
     ['today', '今天'], ['yesterday', '昨天'], ['this_week', '本周'], ['last_week', '上周'],
     ['this_month', '本月'], ['last_month', '上月'], ['last_7_days', '近 7 天'], ['last_30_days', '近 30 天'], ['custom', '自定义范围'],
   ];
+  const feedback = history.queryFeedback
+    ? `<p class="wanjia-history-feedback" data-wanjia-history-feedback role="status" aria-live="polite">${escapeHtml(history.queryFeedback)}</p>`
+    : '';
   return `<form class="wanjia-history-filter-bar" data-wanjia-history-form>
     <label>时间范围<select name="preset" aria-label="时间范围">${presets.map(([value, label]) => option(value, label, range.preset || 'today')).join('')}</select></label>
     <label>开始日期<input type="date" name="startDate" value="${safe(range.startDate, '')}"></label>
@@ -73,7 +76,7 @@ function historyToolbar(history = {}) {
     <label>合作模式<select name="cooperationType" aria-label="合作模式">${selectOptions(options.cooperationTypes, current.cooperationType || 'all')}</select></label>
     <label>异常<select name="abnormal" aria-label="是否异常">${binaryOptions(current.abnormal || 'all')}</select></label>
     <div class="wanjia-history-actions"><button class="v13-action v13-action-primary">查询历史</button><button type="button" class="v13-action" data-wanjia-history-reset>恢复今天</button></div>
-  </form>`;
+  </form>${feedback}`;
 }
 
 function historyValue(value, format = 'number') {

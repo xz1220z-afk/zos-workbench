@@ -1,5 +1,5 @@
-import { createRecord as defaultCreateRecord, touchRecord as defaultTouchRecord } from '../data-model.mjs?v=2.7.1';
-import { humanText } from './value-utils.mjs?v=2.7.1';
+import { createRecord as defaultCreateRecord, touchRecord as defaultTouchRecord } from '../data-model.mjs?v=2.7.2';
+import { humanText } from './value-utils.mjs?v=2.7.2';
 
 const TRANSITIONS = Object.freeze({
   open: new Set(['approved', 'rejected', 'deferred', 'pending_resolution']),

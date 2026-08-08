@@ -59,3 +59,22 @@ test('wanjia ops view renders a dated history workspace without treating missing
   assert.match(container.innerHTML, /单商家历史趋势/);
   assert.match(container.innerHTML, /本地 SQLite 历史仓/);
 });
+
+test('wanjia history query exposes a visible result message instead of silently repainting an empty range', () => {
+  const container = { innerHTML: '' };
+  render(container, {
+    wanjiaOps: {
+      status: {}, kpis: [], historicalReference: null, urgentMerchants: [], merchants: [], filteredMerchants: [], opportunities: [],
+      filterOptions: { industries: [], cooperationTypes: [], owners: [] }, filters: {},
+      history: {
+        range: { preset: 'today', startDate: '2026-08-08', endDate: '2026-08-08' }, filters: {}, allRows: [], rows: [],
+        availability: { state: 'missing', label: '数据缺失' }, insufficient: true,
+        message: '历史数据积累中：对应日期尚无已校验的本地历史数据。',
+        queryFeedback: '已应用查询：2026-08-08 至 2026-08-08。暂无已校验历史数据，因此没有新的图表或排行。',
+      },
+    },
+  });
+  assert.match(container.innerHTML, /data-wanjia-history-feedback/);
+  assert.match(container.innerHTML, /暂无已校验历史数据，因此没有新的图表或排行/);
+  assert.match(container.innerHTML, /aria-live="polite"/);
+});

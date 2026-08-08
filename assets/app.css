@@ -2483,6 +2483,7 @@ body { overflow-x: hidden; }
 .wanjia-history-filter-bar label { display: grid; gap: 5px; min-width: 0; color: var(--cc-text-muted); font-size: 11px; }
 .wanjia-history-filter-bar select, .wanjia-history-filter-bar input { min-width: 0; min-height: 39px; padding: 7px 9px; border: 1px solid var(--cc-border); border-radius: 9px; background: #07101d; color: var(--cc-text); color-scheme: dark; }
 .wanjia-history-actions { display: flex; align-items: end; gap: 8px; grid-column: span 2; }
+.wanjia-history-feedback { margin: -4px 2px 0; padding: 8px 10px; border: 1px solid rgba(216,180,106,.32); border-radius: 10px; color: var(--cc-text-muted); background: rgba(216,180,106,.07); font-size: 12px; line-height: 1.5; }
 .wanjia-history-overview { padding: 18px; border: 1px solid rgba(79,151,224,.3); border-radius: 16px; background: linear-gradient(130deg, rgba(31,66,105,.22), rgba(10,20,34,.94) 50%); }
 .wanjia-history-meta { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
 .wanjia-history-meta h3 { margin: 5px 0 7px; }

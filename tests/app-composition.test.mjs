@@ -135,6 +135,20 @@ test('renders cached content before remote startup settles', async () => {
   assert.ok(document.nodes.get('ceoDashboardRoot').innerHTML.length > 0);
 });
 
+test('wanjia history query reports when it only filters missing local history', () => {
+  const app = createCeoOsApplication({
+    document: renderDocument(),
+    now: () => '2026-08-08T09:00:00.000Z',
+    storage: { getItem: () => 'device-1', setItem() {} },
+    store: fakeStore(),
+  });
+
+  app.applyWanjiaHistoryQuery({ range: { preset: 'today', startDate: '2026-08-08', endDate: '2026-08-08' } });
+
+  assert.match(app.viewModel().wanjiaOps.history.queryFeedback, /已应用查询：2026-08-08 至 2026-08-08/);
+  assert.match(app.viewModel().wanjiaOps.history.queryFeedback, /暂无已校验历史数据/);
+});
+
 test('application badge counts only decisions that require CEO judgment', async () => {
   const document = renderDocument();
   const operatingLoop = {
@@ -362,7 +376,7 @@ test('service worker caches the complete transitive browser module graph', async
     'src/app/auto-refresh-controller.mjs',
     'src/app/daily-digest.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.7\.1`/);
+  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.7\.2`/);
 });
 
 test('Wanjia operations keeps legacy numbers historical and opens only a merchant task draft', () => {
@@ -413,8 +427,8 @@ test('the shell captures raw pre-upgrade state before either application module 
   const html = await readFile(new URL('index.html', root), 'utf8');
   const capture = html.indexOf('window.__ZOS_PRE_UPGRADE_RAW__');
   assert.ok(capture >= 0);
-  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.7.1'));
-  assert.ok(capture < html.indexOf('src/app.mjs?v=2.7.1'));
+  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.7.2'));
+  assert.ok(capture < html.indexOf('src/app.mjs?v=2.7.2'));
 });
 
 test('enabled closed-app reminders synchronize current tasks calendar deadlines and daily digests', async () => {

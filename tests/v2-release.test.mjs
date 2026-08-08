@@ -4,17 +4,17 @@ import { readFile } from 'node:fs/promises';
 
 const root = new URL('../', import.meta.url);
 
-test('v2.7.1 release cache includes the complete Agent task and life module graph', async () => {
+test('v2.7.2 release cache includes the complete Agent task and life module graph', async () => {
   const [sw, manifest, app, html] = await Promise.all([
     readFile(new URL('sw.js', root), 'utf8'),
     readFile(new URL('manifest.json', root), 'utf8').then(JSON.parse),
     readFile(new URL('src/app.mjs', root), 'utf8'),
     readFile(new URL('index.html', root), 'utf8'),
   ]);
-  assert.match(sw, /zos-workbench-v2\.7\.1/);
-  assert.equal(manifest.version, '2.7.1');
-  assert.match(app, /APP_VERSION\s*=\s*'2\.7\.1'/);
-  assert.match(html, /\?v=2\.7\.1/);
+  assert.match(sw, /zos-workbench-v2\.7\.2/);
+  assert.equal(manifest.version, '2.7.2');
+  assert.match(app, /APP_VERSION\s*=\s*'2\.7\.2'/);
+  assert.match(html, /\?v=2\.7\.2/);
   for (const asset of [
     'src/app/content-growth.mjs', 'src/app/knowledge-workspace.mjs',
     'src/app/social-insight-center.mjs', 'src/app/agent-workbench.mjs',
