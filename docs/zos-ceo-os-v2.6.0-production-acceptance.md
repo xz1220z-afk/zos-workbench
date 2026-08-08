@@ -17,6 +17,27 @@
 4. 周期快照/未知口径显示“口径不可累计”，不直接累计。
 5. 正式站的 `index.html`、`manifest.json`、`sw.js`、`src/app.mjs` 均为 `2.6.0`。
 
+## 验收结果
+
+### 1. 自动回归
+
+- `node --test tests/*.test.mjs`：`587/587` 通过，失败 `0`。
+- 对本版核心模块执行 `node --check`：`src/app.mjs`、`src/legacy-app.mjs`、万嘉历史模型与视图均通过。
+- `git diff --check`：通过；发布提交为 `451b844`。
+
+### 2. 三尺寸交互验收
+
+- 桌面 `1280 × 720`：从工作首页进入万嘉网络；仅 `page-local-life` 为活动页，无横向溢出，控制台 error `0`。
+- 平板 `1024 × 768`：通过展开侧栏进入情报中心；仅 `page-intelligence` 为活动页，无横向溢出，控制台 error `0`。
+- 手机 `390 × 844`：通过底部导航进入日历中心；仅 `page-calendar` 为活动页，无横向溢出，控制台 error `0`。
+- 每次路由切换只保留一个活动页面；历史筛选器将时间范围和条件合并为单次渲染提交。
+
+### 3. 正式站回读
+
+- 正式站入口、`manifest.json`、`sw.js` 已回读为 `2.6.0`。
+- `src/app.mjs`、`src/legacy-app.mjs`、`src/app/homepage-presence.mjs`、`src/app/wanjia-history.mjs` 均返回 HTTP `200`。
+- 静态站不直接访问本机 SQLite；未接通受保护的只读历史适配器时，万嘉历史区继续显示“历史数据积累中”，符合数据边界。
+
 ## 回滚
 
 仅回滚前端代码到 `zos-workbench-v2.5.0`，并以新缓存版本发布；保留所有用户本机数据、云端记录和历史数据仓。
