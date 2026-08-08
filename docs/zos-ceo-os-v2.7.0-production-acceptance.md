@@ -15,7 +15,7 @@
 - 语法检查：全部 `src/**/*.mjs`、`sw.js` 与 Agent 索引扫描器均通过 `node --check`（2026-08-08）。
 - 静态资源验收：本地 HTTP 回读 `index.html`、`manifest.json`、`sw.js`、`app.mjs` 与 `agent-task-context.mjs` 均为 200，且缓存版本为 `v2.7.0`（2026-08-08）。
 - 桌面、平板、手机视觉验收：保留为上线后的浏览器验收项；本次未以模拟器替代真实触控验收。
-- 生产 HTTP 回读：待部署后填写。
+- 生产 HTTP 回读：`https://xz1220z-afk.github.io/zos-workbench/` 已回读为 `app.mjs?v=2.7.0`；`manifest.json` 为 `2.7.0`；`sw.js` 缓存名为 `zos-workbench-v2.7.0`；`agent-task-context.mjs` 返回 200 且含确认式上下文函数（2026-08-08）。
 
 ## 生产边界
 
@@ -25,4 +25,4 @@
 
 ## 回滚
 
-上线成功后补充精确 Git 提交与 `zos-workbench-v2.7.0` 标签。若回退，恢复该版本前一发布标签，并保留本机安全备份与当前数据记录。
+上线提交：`47e1a29`；发布标签：`zos-workbench-v2.7.0`。若回退，恢复该版本前一发布标签，并保留本机安全备份与当前数据记录。
