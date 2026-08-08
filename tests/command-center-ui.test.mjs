@@ -60,12 +60,14 @@ function detailPageRenderer(cache) {
   ].map((id) => [id, { textContent: '', style: {} }]));
   const renderBusinessDataStates = vm.runInNewContext(indexHtml.slice(start, end) + '; renderBusinessDataStates', {
     businessDataCache: () => cache,
+    createBusinessDataCache: () => ({ load: () => cache, save: () => ({}) }),
     businessConnectionMessage: () => '待同步',
     setBusinessValue: (id, value) => { values[id] = value; },
     displayCurrency: (value) => '¥' + value,
     renderRecordList: () => {}, renderSourceRails: () => {}, renderCommandCenter: () => {},
     loadVal: (key) => key === 'zos_business_data_cache_v1' ? JSON.stringify(cache) : '{}',
     KEYS: { SYNC_SESSION: 'sync-session' },
+    localStorage: {},
     commandCenterReadErrors: {},
     window: {},
     document: { getElementById: (id) => elements[id] || null, querySelectorAll: () => [] },

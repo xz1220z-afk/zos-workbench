@@ -1,5 +1,6 @@
-import { pageIdFromHash } from './app/router.mjs?v=2.6.0';
-import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAGES } from './app/navigation-preferences.mjs?v=2.6.0';
+import { pageIdFromHash } from './app/router.mjs?v=2.6.1';
+import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAGES } from './app/navigation-preferences.mjs?v=2.6.1';
+import { createBusinessDataCache } from './app/business-data-cache.mjs?v=2.6.1';
 
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
@@ -125,7 +126,7 @@ import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAG
 (function() {
   'use strict';
 
-  const APP_VERSION = '2.6.0';
+  const APP_VERSION = '2.6.1';
   const PUBLIC_APP_URL = new URL('.', window.location.href).href;
   const APP_RELEASE_DATE = '2026-08-08';
 
@@ -1049,10 +1050,16 @@ import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAG
   }
   // Business data is intentionally read-only. The cache is populated only by the
   // future Supabase Edge Function; the PWA never stores ERP credentials.
-  const BUSINESS_DATA_CACHE_KEY = 'zos_business_data_cache_v1';
+  const businessCacheStore = createBusinessDataCache({ storage: localStorage });
+  var commandCenterCacheWarnings = {};
   function businessDataCache() {
-    try { return JSON.parse(loadVal(BUSINESS_DATA_CACHE_KEY, '{}')) || {}; }
-    catch (error) { return {}; }
+    return businessCacheStore.load();
+  }
+  function saveBusinessDataCache(cache, source) {
+    var result = businessCacheStore.save(cache);
+    if (result.message) commandCenterCacheWarnings[source] = result.message;
+    else delete commandCenterCacheWarnings[source];
+    return result;
   }
   function displayCurrency(value) {
     return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY', maximumFractionDigits: 0 }).format(Number(value) || 0);
@@ -1074,6 +1081,7 @@ import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAG
   function renderSourceRails() {
     var cache = businessDataCache();
     var errors = commandCenterReadErrors || {};
+    var cacheWarnings = commandCenterCacheWarnings || {};
     document.querySelectorAll('[data-source-rail]').forEach(function(rail) {
       var source = rail.dataset.source;
       var sourceErrors = source === 'risk'
@@ -1087,12 +1095,18 @@ import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAG
       var status = rail.querySelector('[data-source-status]');
       var updated = rail.querySelector('[data-source-updated]');
       var error = rail.querySelector('[data-source-error]');
+      var sourceWarning = cacheWarnings[source];
       if (status && (source === 'wanjia' || source === 'huahuo')) status.textContent = fetchedAt ? '已读取只读汇总；不会回写飞书。' : businessConnectionMessage();
       if (status && source === 'brain') status.textContent = fetchedAt ? '已读取只读元数据；不含 Markdown 正文。' : businessConnectionMessage();
       if (status && source === 'risk') status.textContent = fetchedAt ? '基于已缓存的只读来源生成风险提示，不会写回事实源。' : '尚无可聚合的来源数据；请手动刷新各只读来源。';
       if (updated && (source === 'wanjia' || source === 'huahuo' || source === 'brain' || source === 'risk')) updated.textContent = formatSourceUpdate(fetchedAt);
       rail.classList.toggle('has-error', sourceErrors.length > 0);
-      if (error) { error.hidden = sourceErrors.length === 0; if (sourceErrors.length) error.textContent = '最近一次读取失败：' + sourceErrors.join('；'); }
+      rail.classList.toggle('has-warning', sourceErrors.length === 0 && !!sourceWarning);
+      if (error) {
+        error.hidden = sourceErrors.length === 0 && !sourceWarning;
+        if (sourceErrors.length) error.textContent = '最近一次读取失败：' + sourceErrors.join('；');
+        else if (sourceWarning) error.textContent = '本机缓存提示：' + sourceWarning;
+      }
     });
   }
   function renderBusinessDataStates() {
@@ -1167,10 +1181,10 @@ import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAG
         }
         var bcache = businessDataCache();
         bcache.brain = { payload: brainPayload, fetchedAt: brainPayload.scannedAt || new Date().toISOString() };
-        localStorage.setItem(BUSINESS_DATA_CACHE_KEY, JSON.stringify(bcache));
+        var brainCacheResult = saveBusinessDataCache(bcache, 'brain');
         commandCenterSetReadError('brain');
         renderBusinessDataStates(); renderBrainIndex();
-        toast('企业大脑只读索引已刷新（仅元数据，不取正文）');
+        toast('企业大脑只读索引已刷新（仅元数据，不取正文）' + (brainCacheResult.message ? ' · ' + brainCacheResult.message : ''));
       } catch (error) {
         commandCenterSetReadError('brain', error);
         renderBusinessDataStates(); renderBrainIndex();
@@ -1243,10 +1257,10 @@ import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAG
         cache.wanjia = { summary: data.wanjia?.summary || {}, records: data.wanjia?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
         cache.huahuo = { summary: data.huahuo?.summary || {}, records: data.huahuo?.records || [], fetchedAt: data.meta?.fetchedAt || new Date().toISOString() };
       }
-      localStorage.setItem(BUSINESS_DATA_CACHE_KEY, JSON.stringify(cache));
+      var businessCacheResult = saveBusinessDataCache(cache, source);
       commandCenterSetReadError(source);
       renderBusinessDataStates();
-      toast((labels[source] || '业务') + '汇总已刷新（只读）');
+      toast((labels[source] || '业务') + '汇总已刷新（只读）' + (businessCacheResult.message ? ' · ' + businessCacheResult.message : ''));
     } catch (error) {
       commandCenterSetReadError(source, error);
       renderBusinessDataStates();

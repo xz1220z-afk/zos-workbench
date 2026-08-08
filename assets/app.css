@@ -549,6 +549,8 @@
   .source-rail-error { display: none; width: 100%; margin: 9px 0 0; color: var(--red); font-size: 12px; line-height: 1.55; }
   .source-rail.has-error { border-left-color: var(--red); }
   .source-rail.has-error .source-rail-error { display: block; }
+  .source-rail.has-warning { border-left-color: var(--warning, #c99a35); }
+  .source-rail.has-warning .source-rail-error { display: block; color: var(--warning, #c99a35); }
   .page-detail-container { min-width: 0; overflow: auto; }
 
   .stat-row {
