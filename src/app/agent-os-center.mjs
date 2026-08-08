@@ -151,11 +151,19 @@ export function buildAgentInvocationDraft(agent = {}, options = {}) {
   };
 }
 
-export function buildAgentAnalysisRequest(agent = {}, question) {
+export function buildAgentAnalysisRequest(agent = {}, question, options = {}) {
   const normalizedAgent = enrich(agent);
   const asked = String(question || '').trim();
   if (!asked) throw new Error('agent_question_required');
   if (isPrivateAgent(normalizedAgent)) throw new Error('private_agent_local_only');
+  const confirmedContext = Array.isArray(options.confirmedContext)
+    ? options.confirmedContext.slice(0, 6).map((item) => ({
+      summary: String(item?.summary || '').trim().slice(0, 800),
+      sourceLabels: Array.isArray(item?.sourceLabels)
+        ? item.sourceLabels.map((label) => String(label || '').trim().slice(0, 800)).filter(Boolean).slice(0, 20)
+        : [],
+    })).filter((item) => item.summary)
+    : [];
   return {
     mode: 'agent', question: asked,
     agent: {
@@ -166,6 +174,7 @@ export function buildAgentAnalysisRequest(agent = {}, question) {
       skillIds: normalizedAgent.skillIds || [], knowledgeEntries: normalizedAgent.knowledgeEntries || [],
       outputContract: normalizedAgent.sections?.outputContract || '事实、推断、建议、待确认、下一步。',
       confidentiality: normalizedAgent.confidentiality,
+      confirmedContext,
     },
   };
 }

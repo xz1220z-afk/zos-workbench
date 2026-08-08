@@ -100,6 +100,44 @@ test('Agent invocation saves only a minimal cloud reference while REL-001 stays 
   assert.equal(Object.hasOwn(buildLocalSyncInput(app.store.load()), 'local_agent_tasks'), false);
 });
 
+test('Agent task drafts create a local archive and keep context candidates out of cross-device sync', () => {
+  const app = application();
+  app.importAgentOsIndexText(JSON.stringify(agentOsIndex));
+  const draft = app.invokeAgent('WANJIA-001');
+  const task = app.saveTask({ ...draft, title: '核验今日 P0 商家', description: '先核验数据日期与商家 ID。' });
+  const [archive] = app.viewModel().agentTaskArchives;
+  assert.equal(archive.agentId, 'WANJIA-001');
+  assert.equal(archive.taskId, task.id);
+  assert.equal(archive.phase, 'draft');
+  assert.equal(app.viewModel().agentContextCandidates.length, 0);
+  const localSync = buildLocalSyncInput(app.store.load());
+  assert.equal(Object.hasOwn(localSync, 'agent_task_archives'), false);
+  assert.equal(Object.hasOwn(localSync, 'agent_contexts'), false);
+});
+
+test('an Agent task analysis is explicitly read-only and creates a confirmable local context candidate', async () => {
+  const requests = [];
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} }, storage: memoryStorage(), createOperatingRuntime: false,
+    askAi: async (request) => { requests.push(request); return { answer: '事实：日报尚待核验。建议：先补齐商家 ID。', sources: ['林客日报'] }; },
+  });
+  app.importAgentOsIndexText(JSON.stringify(agentOsIndex));
+  const task = app.saveTask({ ...app.invokeAgent('WANJIA-001'), title: '核验今日商家风险' });
+  const archive = app.viewModel().agentTaskArchives[0];
+  const completed = await app.analyzeAgentTask(archive.id);
+  assert.equal(requests[0].mode, 'agent');
+  assert.equal(completed.archive.taskId, task.id);
+  assert.equal(completed.archive.phase, 'result_ready');
+  assert.equal(completed.candidate.status, 'pending_confirmation');
+  assert.equal(app.viewModel().agentContextCandidates[0].privacy, 'internal');
+  const confirmed = app.confirmAgentContext(completed.candidate.id);
+  assert.equal(confirmed.status, 'confirmed');
+  await app.analyzeAgent('WANJIA-001', '根据已确认的本机上下文给出下一步');
+  assert.equal(requests[1].agent.confirmedContext[0].summary, confirmed.summary);
+  assert.equal(requests[1].agent.confirmedContext[0].sourceLabels.includes('林客日报'), true);
+  assert.equal(Object.hasOwn(buildLocalSyncInput(app.store.load()), 'agent_contexts'), false);
+});
+
 test('Agent OS import rejects body-bearing payloads without changing data', () => {
   const app = application();
   assert.throws(() => app.importAgentOsIndexText(JSON.stringify({ ...agentOsIndex, agents: [{ ...agentOsIndex.agents[0], body: 'secret' }] })), /body_forbidden/);

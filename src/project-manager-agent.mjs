@@ -150,7 +150,7 @@ export const REPORT_VERSION = '2.0';
 export const REPORT_SECTIONS = ['keyFocus', 'projectRisks', 'decisions', 'suggestions'];
 
 // Re-export the risk engine so callers have a single import surface.
-import { detectRisks, isDone, bucketRisks, riskLevelFromReasons } from './risk-detector.mjs?v=2.6.1';
+import { detectRisks, isDone, bucketRisks, riskLevelFromReasons } from './risk-detector.mjs?v=2.7.0';
 export { detectRisks, isDone, bucketRisks, riskLevelFromReasons };
 
 // Normalize an arbitrary source payload to a plain records array.

@@ -1,11 +1,13 @@
-import { selectLatestRecord } from './data-model.mjs?v=2.6.1';
-import { sanitizeSensitiveFields } from './app/sensitive-fields.mjs?v=2.6.1';
+import { selectLatestRecord } from './data-model.mjs?v=2.7.0';
+import { sanitizeSensitiveFields } from './app/sensitive-fields.mjs?v=2.7.0';
 
 export const CRITICAL_ENTITY_TYPES = new Set([
   'decisions', 'targets', 'content_items', 'knowledge_cards', 'agent_runs',
 ]);
 
-export const LOCAL_ONLY_ENTITY_TYPES = new Set(['agent_os_indexes', 'local_agent_tasks']);
+export const LOCAL_ONLY_ENTITY_TYPES = new Set([
+  'agent_os_indexes', 'local_agent_tasks', 'agent_task_archives', 'agent_contexts',
+]);
 
 // Keep v2 logical collections compatible with the already-deployed v1.7
 // database constraint. The logical type remains in the private JSON payload,

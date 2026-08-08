@@ -1,5 +1,5 @@
-import { AGENT_OS_CATEGORIES } from '../agent-os-center.mjs?v=2.6.1';
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.6.1';
+import { AGENT_OS_CATEGORIES } from '../agent-os-center.mjs?v=2.7.0';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.7.0';
 
 const FILTERS = Object.freeze([
   ['all', '全部可见'], ['shared', '总控与共享中台'], ['wanjia', '万嘉网络'],
@@ -18,9 +18,9 @@ function agentCard(agent) {
     <div class="agent-orb">${escapeHtml((agent.name || agent.agentId).slice(0, 1))}</div>
     <div class="agent-card-copy"><div class="agent-card-eyebrow"><span>${escapeHtml(AGENT_OS_CATEGORIES[agent.category] || agent.category)}</span>${privateMark}</div>
       <h3>${escapeHtml(agent.name || agent.agentId)}</h3><code>${escapeHtml(agent.agentId)}</code><p>${escapeHtml(mission)}</p>
-      <div class="agent-card-meta"><span data-agent-status="${escapeHtml(agent.status)}">${escapeHtml(STATUS_LABEL[agent.status] || agent.status)}</span><span>${Number(agent.skillIds?.length) || 0} Skills</span><span>${escapeHtml(String(agent.updatedAt || '待更新').slice(0, 10))}</span><span>${escapeHtml(pilot)}</span></div>
+      <div class="agent-card-meta"><span data-agent-status="${escapeHtml(agent.status)}">${escapeHtml(STATUS_LABEL[agent.status] || agent.status)}</span><span data-agent-runtime="${escapeHtml(agent.runtimeAvailability || 'can_draft')}">${escapeHtml(agent.runtimeAvailability === 'can_analyze' ? '可直接分析' : agent.runtimeAvailability === 'pilot_limited' ? '试运行分析' : '可派任务')}</span><span>${Number(agent.skillIds?.length) || 0} Skills</span><span>上下文 ${Number(agent.confirmedContextCount) || 0}</span><span>${escapeHtml(String(agent.updatedAt || '待更新').slice(0, 10))}</span><span>${escapeHtml(pilot)}</span></div>
     </div>
-    <div class="agent-card-actions"><button class="v13-action" data-agent-details="${escapeHtml(agent.agentId)}">查看详情</button><button class="v13-action v13-action-primary" data-agent-analyze="${escapeHtml(agent.agentId)}">直接分析</button><button class="v13-action" data-agent-invoke="${escapeHtml(agent.agentId)}">任务草稿</button></div>
+    <div class="agent-card-actions"><button class="v13-action" data-agent-details="${escapeHtml(agent.agentId)}">查看详情</button><button class="v13-action v13-action-primary" data-agent-analyze="${escapeHtml(agent.agentId)}">直接分析</button><button class="v13-action" data-agent-invoke="${escapeHtml(agent.agentId)}">派任务</button></div>
   </article>`;
 }
 
@@ -49,7 +49,19 @@ function detailsList(items, idKey) {
   return items.slice(0, 12).map((item) => `<span>${escapeHtml(item.name || item[idKey] || '未命名')}</span>`).join('');
 }
 
-function detailsDrawer(detail, reminderDrafts = [], analysis = null) {
+function taskArchivePanel(detail, archives = [], candidates = []) {
+  if (!detail) return '';
+  const current = archives.filter((item) => item.agentId === detail.agentId).slice().sort((left, right) => String(right.updatedAt || '').localeCompare(String(left.updatedAt || ''))).slice(0, 8);
+  if (!current.length) return `<section class="agent-task-archives"><h4>本机任务记录</h4><p>从“派任务”保存后，这里会记录该 Agent 的任务目标、规则快照与待确认上下文；不参与云同步。</p></section>`;
+  return `<section class="agent-task-archives"><header><div><span class="growth-kicker">LOCAL TASK MEMORY</span><h4>本机任务记录</h4></div><small>规则快照与候选上下文仅本机保存</small></header>${current.map((archive) => {
+    const candidate = candidates.find((item) => item.id === archive.contextCandidateId || item.archiveId === archive.id);
+    const canAnalyze = archive.phase === 'draft' && detail.agentId !== 'REL-001';
+    const candidateActions = candidate?.status === 'pending_confirmation' ? `<div class="agent-task-row-actions"><button class="v13-action v13-action-primary" data-agent-context-confirm="${escapeHtml(candidate.id)}">确认写入上下文</button><button class="v13-action" data-agent-context-reject="${escapeHtml(candidate.id)}">忽略候选</button></div>` : candidate ? `<small>上下文：${escapeHtml(candidate.status === 'confirmed' ? '已确认' : '已忽略')}</small>` : '';
+    return `<article class="agent-task-row"><div><strong>${escapeHtml(archive.objective)}</strong><small>${escapeHtml(archive.phase === 'draft' ? '草稿待分析' : archive.phase === 'result_ready' ? '只读分析已完成' : archive.phase)} · ${escapeHtml(String(archive.createdAt || '').replace('T', ' ').slice(0, 16))}</small>${candidate?.summary ? `<p>${escapeHtml(candidate.summary)}</p>` : ''}</div><div class="agent-task-row-actions">${canAnalyze ? `<button class="v13-action" data-agent-task-analyze="${escapeHtml(archive.id)}">开始只读分析</button>` : ''}${candidateActions}</div></article>`;
+  }).join('')}</section>`;
+}
+
+function detailsDrawer(detail, reminderDrafts = [], analysis = null, archives = [], candidates = []) {
   if (!detail) return '';
   const sections = detail.sections || {};
   const invocation = `请以 ${detail.name || detail.agentId}（${detail.agentId}）身份进行只读分析或起草。先区分事实、推断、建议、待确认，再给出下一步；不得自动写入、外发或执行。`;
@@ -67,9 +79,9 @@ function detailsDrawer(detail, reminderDrafts = [], analysis = null) {
       <section><h4>关联 Workflow</h4><div class="agent-detail-chips">${detailsList(detail.workflows, 'workflowId')}</div></section>
       <section><h4>知识入口</h4><div class="agent-detail-chips">${detail.knowledgeEntries?.length ? detail.knowledgeEntries.slice(0, 12).map((item) => `<span>${escapeHtml(item)}</span>`).join('') : '<span class="agent-detail-empty">执行时按身份卡路径按需读取</span>'}</div></section>
       <section><h4>评估 / 日志 / Runbook</h4><p>${detail.evaluations?.length || 0} 评估 · ${detail.logs?.length || 0} 日志 · ${detail.runbooks?.length || 0} 调用卡</p></section>
-    </div>${relation}${directAnalysis}
+    </div>${taskArchivePanel(detail, archives, candidates)}${relation}${directAnalysis}
     <section class="agent-invocation-example"><h4>可复制的调用示例</h4><p>${escapeHtml(invocation)}</p></section>
-    <footer><button class="v13-action" data-agent-details-close>关闭</button>${detail.agentId === 'REL-001' ? '' : `<button class="v13-action" data-agent-analyze="${escapeHtml(detail.agentId)}">直接分析</button>`}<button class="v13-action v13-action-primary" data-agent-invoke="${escapeHtml(detail.agentId)}">带入任务草稿</button></footer>
+    <footer><button class="v13-action" data-agent-details-close>关闭</button>${detail.agentId === 'REL-001' ? '' : `<button class="v13-action" data-agent-analyze="${escapeHtml(detail.agentId)}">直接分析</button>`}<button class="v13-action v13-action-primary" data-agent-invoke="${escapeHtml(detail.agentId)}">派任务</button></footer>
   </aside><div class="agent-detail-backdrop" data-agent-details-close></div>`;
 }
 
@@ -88,5 +100,5 @@ export function render(container, viewModel = {}) {
   <div class="agent-summary agent-os-summary"><span><b>${Number(viewModel.agentOsOverview?.summary?.total) || 0}</b>动态发现</span><span><b>${Number(summary.total) || 0}</b>历史执行记录</span><span><b>${Number(summary.awaitingApproval) || 0}</b>待审核</span><span><b>${Number(summary.completed) || 0}</b>已完成</span></div>
   <div class="agent-catalog">${hasIndex ? (agents.map(agentCard).join('') || renderState('empty', '该分类暂无 Agent')) : `<div class="agent-os-empty">${renderState('empty', 'Agent OS 索引')}<p>请导入扫描器生成的 JSON 索引；原有执行记录不会丢失。</p><button class="v13-action v13-action-primary" data-agent-index-import>选择索引文件</button></div>`}</div>
   <article class="agent-runs"><header><div><span class="growth-kicker">RUN HISTORY</span><h3>执行记录与审批链</h3></div><small>保留原功能；输入引用与结果摘要均可回查</small></header>${runRows(viewModel.agentRuns || [])}</article>
-  ${detailsDrawer(viewModel.agentOsDetails, viewModel.relationReminderDrafts, viewModel.agentAnalysis)}`;
+  ${detailsDrawer(viewModel.agentOsDetails, viewModel.relationReminderDrafts, viewModel.agentAnalysis, viewModel.agentTaskArchives, viewModel.agentContextCandidates)}`;
 }

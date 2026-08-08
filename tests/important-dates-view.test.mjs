@@ -73,3 +73,18 @@ test('life home provides a seven-day agenda, ritual planning and privacy-safe me
   assert.match(root.innerHTML, /data-private-date-import/);
   assert.match(root.innerHTML, /已安全导入 19 条/);
 });
+
+test('life home prioritizes today, upcoming care and a collapsible private management layer', () => {
+  const root = container();
+  renderLife(root, {
+    lifeSummary: [{ key: 'health', icon: '♡', label: '健康与精力', open: 1, count: 2 }],
+    life: [{ id: 'life-1', title: '晚间散步', area: 'health', status: 'open', date: '2026-08-08' }],
+    importantDates: { work: [], life: [{ id: 'date-1', title: '重要日期', occurrence: '2026-08-09', days: 1 }] },
+    lifeNextSevenDays: [{ id: 'next-1', title: '晚间散步', occurrence: '2026-08-08', daysUntil: 0, category: 'health' }],
+    rituals: [{ id: 'ritual-1', title: '秋日准备', occurrence: '2026-08-20', daysUntil: 12, suggestion: '提前安排。' }],
+  });
+  assert.match(root.innerHTML, /今天留给自己的事/);
+  assert.match(root.innerHTML, /值得提前准备/);
+  assert.match(root.innerHTML, /生活管理/);
+  assert.match(root.innerHTML, /仅自己可见/);
+});

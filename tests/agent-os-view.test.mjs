@@ -26,6 +26,21 @@ test('Agent OS view keeps execution history and adds dynamic overview, filters a
   assert.match(node.innerHTML, /data-agent-invoke="WANJIA-001"/);
   assert.match(node.innerHTML, /Pilot 待复核/);
   assert.match(node.innerHTML, /执行记录与审批链/);
+  assert.match(node.innerHTML, /派任务/);
+});
+
+test('Agent details expose local task history and confirmation-only context candidates', () => {
+  const node = container();
+  render(node, {
+    ...base,
+    agentOsDetails: { agentId: 'WANJIA-001', name: '万嘉运营 Agent', status: 'pilot', sections: { mission: '经营诊断' }, skills: [], workflows: [], evaluations: [], logs: [], runbooks: [], knowledgeEntries: [] },
+    agentTaskArchives: [{ id: 'archive-1', agentId: 'WANJIA-001', objective: '核验今日 P0 商家', phase: 'result_ready', createdAt: '2026-08-08T10:00:00.000Z' }],
+    agentContextCandidates: [{ id: 'context-1', archiveId: 'archive-1', agentId: 'WANJIA-001', summary: '数据日期待校验；先核验 P0 商家', status: 'pending_confirmation' }],
+  });
+  assert.match(node.innerHTML, /本机任务记录/);
+  assert.match(node.innerHTML, /核验今日 P0 商家/);
+  assert.match(node.innerHTML, /确认写入上下文/);
+  assert.match(node.innerHTML, /data-agent-context-confirm="context-1"/);
 });
 
 test('private relationship details display local drafts and controlled metadata only', () => {

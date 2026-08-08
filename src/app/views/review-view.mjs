@@ -1,4 +1,4 @@
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.6.1';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.7.0';
 
 function formatMoney(value) {
   const number = Number(value);

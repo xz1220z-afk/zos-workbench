@@ -1,4 +1,4 @@
-import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.6.1';
+import { sanitizeSensitiveFields } from './sensitive-fields.mjs?v=2.7.0';
 
 export const STATE_ENTITY_TYPES = Object.freeze([
   'tasks', 'inbox', 'projects', 'commands', 'decisions', 'targets',
@@ -6,7 +6,7 @@ export const STATE_ENTITY_TYPES = Object.freeze([
   'content_items', 'knowledge_cards', 'reading_items', 'agent_runs',
   'social_insights', 'content_assets', 'brainstorms', 'content_experiments',
   'compound_candidates',
-  'agent_os_indexes', 'local_agent_tasks',
+  'agent_os_indexes', 'local_agent_tasks', 'agent_task_archives', 'agent_contexts',
 ]);
 
 const MAX_BACKUP_BYTES = 10 * 1024 * 1024;
@@ -137,7 +137,7 @@ export function summarizeBackup(input = {}) {
   };
 }
 
-export function createDurableBackup({ state = {}, baseRevisions = {}, createdAt = new Date().toISOString(), appVersion = '2.6.1' } = {}) {
+export function createDurableBackup({ state = {}, baseRevisions = {}, createdAt = new Date().toISOString(), appVersion = '2.7.0' } = {}) {
   const safeState = normalizedState(state);
   const safeRevisions = sanitizeSensitiveFields(clone(validateBaseRevisions(baseRevisions)));
   const backup = {

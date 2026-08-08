@@ -22,7 +22,7 @@ test('v2.0 renders the local shell before remote startup and updates without a f
   assert.match(startBody, /initializeRemote\(\)\.catch/);
   assert.doesNotMatch(legacy, /controllerchange[\s\S]{0,180}window\.location\.reload\(\)/);
   assert.match(worker, /fetch\(assetUrl, \{ cache: 'reload' \}\)/);
-  assert.match(worker, /zos-workbench-v2\.6\.1/);
+  assert.match(worker, /zos-workbench-v2\.7\.0/);
 });
 
 test('double-clicking index.html redirects immediately to the official app while https stays in place', async () => {
@@ -32,7 +32,7 @@ test('double-clicking index.html redirects immediately to the official app while
     protocol: 'file:', hash: '#calendar',
     replace(url) { redirected.push(url); },
   });
-  assert.deepEqual(redirected, ['https://xz1220z-afk.github.io/zos-workbench/?v=2.6.1#calendar']);
+  assert.deepEqual(redirected, ['https://xz1220z-afk.github.io/zos-workbench/?v=2.7.0#calendar']);
 
   const onlineRedirected = [];
   runLocalFileGuard(html, {
