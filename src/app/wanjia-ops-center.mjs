@@ -1,4 +1,5 @@
-import { buildWanjiaHistoryModel } from './wanjia-history.mjs?v=2.7.4';
+import { buildWanjiaHistoryModel } from './wanjia-history.mjs?v=2.8.0';
+import { buildWanjiaOpsNavigation } from './wanjia-ops-navigation.mjs?v=2.8.0';
 
 const STATUS_LABELS = Object.freeze({
   realtime_validated: '实时已校验',
@@ -245,6 +246,7 @@ export function buildWanjiaOpsModel(source = null, options = {}) {
     today, range: options.historyRange, filters: options.historyFilters,
   });
   return {
+    navigation: buildWanjiaOpsNavigation(options.activePane),
     status, kpis, historicalReference: legacy,
     merchants, filteredMerchants, filters, filterOptions,
     history,

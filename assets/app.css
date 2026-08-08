@@ -2453,6 +2453,19 @@ body { overflow-x: hidden; }
 /* ===== v2.3 WanJia local-life operations console ===== */
 .wanjia-shell { display: grid; min-width: 0; gap: 14px; color: var(--cc-text); }
 .wanjia-shell > * { min-width: 0; }
+.wanjia-context-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 8px; overflow-x: auto; border: 1px solid var(--cc-border); border-radius: 15px; background: rgba(8,15,27,.82); scrollbar-width: thin; }
+.wanjia-context-nav button { display: grid; min-width: 145px; gap: 4px; padding: 11px 13px; color: var(--cc-text-muted); border: 1px solid transparent; border-radius: 11px; background: transparent; text-align: left; cursor: pointer; transition: transform 150ms ease, border-color 150ms ease, background 150ms ease, color 150ms ease; }
+.wanjia-context-nav button:hover { color: var(--cc-text); border-color: rgba(79,151,224,.36); background: rgba(79,151,224,.08); transform: translateY(-1px); }
+.wanjia-context-nav button:active { transform: scale(.98); }
+.wanjia-context-nav button[aria-current="page"] { color: #14110a; border-color: rgba(229,192,107,.95); background: linear-gradient(135deg, #e5c06b, #cfa24d); box-shadow: 0 8px 21px rgba(216,180,106,.2); }
+.wanjia-context-nav span { font-weight: 800; }
+.wanjia-context-nav small { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; opacity: .8; }
+.wanjia-context-panel { display: grid; gap: 14px; min-width: 0; }
+.wanjia-context-intro { display: grid; gap: 5px; padding: 3px 2px 0; }
+.wanjia-context-intro h3 { margin: 0; font-size: 22px; }
+.wanjia-context-intro p { margin: 0; color: var(--cc-text-muted); line-height: 1.55; }
+.wanjia-growth-review { border-left: 4px solid #4f97e0; }
+.wanjia-growth-guard { margin-top: 14px; padding: 11px 12px; border: 1px solid rgba(79,151,224,.24); border-radius: 10px; color: var(--cc-text-muted); background: rgba(79,151,224,.06); line-height: 1.55; }
 .wanjia-status-panel, .wanjia-section, .wanjia-history-reference {
   border: 1px solid var(--cc-border); border-radius: 16px;
   background: linear-gradient(155deg, rgba(17,28,46,.98), rgba(8,15,27,.98));
@@ -2565,6 +2578,7 @@ body { overflow-x: hidden; }
 .merchant-diagnostic ul { margin: 0; padding-left: 18px; }
 
 @media (max-width: 1180px) {
+  .wanjia-context-nav { display: flex; grid-template-columns: none; }
   .wanjia-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wanjia-urgent-grid, .wanjia-opportunity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wanjia-filter-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -2575,6 +2589,8 @@ body { overflow-x: hidden; }
   .merchant-diagnostic dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 767px) {
+  .wanjia-context-nav { margin-inline: -1px; border-radius: 12px; }
+  .wanjia-context-nav button { min-width: 138px; }
   .wanjia-status-panel { grid-template-columns: 1fr; padding: 15px; }
   .wanjia-status-panel dl { grid-template-columns: 1fr 1fr; }
   .wanjia-kpi-grid, .wanjia-urgent-grid, .wanjia-opportunity-grid, .merchant-diagnostic dl { grid-template-columns: 1fr; }

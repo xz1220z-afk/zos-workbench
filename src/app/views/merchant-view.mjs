@@ -1,4 +1,4 @@
-import { escapeHtml } from './view-utils.mjs?v=2.7.4';
+import { escapeHtml } from './view-utils.mjs?v=2.8.0';
 
 function money(value) {
   return value === null || value === undefined || value === ''

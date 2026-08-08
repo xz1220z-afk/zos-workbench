@@ -21,10 +21,26 @@ test('wanjia ops view renders all required operating sections and safe empty sta
   assert.match(container.innerHTML, /万嘉本地生活运营总控台/);
   assert.match(container.innerHTML, /当前为历史林客快照，不代表今日实时经营结果/);
   assert.match(container.innerHTML, /今日最需要处理的商家/);
-  assert.match(container.innerHTML, /商家健康看板/);
   assert.match(container.innerHTML, /增长机会池/);
   assert.match(container.innerHTML, /待同步/);
   assert.match(container.innerHTML, /data-wanjia-kpi-filter/);
+  assert.match(container.innerHTML, /data-wanjia-pane="overview"/);
+  assert.match(container.innerHTML, /今日总控/);
+  assert.doesNotMatch(container.innerHTML, /LOCAL SQLITE HISTORY/);
+});
+
+test('wanjia merchant ops context isolates health filters from today and historical sections', () => {
+  const container = { innerHTML: '' };
+  render(container, {
+    wanjiaOps: {
+      status: {}, kpis: [], historicalReference: null, urgentMerchants: [], merchants: [], filteredMerchants: [], opportunities: [],
+      filterOptions: { industries: [], cooperationTypes: [], owners: [] }, filters: {},
+      navigation: { active: { id: 'merchant_ops', label: '商家作战' }, items: [] },
+    },
+  });
+  assert.match(container.innerHTML, /商家健康看板/);
+  assert.match(container.innerHTML, /data-wanjia-filter-form/);
+  assert.doesNotMatch(container.innerHTML, /LOCAL SQLITE HISTORY/);
 });
 
 test('existing local-life route remains and legacy KPI nodes are compatibility-only', async () => {
@@ -42,6 +58,7 @@ test('wanjia ops view renders a dated history workspace without treating missing
     wanjiaOps: {
       status: {}, kpis: [], historicalReference: null, urgentMerchants: [], merchants: [], filteredMerchants: [], opportunities: [],
       filterOptions: { industries: [], cooperationTypes: [], owners: [] }, filters: {},
+      navigation: { active: { id: 'data_analysis', label: '数据分析' }, items: [] },
       history: {
         range: { preset: 'custom', startDate: '2026-08-06', endDate: '2026-08-07' },
         availability: { state: 'validated', label: '已校验', source: 'local_sqlite', earliestDate: '2026-08-06', latestDate: '2026-08-07', batchCount: 2 },
@@ -66,6 +83,7 @@ test('wanjia history query exposes a visible result message instead of silently 
     wanjiaOps: {
       status: {}, kpis: [], historicalReference: null, urgentMerchants: [], merchants: [], filteredMerchants: [], opportunities: [],
       filterOptions: { industries: [], cooperationTypes: [], owners: [] }, filters: {},
+      navigation: { active: { id: 'data_analysis', label: '数据分析' }, items: [] },
       history: {
         range: { preset: 'today', startDate: '2026-08-08', endDate: '2026-08-08' }, filters: {}, allRows: [], rows: [],
         availability: { state: 'missing', label: '数据缺失' }, insufficient: true,

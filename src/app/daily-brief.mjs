@@ -1,5 +1,5 @@
-import { buildTodayTop3 } from './priority-engine.mjs?v=2.7.4';
-import { partitionDecisions } from './decision-center.mjs?v=2.7.4';
+import { buildTodayTop3 } from './priority-engine.mjs?v=2.8.0';
+import { partitionDecisions } from './decision-center.mjs?v=2.8.0';
 
 export const CEO_BRIEF_SECTIONS = Object.freeze([
   'yesterday',

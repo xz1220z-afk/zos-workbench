@@ -1,4 +1,5 @@
-import { escapeHtml } from './view-utils.mjs?v=2.7.4';
+import { escapeHtml } from './view-utils.mjs?v=2.8.0';
+import { buildWanjiaOpsNavigation } from '../wanjia-ops-navigation.mjs?v=2.8.0';
 
 function safe(value, fallback = '待同步') {
   return value === null || value === undefined || value === '' ? fallback : escapeHtml(String(value));
@@ -162,6 +163,43 @@ function opportunities(items = []) {
   return `<section class="wanjia-section"><div class="v14-section-head"><div><span class="v14-kicker">GROWTH OPPORTUNITIES</span><h3>增长机会池</h3><p>规则只识别机会，不自动执行、不自动写飞书。</p></div></div><div class="wanjia-opportunity-grid">${items.length ? items.map((item) => `<article><header><span>${escapeHtml(item.type)}</span><strong>${escapeHtml(item.merchantName)}</strong></header><p><b>数据依据</b>${escapeHtml(item.evidence)}</p><p><b>建议服务</b>${escapeHtml(item.service)}</p><p><b>下一步</b>${escapeHtml(item.nextAction)}</p><footer><span>${item.converted ? '已转商机' : '尚未转商机'}</span><button class="v13-action" data-wanjia-opportunity-draft="${escapeHtml(item.id)}">生成商机草案</button></footer></article>`).join('') : '<div class="wanjia-empty">暂未发现有完整数据证据的增长机会。</div>'}</div></section>`;
 }
 
+function contextNavigation(navigation = {}) {
+  const fallback = buildWanjiaOpsNavigation(navigation.active?.id);
+  const items = Array.isArray(navigation.items) && navigation.items.length ? navigation.items : fallback.items;
+  const active = items.find((item) => item.id === navigation.active?.id) || fallback.active;
+  return `<nav class="wanjia-context-nav" aria-label="万嘉运营模块">${items.map((item) => `<button type="button" data-wanjia-pane="${escapeHtml(item.id)}" aria-current="${item.id === active.id ? 'page' : 'false'}"><span>${escapeHtml(item.label)}</span><small>${escapeHtml(item.question)}</small></button>`).join('')}</nav>`;
+}
+
+function overviewPanel(model) {
+  return `<section class="wanjia-context-panel" data-pane="overview"><div class="wanjia-context-intro"><span class="v14-kicker">TODAY COMMAND</span><h3>今日总控</h3><p>只展示已校验的今日经营事实；历史快照不会混入今天的判断。</p></div>${kpiGrid(model.kpis)}${urgentSection(model.urgentMerchants)}${opportunities(model.opportunities)}</section>`;
+}
+
+function merchantOpsPanel(model) {
+  return `<section class="wanjia-context-panel" data-pane="merchant_ops"><div class="wanjia-context-intro"><span class="v14-kicker">MERCHANT OPERATIONS</span><h3>商家作战</h3><p>先按固定规则筛出需要跟进的商家，再进入诊断或生成任务草案；不会自动派单。</p></div>${merchantTable(model)}</section>`;
+}
+
+function growthReviewPanel(model) {
+  const history = model.history || {};
+  const evidence = history.metricRisk
+    ? '当前历史源属于周期累计快照，不能把两个日期直接相加；增长与下滑结论仅在具备可追溯基线后展示。'
+    : history.availability?.state === 'validated'
+      ? '增长机会仅基于已校验经营事实，不自动执行，也不自动转为商机。'
+      : '历史数据仍在积累中；暂不把空数据或历史快照冒充为增长结论。';
+  return `<section class="wanjia-context-panel" data-pane="growth_review"><section class="wanjia-section wanjia-growth-review"><div class="v14-section-head"><div><span class="v14-kicker">GROWTH REVIEW</span><h3>增长复盘</h3><p>${escapeHtml(evidence)}</p></div><button type="button" class="v13-action" data-wanjia-pane="data_analysis">查看数据口径</button></div><div class="wanjia-growth-guard">${escapeHtml(history.metricRisk || history.message || '等待可验证的历史数据。')}</div></section>${opportunities(model.opportunities)}</section>`;
+}
+
+function dataAnalysisPanel(model) {
+  return `<section class="wanjia-context-panel" data-pane="data_analysis"><div class="wanjia-context-intro"><span class="v14-kicker">DATA ANALYSIS</span><h3>数据分析</h3><p>历史快照、范围查询与口径说明只在这里查看；不会被误认为今天的经营结果。</p></div>${historySection(model.history)}${historicalPanel(model.historicalReference)}</section>`;
+}
+
+function activePanel(model) {
+  const active = model.navigation?.active?.id || 'overview';
+  if (active === 'merchant_ops') return merchantOpsPanel(model);
+  if (active === 'growth_review') return growthReviewPanel(model);
+  if (active === 'data_analysis') return dataAnalysisPanel(model);
+  return overviewPanel(model);
+}
+
 export function render(container, viewModel = {}) {
   if (!container) return;
   const model = viewModel.wanjiaOps;
@@ -169,5 +207,5 @@ export function render(container, viewModel = {}) {
     container.innerHTML = '<section class="wanjia-shell"><div class="wanjia-empty">万嘉运营模型尚未初始化，请刷新页面。</div></section>';
     return;
   }
-  container.innerHTML = `<div class="wanjia-shell">${statusPanel(model.status)}${historySection(model.history)}${kpiGrid(model.kpis)}${historicalPanel(model.historicalReference)}${urgentSection(model.urgentMerchants)}${merchantTable(model)}${opportunities(model.opportunities)}</div>`;
+  container.innerHTML = `<div class="wanjia-shell">${statusPanel(model.status)}${contextNavigation(model.navigation)}${activePanel(model)}</div>`;
 }

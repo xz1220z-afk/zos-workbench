@@ -149,6 +149,18 @@ test('wanjia history query reports when it only filters missing local history', 
   assert.match(app.viewModel().wanjiaOps.history.queryFeedback, /暂无已校验历史数据/);
 });
 
+test('Wanjia console switches context without changing operating data or user collections', () => {
+  const app = createCeoOsApplication({
+    document: renderDocument(), storage: { getItem: () => 'device-1', setItem() {} }, store: fakeStore(),
+  });
+
+  assert.equal(app.viewModel().wanjiaOps.navigation.active.id, 'overview');
+  assert.equal(app.setWanjiaOpsPane('data_analysis'), 'data_analysis');
+  assert.equal(app.viewModel().wanjiaOps.navigation.active.id, 'data_analysis');
+  assert.equal(app.setWanjiaOpsPane('not-a-real-pane'), 'overview');
+  assert.deepEqual(app.store.load().collections.tasks, []);
+});
+
 test('application badge counts only decisions that require CEO judgment', async () => {
   const document = renderDocument();
   const operatingLoop = {
@@ -376,7 +388,7 @@ test('service worker caches the complete transitive browser module graph', async
     'src/app/auto-refresh-controller.mjs',
     'src/app/daily-digest.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.7\.4`/);
+  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.8\.0`/);
 });
 
 test('Wanjia operations keeps legacy numbers historical and opens only a merchant task draft', () => {
@@ -427,8 +439,8 @@ test('the shell captures raw pre-upgrade state before either application module 
   const html = await readFile(new URL('index.html', root), 'utf8');
   const capture = html.indexOf('window.__ZOS_PRE_UPGRADE_RAW__');
   assert.ok(capture >= 0);
-  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.7.4'));
-  assert.ok(capture < html.indexOf('src/app.mjs?v=2.7.4'));
+  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.8.0'));
+  assert.ok(capture < html.indexOf('src/app.mjs?v=2.8.0'));
 });
 
 test('enabled closed-app reminders synchronize current tasks calendar deadlines and daily digests', async () => {
