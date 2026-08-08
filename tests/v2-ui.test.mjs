@@ -47,10 +47,10 @@ test('social insight and agent workbench show evidence and approval boundaries',
 
   const agent = container();
   renderAgentWorkbench(agent, { agentRuns: [], agentSummary: { total: 0, awaitingApproval: 0, completed: 0, failed: 0 } });
-  assert.match(agent.innerHTML, /Agent 工作台/);
-  assert.match(agent.innerHTML, /万嘉增长 Agent/);
-  assert.match(agent.innerHTML, /正式发布、消息发送、ERP 写入和删除均需确认/);
-  assert.match(agent.innerHTML, /data-agent-run/);
+  assert.match(agent.innerHTML, /Agent OS 管理与调用中心/);
+  assert.match(agent.innerHTML, /不修改 Vault · 不写飞书 · 不自动外发/);
+  assert.match(agent.innerHTML, /data-agent-index-import/);
+  assert.doesNotMatch(agent.innerHTML, /万嘉增长 Agent/);
 });
 
 test('review center closes the loop with content metrics, experiments and compounding candidates', () => {

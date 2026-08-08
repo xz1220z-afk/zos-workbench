@@ -1,11 +1,11 @@
-import { fetchBusinessData } from '../business-data-client.mjs?v=2.1.0';
-import { createSupabaseAuth } from '../supabase-auth.mjs?v=2.1.0';
-import { createSupabaseTransport } from '../supabase-transport.mjs?v=2.1.0';
-import { createFeishuApprovalClient } from './feishu-approvals.mjs?v=2.1.0';
-import { createOperatingLoop } from './operating-loop.mjs?v=2.1.0';
-import { createSyncController } from './sync-controller.mjs?v=2.1.0';
-import { createPushClient } from './push-notifications.mjs?v=2.1.0';
-import { buildLocalSyncInput } from '../sync-engine.mjs?v=2.1.0';
+import { fetchBusinessData } from '../business-data-client.mjs?v=2.2.0';
+import { createSupabaseAuth } from '../supabase-auth.mjs?v=2.2.0';
+import { createSupabaseTransport } from '../supabase-transport.mjs?v=2.2.0';
+import { createFeishuApprovalClient } from './feishu-approvals.mjs?v=2.2.0';
+import { createOperatingLoop } from './operating-loop.mjs?v=2.2.0';
+import { createSyncController } from './sync-controller.mjs?v=2.2.0';
+import { createPushClient } from './push-notifications.mjs?v=2.2.0';
+import { buildLocalSyncInput, LOCAL_ONLY_ENTITY_TYPES } from '../sync-engine.mjs?v=2.2.0';
 
 const DEFAULT_CONFIG = Object.freeze({
   url: 'https://dtwvyramgbwtlyhmkhkd.supabase.co',
@@ -127,9 +127,13 @@ export async function createBrowserOperatingRuntime({
     readSyncState: () => buildLocalSyncInput(store.load()),
     writeState: (next) => {
       const current = store.load();
+      const remoteCollections = Object.fromEntries(Object.entries(next).filter(([key]) => key !== 'tombstones'));
+      for (const entityType of LOCAL_ONLY_ENTITY_TYPES) {
+        remoteCollections[entityType] = current.collections[entityType] || [];
+      }
       store.replaceSnapshot({
         ...current,
-        collections: Object.fromEntries(Object.entries(next).filter(([key]) => key !== 'tombstones')),
+        collections: remoteCollections,
         tombstones: next.tombstones || current.tombstones,
       });
     },

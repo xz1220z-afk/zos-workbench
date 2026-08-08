@@ -54,3 +54,21 @@ test('content knowledge and agent edits surface conflicts instead of being overw
     assert.equal(result.collections[entityType][0].title, 'local');
   }
 });
+
+test('Agent OS identity index and private Agent tasks remain local-only and are never uploaded', () => {
+  const local = buildLocalSyncInput({
+    collections: {
+      agent_os_indexes: [{ id: 'agent-os-current', index: { agents: [{ agentId: 'REL-001' }] } }],
+      local_agent_tasks: [{ id: 'private-task', title: '关系关怀草稿', agentContext: { agentId: 'REL-001', knowledgeEntries: ['private/path'] } }],
+      tasks: [],
+    },
+    tombstones: [
+      { id: 'agent-os-current', entity: 'agent_os_indexes', deletedAt: '2026-08-07T00:00:00Z' },
+      { id: 'private-task', entity: 'local_agent_tasks', deletedAt: '2026-08-07T00:00:00Z' },
+    ],
+  });
+  assert.equal(Object.hasOwn(local, 'agent_os_indexes'), false);
+  assert.equal(Object.hasOwn(local, 'local_agent_tasks'), false);
+  assert.equal(JSON.stringify(local).includes('private/path'), false);
+  assert.deepEqual(local.tasks, []);
+});

@@ -1,9 +1,11 @@
-import { selectLatestRecord } from './data-model.mjs?v=2.1.0';
-import { sanitizeSensitiveFields } from './app/sensitive-fields.mjs?v=2.1.0';
+import { selectLatestRecord } from './data-model.mjs?v=2.2.0';
+import { sanitizeSensitiveFields } from './app/sensitive-fields.mjs?v=2.2.0';
 
 export const CRITICAL_ENTITY_TYPES = new Set([
   'decisions', 'targets', 'content_items', 'knowledge_cards', 'agent_runs',
 ]);
+
+export const LOCAL_ONLY_ENTITY_TYPES = new Set(['agent_os_indexes', 'local_agent_tasks']);
 
 // Keep v2 logical collections compatible with the already-deployed v1.7
 // database constraint. The logical type remains in the private JSON payload,
@@ -77,10 +79,11 @@ export function fromCloudRow(row) {
 
 export function buildLocalSyncInput(snapshot = {}) {
   const collections = Object.fromEntries(Object.entries(snapshot.collections || {})
+    .filter(([entityType]) => !LOCAL_ONLY_ENTITY_TYPES.has(entityType))
     .map(([entityType, records]) => [entityType, Array.isArray(records) ? records.slice() : []]));
   for (const tombstone of Array.isArray(snapshot.tombstones) ? snapshot.tombstones : []) {
     const entityType = String(tombstone?.entity || '').trim();
-    if (!entityType || !tombstone?.id) continue;
+    if (!entityType || !tombstone?.id || LOCAL_ONLY_ENTITY_TYPES.has(entityType)) continue;
     const records = collections[entityType] || [];
     collections[entityType] = [...records.filter((record) => record.id !== tombstone.id), tombstone];
   }

@@ -1,63 +1,68 @@
-import { createStateStore, readPersistedStateForBackup } from './app/state-store.mjs?v=2.1.0';
-import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=2.1.0';
-import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.1.0';
-import { render as renderTargets } from './app/views/targets-view.mjs?v=2.1.0';
-import { render as renderHealth } from './app/views/health-view.mjs?v=2.1.0';
-import { render as renderMobile } from './app/views/mobile-view.mjs?v=2.1.0';
-import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.1.0';
-import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=2.1.0';
-import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=2.1.0';
-import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=2.1.0';
-import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=2.1.0';
-import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=2.1.0';
-import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=2.1.0';
-import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=2.1.0';
-import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=2.1.0';
-import { buildImportantDates } from './app/important-dates.mjs?v=2.1.0';
-import { queryAvailability } from './app/availability-center.mjs?v=2.1.0';
-import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=2.1.0';
-import { filterIntelligence, normalizeIntelligenceItem, sortIntelligence, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=2.1.0';
-import { buildLifeAgenda, summarizeLife } from './app/life-os.mjs?v=2.1.0';
-import { upcomingRituals } from './app/ritual-calendar.mjs?v=2.1.0';
-import { parsePrivateDateMetadata } from './app/private-date-import.mjs?v=2.1.0';
-import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=2.1.0';
-import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=2.1.0';
-import { render as renderCalendar } from './app/views/calendar-view.mjs?v=2.1.0';
-import { render as renderLife } from './app/views/life-view.mjs?v=2.1.0';
-import { render as renderSearch } from './app/views/search-view.mjs?v=2.1.0';
-import { render as renderLingli } from './app/views/lingli-view.mjs?v=2.1.0';
-import { buildRelations } from './app/relation-center.mjs?v=2.1.0';
-import { createReviewDraft } from './app/review-center.mjs?v=2.1.0';
-import { render as renderRelations } from './app/views/relation-view.mjs?v=2.1.0';
-import { render as renderReviews } from './app/views/review-view.mjs?v=2.1.0';
-import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=2.1.0';
-import { render as renderTaskCenter } from './app/views/task-view.mjs?v=2.1.0';
-import { render as renderFocus } from './app/views/focus-view.mjs?v=2.1.0';
-import { render as renderAvailability } from './app/views/availability-view.mjs?v=2.1.0';
-import { render as renderMerchant } from './app/views/merchant-view.mjs?v=2.1.0';
-import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=2.1.0';
-import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=2.1.0';
-import { buildCompanyCockpit } from './app/company-cockpit.mjs?v=2.1.0';
-import { render as renderCompanyCockpit } from './app/views/company-cockpit-view.mjs?v=2.1.0';
-import { buildTodayTop3 } from './app/priority-engine.mjs?v=2.1.0';
-import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=2.1.0';
-import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=2.1.0';
-import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=2.1.0';
-import { runCompanyAgent } from './app/company-agent-hub.mjs?v=2.1.0';
-import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=2.1.0';
-import { contentOverview, contentPerformance, evaluateExperiment, normalizeContentItem, transitionContent, buildCompoundCandidate } from './app/content-growth.mjs?v=2.1.0';
-import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.1.0';
-import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.1.0';
-import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.1.0';
-import { render as renderContentGrowth } from './app/views/content-growth-view.mjs?v=2.1.0';
-import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.1.0';
-import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.1.0';
-import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.1.0';
-import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.1.0';
-import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.1.0';
-import { applyDecisionAction, applyDecisionBatch, partitionDecisions } from './app/decision-center.mjs?v=2.1.0';
+import { createStateStore, readPersistedStateForBackup } from './app/state-store.mjs?v=2.2.0';
+import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=2.2.0';
+import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.2.0';
+import { render as renderTargets } from './app/views/targets-view.mjs?v=2.2.0';
+import { render as renderHealth } from './app/views/health-view.mjs?v=2.2.0';
+import { render as renderMobile } from './app/views/mobile-view.mjs?v=2.2.0';
+import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.2.0';
+import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=2.2.0';
+import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=2.2.0';
+import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=2.2.0';
+import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=2.2.0';
+import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=2.2.0';
+import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=2.2.0';
+import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=2.2.0';
+import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=2.2.0';
+import { buildImportantDates } from './app/important-dates.mjs?v=2.2.0';
+import { queryAvailability } from './app/availability-center.mjs?v=2.2.0';
+import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=2.2.0';
+import { filterIntelligence, normalizeIntelligenceItem, sortIntelligence, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=2.2.0';
+import { buildLifeAgenda, summarizeLife } from './app/life-os.mjs?v=2.2.0';
+import { upcomingRituals } from './app/ritual-calendar.mjs?v=2.2.0';
+import { parsePrivateDateMetadata } from './app/private-date-import.mjs?v=2.2.0';
+import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=2.2.0';
+import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=2.2.0';
+import { render as renderCalendar } from './app/views/calendar-view.mjs?v=2.2.0';
+import { render as renderLife } from './app/views/life-view.mjs?v=2.2.0';
+import { render as renderSearch } from './app/views/search-view.mjs?v=2.2.0';
+import { render as renderLingli } from './app/views/lingli-view.mjs?v=2.2.0';
+import { buildRelations } from './app/relation-center.mjs?v=2.2.0';
+import { createReviewDraft } from './app/review-center.mjs?v=2.2.0';
+import { render as renderRelations } from './app/views/relation-view.mjs?v=2.2.0';
+import { render as renderReviews } from './app/views/review-view.mjs?v=2.2.0';
+import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=2.2.0';
+import { render as renderTaskCenter } from './app/views/task-view.mjs?v=2.2.0';
+import { render as renderFocus } from './app/views/focus-view.mjs?v=2.2.0';
+import { render as renderAvailability } from './app/views/availability-view.mjs?v=2.2.0';
+import { render as renderMerchant } from './app/views/merchant-view.mjs?v=2.2.0';
+import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=2.2.0';
+import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=2.2.0';
+import { buildCompanyCockpit } from './app/company-cockpit.mjs?v=2.2.0';
+import { render as renderCompanyCockpit } from './app/views/company-cockpit-view.mjs?v=2.2.0';
+import { buildTodayTop3 } from './app/priority-engine.mjs?v=2.2.0';
+import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=2.2.0';
+import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=2.2.0';
+import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=2.2.0';
+import { runCompanyAgent } from './app/company-agent-hub.mjs?v=2.2.0';
+import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=2.2.0';
+import { contentOverview, contentPerformance, evaluateExperiment, normalizeContentItem, transitionContent, buildCompoundCandidate } from './app/content-growth.mjs?v=2.2.0';
+import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.2.0';
+import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.2.0';
+import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.2.0';
+import { validateAgentOsIndex } from './app/agent-os-index-contract.mjs?v=2.2.0';
+import {
+  agentDetails, buildAgentInvocationDraft, buildAgentOsOverview, buildRelationReminderDrafts,
+  compareAgentOsIndexes, visibleAgents,
+} from './app/agent-os-center.mjs?v=2.2.0';
+import { render as renderContentGrowth } from './app/views/content-growth-view.mjs?v=2.2.0';
+import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.2.0';
+import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.2.0';
+import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.2.0';
+import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.2.0';
+import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.2.0';
+import { applyDecisionAction, applyDecisionBatch, partitionDecisions } from './app/decision-center.mjs?v=2.2.0';
 
-export const APP_VERSION = '2.1.0';
+export const APP_VERSION = '2.2.0';
 const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
 const SYNC_META_KEY = 'zos_sync_meta_v2';
 const LEGACY_COLLECTION_KEYS = Object.freeze({
@@ -124,6 +129,8 @@ export function createCeoOsApplication(config = {}) {
       followUpLimit: 6, historyLimit: 6, undo: null,
       selectedIds: [], batchBusy: false, batchError: null,
     },
+    agentOsFilter: 'all', agentOsDetailId: null, agentOsPatrol: null,
+    agentOsImportState: 'idle', agentOsImportMessage: null,
   };
   let operatingRuntime = config.operatingRuntime || null;
   let autoRefreshController = null;
@@ -274,7 +281,7 @@ export function createCeoOsApplication(config = {}) {
           ? readPersistedStateForBackup({ rawSnapshot: preUpgradeRaw, now, deviceId, createId: browserId })
           : currentDurableState());
         await snapshotRepository.save({
-          kind: 'upgrade', appVersion: previousVersion || 'pre-2.1.0',
+          kind: 'upgrade', appVersion: previousVersion || 'pre-2.2.0',
           backup: buildSafeBackup({ state: checkpointState, baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() }),
         });
         storage?.setItem?.(LAST_PROTECTED_VERSION_KEY, APP_VERSION);
@@ -317,6 +324,12 @@ export function createCeoOsApplication(config = {}) {
     const readingItems = (state.collections.reading_items || []).map(normalizeReadingItem);
     const knowledgeCards = state.collections.knowledge_cards || [];
     const agentRuns = state.collections.agent_runs || [];
+    const agentOsRecord = [...(state.collections.agent_os_indexes || [])]
+      .sort((left, right) => String(right.importedAt || right.updatedAt || '').localeCompare(String(left.importedAt || left.updatedAt || '')))[0] || null;
+    const agentOsIndex = agentOsRecord?.index || null;
+    const agentOsOverview = agentOsIndex ? buildAgentOsOverview(agentOsIndex) : null;
+    const agentOsDetails = agentOsIndex && runtime.agentOsDetailId
+      ? agentDetails(agentOsIndex, runtime.agentOsDetailId) : null;
     const socialInsights = rankSocialOpportunities(state.collections.social_insights || []);
     const contentAssets = state.collections.content_assets || [];
     const brainstorms = state.collections.brainstorms || [];
@@ -395,6 +408,7 @@ export function createCeoOsApplication(config = {}) {
       decisionQueues: partitionDecisions(decisions),
       targets: runtime.loopConnected ? runtime.targets : (state.collections.targets || []),
       tasks: state.collections.tasks || [],
+      localAgentTasks: state.collections.local_agent_tasks || [],
       inbox: state.collections.inbox || [],
       todayTop3,
       reminderQueue: buildReminderQueue(todayTop3, { now: now() }).map((item) => ({
@@ -461,6 +475,11 @@ export function createCeoOsApplication(config = {}) {
       knowledgeReview: knowledgeReviewQueue(knowledgeCards),
       agentRuns,
       agentSummary: summarizeAgentRuns(agentRuns),
+      agentOsIndex,
+      agentOsOverview,
+      agentOsAgents: agentOsIndex ? visibleAgents(agentOsIndex, runtime.agentOsFilter) : [],
+      agentOsDetails,
+      relationReminderDrafts: agentOsDetails?.agentId === 'REL-001' ? buildRelationReminderDrafts({ now: now() }) : [],
       socialInsights,
       contentAssets,
       brainstorms,
@@ -949,6 +968,119 @@ export function createCeoOsApplication(config = {}) {
     return true;
   }
 
+  function currentAgentOsIndex() {
+    const records = store.load().collections.agent_os_indexes || [];
+    return [...records]
+      .sort((left, right) => String(right.importedAt || right.updatedAt || '').localeCompare(String(left.importedAt || left.updatedAt || '')))[0]?.index || null;
+  }
+
+  function applyAgentOsIndex(input, options = {}) {
+    const index = validateAgentOsIndex(input);
+    const previous = currentAgentOsIndex();
+    runtime.agentOsPatrol = compareAgentOsIndexes(previous, index);
+    runtime.agentOsImportState = 'ready';
+    runtime.agentOsImportMessage = options.message || `已读取 ${index.agents.length} 个 Agent 身份卡；仅保存索引，不含整库正文。`;
+    if (options.persist !== false) {
+      store.saveEntity('agent_os_indexes', {
+        id: 'agent-os-current', title: 'Agent OS 只读索引', index,
+        importedAt: options.importedAt || now(), sourceGeneratedAt: index.generatedAt,
+        sourceMode: options.sourceMode || 'manual_readonly_index',
+      });
+      signalLocalChange();
+    }
+    if (!runtime.agentOsDetailId || !index.agents.some((agent) => agent.agentId === runtime.agentOsDetailId)) {
+      runtime.agentOsDetailId = null;
+    }
+    renderAll();
+    return { index, patrol: runtime.agentOsPatrol };
+  }
+
+  function importAgentOsIndexText(text) {
+    const parsed = JSON.parse(String(text || ''));
+    return applyAgentOsIndex(parsed, { sourceMode: 'manual_readonly_index' });
+  }
+
+  function selectAgentOsIndexFile() {
+    const input = document?.createElement?.('input');
+    if (!input) return false;
+    input.type = 'file'; input.accept = 'application/json,.json';
+    input.addEventListener('change', async () => {
+      try {
+        const file = input.files?.[0];
+        if (!file) return;
+        importAgentOsIndexText(await file.text());
+      } catch (error) {
+        runtime.agentOsImportState = 'error';
+        runtime.agentOsImportMessage = error?.message || 'Agent OS 索引导入失败';
+        renderAll();
+      }
+    }, { once: true });
+    input.click();
+    return true;
+  }
+
+  async function loadBundledAgentOsIndex() {
+    const existing = currentAgentOsIndex();
+    if (typeof config.loadAgentOsIndex !== 'function') {
+      if (existing) {
+        runtime.agentOsPatrol = compareAgentOsIndexes(existing, existing);
+        runtime.agentOsImportState = 'ready';
+        runtime.agentOsImportMessage = `已完成本机索引巡检：包含 ${existing.agents.length} 个 Agent。`;
+      } else {
+        runtime.agentOsImportState = 'manual_required';
+        runtime.agentOsImportMessage = '浏览器未获 Vault 文件权限；请手动导入本机生成的只读索引。';
+      }
+      renderAll();
+      return existing;
+    }
+    const candidate = await config.loadAgentOsIndex();
+    const index = validateAgentOsIndex(candidate);
+    const candidateTime = Date.parse(index.generatedAt) || 0;
+    const existingTime = Date.parse(existing?.generatedAt || '') || 0;
+    if (!existing || candidateTime > existingTime) {
+      applyAgentOsIndex(index, { sourceMode: 'bundled_readonly_index', message: `已完成启动巡检：发现 ${index.agents.length} 个 Agent。` });
+      return index;
+    }
+    runtime.agentOsPatrol = compareAgentOsIndexes(existing, existing);
+    runtime.agentOsImportState = 'ready';
+    runtime.agentOsImportMessage = `已完成启动巡检：现有索引包含 ${existing.agents.length} 个 Agent。`;
+    renderAll();
+    return existing;
+  }
+
+  function setAgentOsFilter(filter = 'all') {
+    runtime.agentOsFilter = ['all', 'shared', 'wanjia', 'huahuo', 'lingli', 'life', 'private-relations'].includes(filter) ? filter : 'all';
+    runtime.agentOsDetailId = null;
+    renderAll();
+    return runtime.agentOsFilter;
+  }
+
+  function openAgentDetails(agentId) {
+    const detail = agentDetails(currentAgentOsIndex() || {}, agentId);
+    if (!detail) throw new Error('agent_not_found');
+    if (detail.agentId === 'REL-001' && runtime.agentOsFilter !== 'private-relations') throw new Error('private_agent_hidden');
+    runtime.agentOsDetailId = detail.agentId;
+    renderAll();
+    return detail;
+  }
+
+  function closeAgentDetails() {
+    runtime.agentOsDetailId = null;
+    renderAll();
+  }
+
+  function invokeAgent(agentId) {
+    const detail = agentDetails(currentAgentOsIndex() || {}, agentId);
+    if (!detail) throw new Error('agent_not_found');
+    if (detail.agentId === 'REL-001' && runtime.agentOsFilter !== 'private-relations') throw new Error('private_agent_hidden');
+    const draft = buildAgentInvocationDraft(detail, { now: now() });
+    runtime.taskDraft = draft;
+    runtime.taskDrawerOpen = true;
+    showTaskCenter();
+    renderAll();
+    return draft;
+  }
+
   function sourceRows(source) {
     const payload = runtime.sources?.[source]?.records;
     return Array.isArray(payload) ? payload : (payload?.records || []);
@@ -960,7 +1092,18 @@ export function createCeoOsApplication(config = {}) {
     const nextDone = ['done', 'completed'].includes(normalized.status);
     const wasDone = ['done', 'completed'].includes(existing?.status);
     const action = existing && nextDone !== wasDone ? (nextDone ? 'complete' : 'reopen') : undefined;
-    const item = store.saveEntity('tasks', normalized, action ? { action } : undefined);
+    const existingEntity = input.id && (store.load().collections.local_agent_tasks || []).some((record) => record.id === input.id)
+      ? 'local_agent_tasks' : 'tasks';
+    const localOnly = normalized.agentContext?.localOnly || existingEntity === 'local_agent_tasks';
+    const entityType = localOnly ? 'local_agent_tasks' : 'tasks';
+    const persistedContext = normalized.agentContext?.agentId ? (localOnly ? normalized.agentContext : {
+      agentId: normalized.agentContext.agentId,
+      agentName: normalized.agentContext.agentName,
+      agentStatus: normalized.agentContext.agentStatus,
+      category: normalized.agentContext.category,
+      mode: normalized.agentContext.mode,
+    }) : null;
+    const item = store.saveEntity(entityType, { ...normalized, agentContext: persistedContext }, action ? { action } : undefined);
     runtime.taskDrawerOpen = false;
     runtime.taskDraft = null;
     signalLocalChange();
@@ -969,14 +1112,21 @@ export function createCeoOsApplication(config = {}) {
   }
 
   function taskById(id) {
-    return store.load().collections.tasks.find((record) => record.id === id) || null;
+    const collections = store.load().collections;
+    return (collections.local_agent_tasks || []).find((record) => record.id === id)
+      || (collections.tasks || []).find((record) => record.id === id) || null;
+  }
+
+  function taskEntityType(id) {
+    return (store.load().collections.local_agent_tasks || []).some((record) => record.id === id) ? 'local_agent_tasks' : 'tasks';
   }
 
   function deleteTask(id) {
     const existing = taskById(id);
     if (!existing) throw new Error('task_required');
-    const result = store.deleteEntity('tasks', id);
-    runtime.calendarUndoDelete = { entity: 'tasks', id, title: existing.title };
+    const entityType = taskEntityType(id);
+    const result = store.deleteEntity(entityType, id);
+    runtime.calendarUndoDelete = { entity: entityType, id, title: existing.title };
     runtime.calendarPendingDelete = null;
     runtime.selectedCalendarId = null;
     runtime.calendarPanel = null;
@@ -986,10 +1136,10 @@ export function createCeoOsApplication(config = {}) {
   }
 
   function restoreTask(id) {
-    const tombstone = store.load().tombstones.find((record) => record.entity === 'tasks' && record.id === id);
+    const tombstone = store.load().tombstones.find((record) => ['tasks', 'local_agent_tasks'].includes(record.entity) && record.id === id);
     if (!tombstone) throw new Error('task_tombstone_required');
-    const result = store.restoreEntity('tasks', id);
-    if (runtime.calendarUndoDelete?.entity === 'tasks' && runtime.calendarUndoDelete.id === id) {
+    const result = store.restoreEntity(tombstone.entity, id);
+    if (runtime.calendarUndoDelete?.entity === tombstone.entity && runtime.calendarUndoDelete.id === id) {
       runtime.calendarUndoDelete = null;
     }
     signalLocalChange();
@@ -1937,8 +2087,18 @@ export function createCeoOsApplication(config = {}) {
       const agentSubmit = event.target?.closest?.('[data-agent-submit]');
       const agentApprove = event.target?.closest?.('[data-agent-approve]');
       const agentRunDelete = event.target?.closest?.('[data-agent-run-delete]');
+      const agentIndexImport = event.target?.closest?.('[data-agent-index-import]');
+      const agentOsFilter = event.target?.closest?.('[data-agent-os-filter]');
+      const agentDetailsButton = event.target?.closest?.('[data-agent-details]');
+      const agentDetailsClose = event.target?.closest?.('[data-agent-details-close]');
+      const agentInvoke = event.target?.closest?.('[data-agent-invoke]');
       try {
-        if (contentCapture) captureContentItem();
+        if (agentIndexImport) selectAgentOsIndexFile();
+        else if (agentOsFilter) setAgentOsFilter(agentOsFilter.dataset.agentOsFilter);
+        else if (agentDetailsButton) openAgentDetails(agentDetailsButton.dataset.agentDetails);
+        else if (agentDetailsClose) closeAgentDetails();
+        else if (agentInvoke) invokeAgent(agentInvoke.dataset.agentInvoke);
+        else if (contentCapture) captureContentItem();
         else if (contentCompany) { runtime.contentCompany = contentCompany.dataset.contentCompany || 'all'; renderAll(); }
         else if (contentOwner) { runtime.contentOwner = contentOwner.dataset.contentOwner || 'all'; renderAll(); }
         else if (contentEdit) editContentItem(contentEdit.dataset.contentEdit);
@@ -2173,6 +2333,7 @@ export function createCeoOsApplication(config = {}) {
           assigneeIds: String(data.get('assigneeIds') || '').split(/[、,，]/), listId: data.get('listId') || null,
           estimateMinutes: data.get('estimateMinutes'),
           reminderAt: data.get('reminderAt') || null, recurrence: data.get('recurrence') || null, subtasks,
+          agentContext: runtime.taskDraft?.agentContext || null,
         });
         return;
       }
@@ -2574,11 +2735,18 @@ export function createCeoOsApplication(config = {}) {
         }
       }, 1000);
     }
-    startupWork = initializeRemote().catch(() => {
+    const remoteStartup = initializeRemote().catch(() => {
       runtime.syncStatus = '初始化失败，请稍后重试';
       renderAll();
       return viewModel();
     });
+    const agentOsStartup = loadBundledAgentOsIndex().catch((error) => {
+      runtime.agentOsImportState = 'error';
+      runtime.agentOsImportMessage = error?.message || 'Agent OS 启动巡检失败';
+      renderAll();
+      return currentAgentOsIndex();
+    });
+    startupWork = Promise.all([remoteStartup, agentOsStartup]).then(() => viewModel());
     return viewModel();
   }
 
@@ -2610,6 +2778,7 @@ export function createCeoOsApplication(config = {}) {
     setDecisionSelection, toggleDecisionSelection, executeDecisionBatch,
     quickCapture, captureCalendar, saveCalendar, deleteCalendar, restoreCalendar, copyCalendar, moveCalendar,
     ignoreRitual, convertRitualToLifeTask, importPrivateDateText, selectPrivateDateFile,
+    importAgentOsIndexText, selectAgentOsIndexFile, setAgentOsFilter, openAgentDetails, closeAgentDetails, invokeAgent,
     setIntelligenceFilter, resetIntelligenceFilters,
     deleteTask, restoreTask, toggleTask, copyTask, moveTask,
     setCalendarView, navigateCalendar, goToCalendarToday, refreshCalendarRange,

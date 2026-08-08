@@ -1,5 +1,5 @@
-import { escapeHtml } from './view-utils.mjs?v=2.1.0';
-import { taskCompletion } from '../task-center.mjs?v=2.1.0';
+import { escapeHtml } from './view-utils.mjs?v=2.2.0';
+import { taskCompletion } from '../task-center.mjs?v=2.2.0';
 
 function option(value, label, selected) {
   return `<option value="${escapeHtml(value)}" ${selected === value ? 'selected' : ''}>${escapeHtml(label)}</option>`;
@@ -15,13 +15,22 @@ function taskCard(task) {
   </article>`;
 }
 
+function agentContextNotice(context) {
+  if (!context?.agentId) return '';
+  return `<section class="task-agent-context" aria-label="已带入 Agent 上下文">
+    <div><span class="v14-kicker">已带入 Agent 上下文</span><strong>${escapeHtml(context.agentName || context.name || context.agentId)}</strong><small>${escapeHtml(context.agentId)} · ${escapeHtml(context.agentStatus || context.status || 'draft')}</small></div>
+    <p>当前仅用于草稿或只读分析，不会自动执行外部动作。保存任务也不会写入 Vault、飞书或发送消息。${context.localOnly ? '该私密任务只保存在本机，不参与云同步。' : ''}</p>
+  </section>`;
+}
+
 export function render(container, viewModel = {}) {
   if (!container) return;
-  const tasks = viewModel.tasks || [];
+  const tasks = [...(viewModel.tasks || []), ...(viewModel.localAgentTasks || [])];
   const draft = viewModel.taskDraft || {};
   const drawer = viewModel.taskDrawerOpen ? `<aside class="task-drawer" role="dialog" aria-modal="true" aria-labelledby="taskEditorTitle">
     <form id="richTaskForm" data-task-form>
       <header><div><span class="v14-kicker">EXECUTION TASK</span><h2 id="taskEditorTitle">${draft.id ? '编辑任务' : '新建任务'}</h2></div><button type="button" data-task-close aria-label="关闭">×</button></header>
+      ${agentContextNotice(draft.agentContext)}
       <input type="hidden" name="id" value="${escapeHtml(draft.id || '')}">
       <label class="task-field task-field-wide">标题<input id="task-title" name="title" required maxlength="200" value="${escapeHtml(draft.title || '')}" placeholder="下一步要完成什么？"></label>
       <label class="task-field task-field-wide">说明<textarea id="task-description" name="description" rows="3" placeholder="背景、交付标准或注意事项">${escapeHtml(draft.description || '')}</textarea></label>
