@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { fetchBusinessData } from '../src/business-data-client.mjs';
+import { fetchBusinessData, fetchWanjiaSchema } from '../src/business-data-client.mjs';
 
 test('requests the protected read-only summary endpoint with the current user token', async () => {
   let request;
@@ -96,4 +96,22 @@ test('reports a safe Feishu field diagnosis when a configured field no longer ex
     }),
     /Feishu table field configuration does not match: 支付GMV/i,
   );
+});
+
+test('Wanjia schema discovery uses owner diagnostics without exposing auth material', async () => {
+  const calls = [];
+  const fetchImpl = async (url, options) => {
+    calls.push({ url: String(url), headers: options.headers });
+    const parsed = new URL(url);
+    if (parsed.searchParams.get('diagnostic') === 'wanjia_tables') {
+      return new Response(JSON.stringify({ source: 'wanjia', kind: 'table_names', names: ['01.00 商家主档', '01.04.04｜林客每日汇总'] }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ source: 'wanjia', kind: 'field_names', table_name: parsed.searchParams.get('table_name'), names: ['商家名称', '数据日期'] }), { status: 200 });
+  };
+  const result = await fetchWanjiaSchema({ url: 'https://example.supabase.co', anonKey: 'anon', accessToken: 'token', fetchImpl });
+  assert.equal(result.tables.length, 2);
+  assert.deepEqual(result.tables[1].fields, ['商家名称', '数据日期']);
+  assert.equal(calls.length, 3);
+  assert.ok(calls.every((call) => call.headers.Authorization === 'Bearer token'));
+  assert.equal(JSON.stringify(result).includes('token'), false);
 });

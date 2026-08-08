@@ -1,4 +1,4 @@
-import { fetchBusinessData } from '../business-data-client.mjs?v=2.3.0';
+import { fetchBusinessData, fetchWanjiaSchema } from '../business-data-client.mjs?v=2.3.0';
 import { createSupabaseAuth } from '../supabase-auth.mjs?v=2.3.0';
 import { createSupabaseTransport } from '../supabase-transport.mjs?v=2.3.0';
 import { createFeishuApprovalClient } from './feishu-approvals.mjs?v=2.3.0';
@@ -149,5 +149,6 @@ export async function createBrowserOperatingRuntime({
     pushClient: createPushClient({ ...config, accessToken: session.accessToken, fetchImpl }),
     loadIntelligence: (options) => loadIntelligenceRows(fetchImpl, config, session.accessToken, options),
     loadExternalCalendar: (options) => loadExternalCalendar(fetchImpl, config, session.accessToken, options),
+    diagnoseWanjiaSchema: () => fetchWanjiaSchema({ ...config, accessToken: session.accessToken, fetchImpl }),
   };
 }

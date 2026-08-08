@@ -528,6 +528,11 @@ export function createCeoOsApplication(config = {}) {
     return viewModel();
   }
 
+  async function diagnoseWanjiaSchema() {
+    if (!operatingRuntime?.diagnoseWanjiaSchema) throw new Error('请先登录 Supabase');
+    return operatingRuntime.diagnoseWanjiaSchema();
+  }
+
   function safeRefreshCode(error) {
     const message = String(error?.message || error || '').toLowerCase();
     if (/authentication|登录|jwt|401/.test(message)) return 'authentication_required';
@@ -2862,7 +2867,7 @@ export function createCeoOsApplication(config = {}) {
 
   return {
     start, stop, whenIdle: () => Promise.all([startupWork, reminderScheduleWork]).then(() => viewModel()), render: renderAll, store, runtime, viewModel,
-    refreshSource, refreshAllSources, notifyCurrentReminders, confirmTarget, previewDecision, executeApproval,
+    refreshSource, refreshAllSources, diagnoseWanjiaSchema, notifyCurrentReminders, confirmTarget, previewDecision, executeApproval,
     openDecisionAction, closeDecisionAction, confirmDecisionAction, undoDecisionAction, setDecisionFilter, loadMoreDecisions,
     setDecisionSelection, toggleDecisionSelection, executeDecisionBatch,
     quickCapture, captureCalendar, saveCalendar, deleteCalendar, restoreCalendar, copyCalendar, moveCalendar,

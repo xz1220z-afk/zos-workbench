@@ -47,8 +47,10 @@ assert.match(source, /searchParams\.get\('source'\)/,
   'Function can limit a page refresh to its requested read-only source');
 assert.match(source, /searchParams\.get\('diagnostic'\)/,
   'Function exposes an explicit diagnostics mode instead of overloading normal business reads');
-assert.match(source, /\['lingli_tables', 'lingli_fields'\]\.includes\(diagnostic\)/,
-  'Owner diagnostics can inspect current Lingli table titles without reading records');
+assert.match(source, /lingli_tables[\s\S]*wanjia_tables/,
+  'Owner diagnostics can inspect current Lingli and Wanjia table titles without reading records');
+assert.match(source, /wanjia_fields/,
+  'Owner diagnostics can inspect Wanjia field titles for one explicitly selected table');
 assert.match(source, /lingli_fields/,
   'Owner diagnostics can inspect field titles for one explicitly selected Lingli table');
 assert.match(source, /searchParams\.get\('table_name'\)/,

@@ -40,22 +40,25 @@ Deno.serve(async (req) => {
   }
 
   if (diagnostic) {
-    if (!['lingli_tables', 'lingli_fields'].includes(diagnostic)) return response({ error: 'invalid_diagnostic' }, 400);
+    if (!['lingli_tables', 'lingli_fields', 'wanjia_tables', 'wanjia_fields'].includes(diagnostic)) return response({ error: 'invalid_diagnostic' }, 400);
     const ownerId = Deno.env.get('ZOS_OWNER_USER_ID');
     if (!ownerId || identity.user.id !== ownerId) return response({ error: 'forbidden' }, 403);
-    const appToken = Deno.env.get('LINGLI_APP_TOKEN');
+    const source = diagnostic.startsWith('wanjia_') ? 'wanjia' : 'lingli';
+    const appToken = source === 'wanjia'
+      ? 'AWFUwAbItiI4TjkPMErcpv5Onab'
+      : Deno.env.get('LINGLI_APP_TOKEN');
     if (!appToken) return response({ error: 'feishu_configuration_missing' }, 503);
     try {
       const token = await getTenantAccessToken();
       const tables = await listTables(token, appToken);
-      if (diagnostic === 'lingli_tables') {
-        return response({ source: 'lingli', kind: 'table_names', count: tables.length, names: tables.map((table) => table.name) });
+      if (diagnostic.endsWith('_tables')) {
+        return response({ source, kind: 'table_names', count: tables.length, names: tables.map((table) => table.name) });
       }
       const tableName = searchParams.get('table_name') || '';
       const table = tables.find((item) => item.name === tableName);
       if (!table) return response({ error: 'table_not_found' }, 404);
       const fields = await listFieldNames(token, { appToken, tableId: table.tableId });
-      return response({ source: 'lingli', kind: 'field_names', table_name: table.name, count: fields.length, names: fields });
+      return response({ source, kind: 'field_names', table_name: table.name, count: fields.length, names: fields });
     } catch (error) {
       const detail = safeFeishuDiagnostic(error);
       return response({ error: 'diagnostic_failed', ...detail }, 502);

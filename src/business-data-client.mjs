@@ -9,6 +9,37 @@ function endpoint(baseUrl, source) {
   return url.toString();
 }
 
+function diagnosticEndpoint(baseUrl, diagnostic, tableName = '') {
+  const url = new URL('/functions/v1/zos-business-data', `${baseUrl.replace(/\/$/, '')}/`);
+  url.searchParams.set('diagnostic', diagnostic);
+  if (tableName) url.searchParams.set('table_name', tableName);
+  return url.toString();
+}
+
+async function fetchDiagnostic({ url, anonKey, accessToken, diagnostic, tableName, fetchImpl }) {
+  const response = await fetchImpl(diagnosticEndpoint(url, diagnostic, tableName), {
+    headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` },
+  });
+  const body = await response.text();
+  if (!response.ok) throw businessDataError(response.status, body);
+  return body ? JSON.parse(body) : {};
+}
+
+export async function fetchWanjiaSchema({ url, anonKey, accessToken, fetchImpl = fetch }) {
+  required(url, 'url');
+  required(anonKey, 'anonKey');
+  required(accessToken, 'accessToken');
+  const tablePayload = await fetchDiagnostic({ url, anonKey, accessToken, diagnostic: 'wanjia_tables', fetchImpl });
+  const names = Array.isArray(tablePayload.names) ? tablePayload.names.filter((name) => typeof name === 'string') : [];
+  const targetPrefixes = ['01.00', '01.03', '01.04.03', '01.04.04', '01.04.05', '04.03', '04.08', '04.09'];
+  const targets = names.filter((name) => targetPrefixes.some((prefix) => name.includes(prefix)));
+  const tables = await Promise.all(targets.map(async (name) => {
+    const fieldPayload = await fetchDiagnostic({ url, anonKey, accessToken, diagnostic: 'wanjia_fields', tableName: name, fetchImpl });
+    return { name, fields: Array.isArray(fieldPayload.names) ? fieldPayload.names.filter((field) => typeof field === 'string') : [] };
+  }));
+  return { source: 'wanjia', mode: 'schema_only', names, tables };
+}
+
 function businessDataError(status, body) {
   let payload = {};
   try { payload = body ? JSON.parse(body) : {}; } catch { /* Keep the generic status message. */ }
