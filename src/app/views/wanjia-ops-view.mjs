@@ -1,4 +1,4 @@
-import { escapeHtml } from './view-utils.mjs?v=2.7.3';
+import { escapeHtml } from './view-utils.mjs?v=2.7.4';
 
 function safe(value, fallback = '待同步') {
   return value === null || value === undefined || value === '' ? fallback : escapeHtml(String(value));

@@ -1,5 +1,5 @@
-import { selectLatestRecord } from './data-model.mjs?v=2.7.3';
-import { sanitizeSensitiveFields } from './app/sensitive-fields.mjs?v=2.7.3';
+import { selectLatestRecord } from './data-model.mjs?v=2.7.4';
+import { sanitizeSensitiveFields } from './app/sensitive-fields.mjs?v=2.7.4';
 
 export const CRITICAL_ENTITY_TYPES = new Set([
   'decisions', 'targets', 'content_items', 'knowledge_cards', 'agent_runs',

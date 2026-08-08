@@ -1,6 +1,6 @@
-import { calendarLayout } from '../calendar-center.mjs?v=2.7.3';
-import { calendarEventCapabilities } from '../calendar-event.mjs?v=2.7.3';
-import { escapeHtml } from './view-utils.mjs?v=2.7.3';
+import { calendarLayout } from '../calendar-center.mjs?v=2.7.4';
+import { calendarEventCapabilities } from '../calendar-event.mjs?v=2.7.4';
+import { escapeHtml } from './view-utils.mjs?v=2.7.4';
 
 const COMPANY_LABELS = { wanjia: '万嘉', huahuo: '花火', lingli: '玲丽', life: '个人', ceo: 'CEO' };
 const SOURCE_LABELS = {

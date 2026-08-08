@@ -7,6 +7,7 @@ import { createDurableBackup } from '../src/app/data-durability.mjs';
 import { createStateStore } from '../src/app/state-store.mjs';
 import { createMemorySnapshotAdapter, createSnapshotRepository } from '../src/app/snapshot-repository.mjs';
 import { buildLocalSyncInput } from '../src/sync-engine.mjs';
+import { installSettingsSyncBridge } from '../src/app/settings-sync-bridge.mjs';
 
 function memoryStorage() {
   const values = new Map([['zos_device_id', 'mac-1']]);
@@ -15,6 +16,83 @@ function memoryStorage() {
     setItem: (key, value) => values.set(key, String(value)),
   };
 }
+
+test('settings sync uses the signed-in modular controller instead of the quota-prone legacy inbox mirror', async () => {
+  let legacyCalls = 0;
+  let modularCalls = 0;
+  const browserWindow = {
+    async syncNow() {
+      legacyCalls += 1;
+      const error = new Error("Setting the value of 'zos_inbox' exceeded the quota.");
+      error.name = 'QuotaExceededError';
+      throw error;
+    },
+  };
+  const application = {
+    operatingRuntime: { syncController: { sync: async () => ({ phase: 'complete' }) } },
+    async syncNow() {
+      modularCalls += 1;
+      return { phase: 'complete' };
+    },
+  };
+
+  installSettingsSyncBridge({ browserWindow, application });
+  const result = await browserWindow.syncNow();
+
+  assert.deepEqual(result, { phase: 'complete' });
+  assert.equal(modularCalls, 1);
+  assert.equal(legacyCalls, 0);
+});
+
+test('settings sync keeps the legacy sign-in path available before a modular session exists', async () => {
+  let legacyCalls = 0;
+  const browserWindow = {
+    async syncNow() {
+      legacyCalls += 1;
+      return { phase: 'login-required' };
+    },
+  };
+  const application = {
+    operatingRuntime: null,
+    async syncNow() {
+      throw new Error('must_not_run_without_session');
+    },
+  };
+
+  installSettingsSyncBridge({ browserWindow, application });
+
+  assert.deepEqual(await browserWindow.syncNow(), { phase: 'login-required' });
+  assert.equal(legacyCalls, 1);
+});
+
+test('settings sync waits for modular startup before falling back to the legacy mirror', async () => {
+  let legacyCalls = 0;
+  let modularCalls = 0;
+  const browserWindow = {
+    async syncNow() {
+      legacyCalls += 1;
+      return { phase: 'login-required' };
+    },
+  };
+  const application = {
+    operatingRuntime: null,
+    async whenIdle() {
+      application.operatingRuntime = {
+        syncController: { async sync() { return { phase: 'complete' }; } },
+      };
+    },
+    async syncNow() {
+      modularCalls += 1;
+      return { phase: 'complete' };
+    },
+  };
+
+  installSettingsSyncBridge({ browserWindow, application });
+
+  assert.deepEqual(await browserWindow.syncNow(), { phase: 'complete' });
+  assert.equal(modularCalls, 1);
+  assert.equal(legacyCalls, 0);
+});
 
 test('application reliability actions snooze, restore, test reminders and export a credential-free backup', async () => {
   let tick = 0;

@@ -1,6 +1,6 @@
-import { pageIdFromHash } from './app/router.mjs?v=2.7.3';
-import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAGES } from './app/navigation-preferences.mjs?v=2.7.3';
-import { createBusinessDataCache } from './app/business-data-cache.mjs?v=2.7.3';
+import { pageIdFromHash } from './app/router.mjs?v=2.7.4';
+import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAGES } from './app/navigation-preferences.mjs?v=2.7.4';
+import { createBusinessDataCache } from './app/business-data-cache.mjs?v=2.7.4';
 
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
@@ -126,7 +126,7 @@ import { createBusinessDataCache } from './app/business-data-cache.mjs?v=2.7.3';
 (function() {
   'use strict';
 
-  const APP_VERSION = '2.7.3';
+  const APP_VERSION = '2.7.4';
   const PUBLIC_APP_URL = new URL('.', window.location.href).href;
   const APP_RELEASE_DATE = '2026-08-08';
 

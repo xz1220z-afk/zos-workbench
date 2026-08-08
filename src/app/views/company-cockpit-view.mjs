@@ -1,5 +1,5 @@
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.7.3';
-import { formatCurrency } from '../value-utils.mjs?v=2.7.3';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.7.4';
+import { formatCurrency } from '../value-utils.mjs?v=2.7.4';
 
 function valueOf(item) {
   if (!item.available) return '—';
