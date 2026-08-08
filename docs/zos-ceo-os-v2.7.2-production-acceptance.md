@@ -8,10 +8,10 @@
 
 ## 上线前验收
 
-- 自动化测试：待正式发布前运行 `node --test tests/*.test.mjs`，结果记录为本次发布事实。
-- 语法与空白检查：待正式发布前运行 `node --check src/app.mjs`、`node --check src/legacy-app.mjs` 与 `git diff --check`。
-- 生产资源回读：发布后运行 `node scripts/verify-release-readback.mjs --version 2.7.2 --base https://xz1220z-afk.github.io/zos-workbench/`，确认 `index.html`、`manifest.json`、`sw.js` 和 `src/app.mjs` 都是 HTTP 200 且版本一致。
-- 页面交互回读：打开 `#local-life`，点击“查询历史”，无历史数据时必须显示“已应用查询…暂无已校验历史数据”；控制台 error 为 0。
+- 自动化测试：`node --test tests/*.test.mjs`，604/604 通过（2026-08-08）。
+- 语法与空白检查：`node --check src/app.mjs`、`node --check src/legacy-app.mjs` 与 `git diff --check` 通过（2026-08-08）。
+- 生产资源回读：`node scripts/verify-release-readback.mjs --version 2.7.2 --base https://xz1220z-afk.github.io/zos-workbench/`，`index.html`、`manifest.json`、`sw.js` 和 `src/app.mjs` 均为 HTTP 200 且版本为 `2.7.2`（2026-08-08）。
+- 页面交互回读：组件和应用层验证“查询历史”在无历史数据时显示“已应用查询…暂无已校验历史数据”，且不伪造图表或排行（2026-08-08）。浏览器登录态由本人控制，生产页的最终视觉点击回读保留为打开链接后的手动确认项。
 
 ## 数据保护
 
@@ -20,4 +20,4 @@
 
 ## 回滚
 
-上线代码提交与正式标签在发布完成后补充。若需回退，以 `zos-workbench-v2.7.1` 为代码基线，新建回滚提交、提高缓存版本、重新回归和生产资源回读；用户数据保持原位。
+上线代码提交：`6db35f7`；发布标签指向包含本验收记录的提交。若需回退，以 `zos-workbench-v2.7.1` 为代码基线，新建回滚提交、提高缓存版本、重新回归和生产资源回读；用户数据保持原位。
