@@ -1,5 +1,5 @@
-import { AGENT_OS_CATEGORIES } from '../agent-os-center.mjs?v=2.7.2';
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.7.2';
+import { AGENT_OS_CATEGORIES } from '../agent-os-center.mjs?v=2.7.3';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.7.3';
 
 const FILTERS = Object.freeze([
   ['all', '全部可见'], ['shared', '总控与共享中台'], ['wanjia', '万嘉网络'],

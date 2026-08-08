@@ -41,6 +41,25 @@ test('does not sum snapshot metrics and exposes a metric-risk message', () => {
   assert.equal(model.rangeSummary.paymentGmv, 60);
 });
 
+test('shows verified 2026-08-07 to 2026-08-08 period snapshots without inventing a missing baseline', () => {
+  const model = buildWanjiaHistoryModel({
+    availability: { state: 'validated', source: 'local_sqlite', earliestDate: '2026-08-07', latestDate: '2026-08-08', batchCount: 2 },
+    rows: [
+      { businessDate: '2026-08-07', merchantId: 'L-1', merchantName: '甲店', paymentGmv: 100, redeemedGmv: 50, sourceKind: 'period_snapshot' },
+      { businessDate: '2026-08-08', merchantId: 'L-1', merchantName: '甲店', paymentGmv: 130, redeemedGmv: 80, sourceKind: 'period_snapshot' },
+    ],
+  }, { range: { preset: 'custom', startDate: '2026-08-07', endDate: '2026-08-08' }, today: '2026-08-08' });
+
+  assert.equal(model.availability.label, '历史数据已验证');
+  assert.equal(model.metricRisk, '口径不可累计');
+  assert.equal(model.rangeStatus, 'insufficient_history');
+  assert.equal(model.rangeSummary.paymentGmv, null);
+  assert.equal(model.rangeSummary.redeemedGmv, null);
+  assert.deepEqual(model.snapshotTrend.map((item) => [item.date, item.paymentGmv, item.redeemedGmv]), [
+    ['2026-08-07', 100, 50], ['2026-08-08', 130, 80],
+  ]);
+});
+
 test('history missing or too short is shown as accumulation rather than zero performance', () => {
   const model = buildWanjiaHistoryModel(null, { range: { preset: 'last_7_days' }, today: '2026-08-08' });
   assert.equal(model.availability.state, 'missing');

@@ -1,4 +1,4 @@
-import { buildWanjiaHistoryModel } from './wanjia-history.mjs?v=2.7.2';
+import { buildWanjiaHistoryModel } from './wanjia-history.mjs?v=2.7.3';
 
 const STATUS_LABELS = Object.freeze({
   realtime_validated: '实时已校验',

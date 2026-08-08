@@ -42,6 +42,30 @@ test('requests only the selected business source when a page refreshes', async (
   assert.equal(request.url, 'https://project.supabase.co/functions/v1/zos-business-data?source=wanjia');
 });
 
+test("requests and preserves Wanjia's opt-in protected history inside the selected source contract", async () => {
+  let request;
+  const data = await fetchBusinessData({
+    url: 'https://project.supabase.co', anonKey: 'public-key', accessToken: 'user-token', source: 'wanjia', history: true,
+    fetchImpl: async (url) => {
+      request = String(url);
+      return new Response(JSON.stringify({
+        meta: { mode: 'read_only', fetchedAt: '2026-08-08T09:00:00.000Z' },
+        wanjia: {
+          summary: {}, records: [],
+          history: {
+            availability: { state: 'validated', source: 'local_sqlite', earliestDate: '2026-08-07', latestDate: '2026-08-08', batchCount: 2 },
+            rows: [{ businessDate: '2026-08-08', merchantId: 'merchant-1', sourceKind: 'period_snapshot' }],
+          },
+        },
+      }), { status: 200 });
+    },
+  });
+
+  assert.equal(request, 'https://project.supabase.co/functions/v1/zos-business-data?source=wanjia&history=1');
+  assert.equal(data.history.availability.batchCount, 2);
+  assert.equal(data.history.rows[0].sourceKind, 'period_snapshot');
+});
+
 test('selected refresh returns the normalized v1.3 operating contract', async () => {
   const data = await fetchBusinessData({
     url: 'https://project.supabase.co', anonKey: 'public-key', accessToken: 'user-token', source: 'huahuo',

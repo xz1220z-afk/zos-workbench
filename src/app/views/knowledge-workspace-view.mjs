@@ -1,4 +1,4 @@
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.7.2';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.7.3';
 
 function readingRows(items) {
   return items.length ? items.slice(0, 8).map((item) => `<div class="knowledge-row"><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.sourceType || '网页')} · ${Number(item.progress) || 0}%</small></div><div><button data-reading-progress="${escapeHtml(item.id)}">进度</button><button data-reading-to-card="${escapeHtml(item.id)}">转卡片</button><button data-reading-delete="${escapeHtml(item.id)}">删除</button></div></div>`).join('') : renderState('empty', 'AI 阅读');

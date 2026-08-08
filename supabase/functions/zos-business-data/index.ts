@@ -9,6 +9,7 @@ import {
 } from '../_shared/feishu.ts';
 import { readBusinessSources } from '../_shared/business-data.ts';
 import { buildCachedBusinessPayload } from '../_shared/business-cache.mjs';
+import { buildHistoryPayload } from '../_shared/wanjia-history.mjs';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -20,12 +21,64 @@ function response(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: CORS_HEADERS });
 }
 
+async function readWanjiaHistory(
+  supabase: Awaited<ReturnType<typeof requireUser>>['supabase'],
+  searchParams: URLSearchParams,
+) {
+  const { data: batches, error: batchError } = await supabase
+    .from('zos_wanjia_history_batches')
+    .select('id,business_date,row_count,source_kind,validated_at')
+    .eq('validation_status', 'validated')
+    .order('business_date', { ascending: true });
+  if (batchError || !batches?.length) return buildHistoryPayload([], []);
+
+  const batchIds = batches.map((batch: { id: number }) => batch.id);
+  const { data: rows, error: rowError } = await supabase
+    .from('zos_wanjia_history_rows')
+    .select('batch_id,merchant_id,merchant_name,industry,owner,cooperation_type,payment_gmv,redeemed_gmv,refund_gmv,video_payment_gmv,live_payment_gmv,exception')
+    .in('batch_id', batchIds);
+  if (rowError) return buildHistoryPayload([], []);
+
+  const dateByBatch = new Map(batches.map((batch: { id: number; business_date: string; source_kind: string }) => [batch.id, batch]));
+  const historyRows = (rows || []).map((row: Record<string, unknown>) => {
+    const batch = dateByBatch.get(row.batch_id as number);
+    return { ...row, business_date: batch?.business_date, source_kind: batch?.source_kind };
+  });
+  const from = searchParams.get('from') || undefined;
+  return buildHistoryPayload(batches, historyRows, {
+    includeRange: Boolean(from || searchParams.get('to')),
+    baselinePresent: from ? batches.some((batch: { business_date: string }) => batch.business_date < from) : false,
+  });
+}
+
+function attachWanjiaHistory(payload: unknown, history: unknown) {
+  if (!payload || typeof payload !== 'object') return payload;
+  const value = payload as Record<string, unknown>;
+  const wanjia = value.wanjia;
+  if (!wanjia || typeof wanjia !== 'object') return payload;
+  // Keep history within its selected source so existing source-normalisation
+  // sees it; a root-level history key would be ignored by the client.
+  return { ...value, wanjia: { ...(wanjia as Record<string, unknown>), history } };
+}
+
+async function withOptionalHistory(
+  payload: unknown,
+  requestedSource: string,
+  includeHistory: boolean,
+  identity: Awaited<ReturnType<typeof requireUser>>,
+  searchParams: URLSearchParams,
+) {
+  if (!includeHistory || !['all', 'wanjia'].includes(requestedSource)) return payload;
+  return attachWanjiaHistory(payload, await readWanjiaHistory(identity.supabase, searchParams));
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
   if (req.method !== 'GET') return response({ error: 'method_not_allowed' }, 405);
 
   const searchParams = new URL(req.url).searchParams;
   const requestedSource = searchParams.get('source') || 'all';
+  const includeHistory = searchParams.get('history') === '1';
   const diagnostic = searchParams.get('diagnostic');
   if (!['all', 'wanjia', 'huahuo', 'lingli', 'projects'].includes(requestedSource)) {
     return response({ error: 'invalid_source' }, 400);
@@ -72,12 +125,13 @@ Deno.serve(async (req) => {
       .in('source', sources);
     if (!error) {
       const cached = buildCachedBusinessPayload(data, requestedSource);
-      if (cached) return response(cached);
+      if (cached) return response(await withOptionalHistory(cached, requestedSource, includeHistory, identity, searchParams));
     }
   } catch { /* A cache miss or unavailable cache safely falls back to live read-only Feishu. */ }
 
   try {
-    return response(await readBusinessSources(requestedSource as 'all' | 'wanjia' | 'huahuo' | 'lingli' | 'projects'));
+    const payload = await readBusinessSources(requestedSource as 'all' | 'wanjia' | 'huahuo' | 'lingli' | 'projects');
+    return response(await withOptionalHistory(payload, requestedSource, includeHistory, identity, searchParams));
   } catch (error) {
     const reason = safeFeishuCode(error);
     const diagnostic = safeFeishuDiagnostic(error);

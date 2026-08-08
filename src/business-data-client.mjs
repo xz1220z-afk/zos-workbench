@@ -3,9 +3,14 @@ function required(value, name) {
   return value;
 }
 
-function endpoint(baseUrl, source) {
+function endpoint(baseUrl, source, options = {}) {
   const url = new URL('/functions/v1/zos-business-data', `${baseUrl.replace(/\/$/, '')}/`);
   if (source) url.searchParams.set('source', source);
+  if (source === 'wanjia' && options.history === true) {
+    url.searchParams.set('history', '1');
+    if (options.from) url.searchParams.set('from', options.from);
+    if (options.to) url.searchParams.set('to', options.to);
+  }
   return url.toString();
 }
 
@@ -59,12 +64,12 @@ function businessDataError(status, body) {
   return new Error(reason ? `Business data request failed (${status}): ${reason}${missingFields}` : `Business data request failed (${status})`);
 }
 
-export async function fetchBusinessData({ url, anonKey, accessToken, source, fetchImpl = fetch }) {
+export async function fetchBusinessData({ url, anonKey, accessToken, source, history = false, from, to, fetchImpl = fetch }) {
   required(url, 'url');
   required(anonKey, 'anonKey');
   required(accessToken, 'accessToken');
 
-  const response = await fetchImpl(endpoint(url, source), {
+  const response = await fetchImpl(endpoint(url, source, { history, from, to }), {
     headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` },
   });
   const body = await response.text();

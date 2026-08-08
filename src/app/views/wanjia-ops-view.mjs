@@ -1,4 +1,4 @@
-import { escapeHtml } from './view-utils.mjs?v=2.7.2';
+import { escapeHtml } from './view-utils.mjs?v=2.7.3';
 
 function safe(value, fallback = '待同步') {
   return value === null || value === undefined || value === '' ? fallback : escapeHtml(String(value));
@@ -102,11 +102,16 @@ function historySummary(history = {}) {
 }
 
 function historyTrend(history = {}) {
-  const points = history.trend || [];
-  const hasData = !history.insufficient && !history.metricRisk && points.some((item) => item.paymentGmv !== null || item.exceptionMerchants !== null);
+  const isSnapshot = Boolean(history.metricRisk);
+  const points = isSnapshot ? (history.snapshotTrend || []) : (history.trend || []);
+  const hasData = points.some((item) => item.paymentGmv !== null || item.exceptionMerchants !== null);
   if (!hasData) return `<section class="wanjia-section wanjia-history-chart"><div class="v14-section-head"><div><span class="v14-kicker">DAILY TREND</span><h3>每日 GMV 与异常趋势</h3></div></div><div class="wanjia-empty">${escapeHtml(history.message || '历史数据积累中。')}</div></section>`;
   const maxGmv = Math.max(1, ...points.map((item) => Number(item.paymentGmv) || 0));
-  return `<section class="wanjia-section wanjia-history-chart"><div class="v14-section-head"><div><span class="v14-kicker">DAILY TREND</span><h3>每日 GMV 与异常趋势</h3><p>支付 GMV、核销 GMV 与异常商家按天展示；没有数据的日期不会被填成 0。</p></div></div><div class="wanjia-trend-list">${points.map((item) => `<article><header><strong>${escapeHtml(item.date)}</strong><span>异常 ${historyValue(item.exceptionMerchants)}</span></header><div class="wanjia-trend-bar"><i style="width:${Math.max(2, ((Number(item.paymentGmv) || 0) / maxGmv) * 100)}%"></i></div><dl><div><dt>支付</dt><dd>${historyValue(item.paymentGmv, 'money')}</dd></div><div><dt>核销</dt><dd>${historyValue(item.redeemedGmv, 'money')}</dd></div></dl></article>`).join('')}</div></section>`;
+  const title = isSnapshot ? '每日经营快照趋势' : '每日 GMV 与异常趋势';
+  const description = isSnapshot
+    ? '每个数据点是当天全量商家快照，仅用于观察历史状态；禁止跨日期直接求和。'
+    : '支付 GMV、核销 GMV 与异常商家按天展示；没有数据的日期不会被填成 0。';
+  return `<section class="wanjia-section wanjia-history-chart"><div class="v14-section-head"><div><span class="v14-kicker">DAILY TREND</span><h3>${title}</h3><p>${description}</p></div></div><div class="wanjia-trend-list">${points.map((item) => `<article><header><strong>${escapeHtml(item.date)}</strong><span>异常 ${historyValue(item.exceptionMerchants)}</span></header><div class="wanjia-trend-bar"><i style="width:${Math.max(2, ((Number(item.paymentGmv) || 0) / maxGmv) * 100)}%"></i></div><dl><div><dt>支付</dt><dd>${historyValue(item.paymentGmv, 'money')}</dd></div><div><dt>核销</dt><dd>${historyValue(item.redeemedGmv, 'money')}</dd></div></dl></article>`).join('')}</div></section>`;
 }
 
 function rankingList(title, rows = [], format = 'money') {

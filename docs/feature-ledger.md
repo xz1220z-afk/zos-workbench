@@ -2,6 +2,18 @@
 
 本账本是发布前的固定回读入口。新增功能只能追加记录，不删除旧记录；事实、设计意图和未完成边界必须分开写。
 
+## v2.7.3（候选）
+
+### 万嘉受保护历史快照读取
+
+- **入口**：万嘉网络 `#local-life` 的既有“时间范围查询与历史经营分析”。
+- **目标**：仅向已登录用户展示 2026-08-07 至 2026-08-08 的已验证历史快照，并让现有时间筛选、快照趋势和商家明细真正基于历史信封工作。
+- **实现文件**：`src/business-data-client.mjs`、`src/app/browser-runtime.mjs`、`src/app/wanjia-history.mjs`、`src/app/views/wanjia-ops-view.mjs`、`supabase/functions/zos-business-data/index.ts`、`supabase/functions/_shared/wanjia-history.mjs`、`supabase/migrations/011_wanjia_history_mirror.sql`。
+- **数据边界**：仅认证态请求 `source=wanjia&history=1`；只读、按用户 RLS 隔离。适配器只返回允许字段，不返回原始文件、哈希、raw JSON、密钥或凭证。不会写飞书、Vault、任务、用户数据或历史批次。
+- **口径**：`period_snapshot` 仅展示单日快照趋势，绝不跨日相加；区间变化为结束日期快照减开始日前最近快照。无起点即 `insufficient_history`，不显示 0、排行或模拟业绩。
+- **测试**：客户端请求/信封、适配器字段白名单、真实日期边界模型、Edge 函数认证与 RLS 静态约束、完整 PWA 模块图和全量回归。
+- **回滚**：回到 `zos-workbench-v2.7.2` 代码标签，提升缓存版本后再部署页面和函数；不删除用户数据或历史数据仓。
+
 ## v2.7.2（候选）
 
 ### 万嘉历史查询结果反馈

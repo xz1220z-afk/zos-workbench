@@ -96,5 +96,19 @@ assert.match(migration, /enable row level security/i);
 assert.match(migration, /auth\.uid\(\) = user_id/i);
 assert.match(config, /\[functions\.zos-business-data\]/);
 assert.match(config, /verify_jwt\s*=\s*true/);
+const historyMigration = await readFile(new URL('../supabase/migrations/011_wanjia_history_mirror.sql', import.meta.url), 'utf8');
+assert.match(source, /searchParams\.get\('history'\) === '1'/,
+  'History is opt-in and cannot alter existing payloads by default');
+assert.match(source, /requireUser\(req\)/,
+  'History reads stay behind the existing Supabase login requirement');
+assert.match(source, /wanjia:\s*\{\s*\.\.\.\(wanjia as Record<string, unknown>\),\s*history\s*\}/,
+  'History is nested under wanjia so selected-source clients receive it');
+assert.match(source, /zos_wanjia_history_batches/);
+assert.match(source, /zos_wanjia_history_rows/);
+assert.doesNotMatch(source, /\.select\('[^']*(raw_json|source_sha256|source_name)/,
+  'The Edge response never selects source files, hashes, or raw records');
+assert.match(historyMigration, /enable row level security/ig);
+assert.match(historyMigration, /auth\.uid\(\) = user_id/i);
+assert.doesNotMatch(historyMigration, /service_role/i);
 
 console.log('Business Edge Function safety checks passed');

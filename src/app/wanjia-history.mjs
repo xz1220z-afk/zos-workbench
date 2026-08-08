@@ -73,13 +73,13 @@ function normalizeRow(input = {}) {
 function availabilityOf(history, rows) {
   const declared = history?.availability || {};
   const sourceRows = Array.isArray(history?.rows) ? history.rows : history?.records;
-  if (!history || !Array.isArray(sourceRows)) return { state: 'missing', source: 'local_sqlite', label: '数据缺失' };
-  if (declared.state && declared.state !== 'validated') return { ...declared, label: declared.label || (declared.state === 'pending' ? '待校验' : '数据缺失') };
+  if (!history || !Array.isArray(sourceRows)) return { state: 'missing', source: 'local_sqlite', label: '历史数据积累中' };
+  if (declared.state && declared.state !== 'validated') return { ...declared, label: declared.label || (declared.state === 'pending' ? '待校验' : '历史数据积累中') };
   const dates = rows.map((item) => item.businessDate).filter(Boolean).sort();
   return {
     state: dates.length ? 'validated' : 'missing', source: declared.source || 'local_sqlite',
     latestDate: declared.latestDate || dates.at(-1) || null, earliestDate: declared.earliestDate || dates[0] || null,
-    batchCount: finite(declared.batchCount), label: dates.length ? '已校验' : '数据缺失',
+    batchCount: finite(declared.batchCount), label: dates.length ? '历史数据已验证' : '历史数据积累中',
   };
 }
 
@@ -148,6 +148,24 @@ function dailyTrend(rows, range, metricRisk) {
   });
 }
 
+function snapshotTrend(rows, range) {
+  const dates = [...new Set(rows
+    .filter((row) => row.sourceKind === 'period_snapshot' && row.businessDate >= range.startDate && row.businessDate <= range.endDate)
+    .map((row) => row.businessDate))].sort();
+  return dates.map((date) => {
+    const daily = rows.filter((row) => row.sourceKind === 'period_snapshot' && row.businessDate === date);
+    const paymentGmv = sumMetric(daily, 'paymentGmv');
+    const redeemedGmv = sumMetric(daily, 'redeemedGmv');
+    return {
+      date, paymentGmv, redeemedGmv, refundGmv: sumMetric(daily, 'refundGmv'),
+      redemptionRate: paymentGmv && redeemedGmv !== null ? redeemedGmv / paymentGmv : null,
+      activeMerchants: daily.length ? daily.filter((row) => (finite(row.paymentGmv) || 0) > 0).length : null,
+      exceptionMerchants: daily.length ? new Set(daily.filter((row) => row.exception).map((row) => row.merchantId)).size : null,
+      videoPaymentGmv: sumMetric(daily, 'videoPaymentGmv'), livePaymentGmv: sumMetric(daily, 'livePaymentGmv'),
+    };
+  });
+}
+
 export function buildWanjiaHistoryModel(history = null, options = {}) {
   const range = normalizeWanjiaRange(options.range || {}, { today: options.today });
   const filters = options.filters || {};
@@ -168,15 +186,21 @@ export function buildWanjiaHistoryModel(history = null, options = {}) {
   const paymentGmv = currentRows.length ? sumMetric(currentRows, 'paymentGmv') : snapshotsDelta(snapshotRows, 'paymentGmv', range);
   const redeemedGmv = currentRows.length ? sumMetric(currentRows, 'redeemedGmv') : snapshotsDelta(snapshotRows, 'redeemedGmv', range);
   const trend = dailyTrend(scoped, range, metricRisk);
+  const snapshotDaily = snapshotTrend(scoped, range);
   const usableDays = trend.filter((item) => item.paymentGmv !== null).length;
-  const insufficient = availability.state !== 'validated' || !scoped.length || usableDays < Math.min(2, rangeDays(range.startDate, range.endDate).length);
+  const snapshotRangeMissing = metricRisk && (paymentGmv === null || redeemedGmv === null);
+  const rangeStatus = snapshotRangeMissing
+    ? 'insufficient_history'
+    : (history?.range?.status || 'ready');
+  const insufficient = availability.state !== 'validated' || !scoped.length || snapshotRangeMissing || (!metricRisk && usableDays < Math.min(2, rangeDays(range.startDate, range.endDate).length));
   const message = availability.state !== 'validated' || !scoped.length
     ? '历史数据积累中：对应日期尚无已校验的本地历史数据。'
-    : metricRisk ? '当前源数据为周期快照，禁止直接求和；区间变化仅在存在起始日前快照时计算。'
+    : snapshotRangeMissing ? '历史数据已验证，但缺少起始日前最近可用快照（insufficient_history）；不显示区间变化值。'
+      : metricRisk ? '历史数据已验证：当前源数据为周期快照，禁止直接求和；区间变化按结束日快照减开始日前最近快照计算。'
       : insufficient ? '历史数据积累中：数据天数不足，暂不生成趋势或环比结论。'
         : '历史数据已校验，所有指标按选定时间范围与字段口径计算。';
   return {
-    range, filters, availability, metricRisk, insufficient, message, trend, allRows,
+    range, filters, availability, metricRisk, rangeStatus, insufficient, message, trend, snapshotTrend: snapshotDaily, allRows,
     rangeSummary: {
       paymentGmv, redeemedGmv, refundGmv: currentRows.length ? sumMetric(currentRows, 'refundGmv') : snapshotsDelta(snapshotRows, 'refundGmv', range),
       redemptionRate: paymentGmv && redeemedGmv !== null ? redeemedGmv / paymentGmv : null,

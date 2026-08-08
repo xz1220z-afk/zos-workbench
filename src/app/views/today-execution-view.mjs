@@ -1,4 +1,4 @@
-import { escapeHtml } from './view-utils.mjs?v=2.7.2';
+import { escapeHtml } from './view-utils.mjs?v=2.7.3';
 
 const GROUPS = [
   ['overdue', '已逾期'], ['allDay', '全天'], ['morning', '上午'],
