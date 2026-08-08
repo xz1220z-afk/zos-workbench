@@ -6,6 +6,7 @@ import {
   buildMerchantProfile,
   searchMerchants,
 } from '../src/app/merchant-center.mjs';
+import { render as renderMerchant } from '../src/app/views/merchant-view.mjs';
 
 test('merchant profile separates incomplete actions from missing evidence', () => {
   const profile = buildMerchantProfile({
@@ -22,6 +23,26 @@ test('merchant profile separates incomplete actions from missing evidence', () =
   assert.deepEqual(profile.actions.overdue.map((item) => item.title), ['发布视频']);
   assert.deepEqual(profile.actions.unrecorded, ['复盘核销']);
   assert.equal(profile.metrics.paymentGmv, 12800);
+});
+
+test('merchant profile preserves missing numeric evidence instead of inventing zero', () => {
+  const profile = buildMerchantProfile({ id: 'm1', merchantName: '待同步商家' });
+  assert.equal(profile.metrics.paymentGmv, null);
+  assert.equal(profile.metrics.redeemedGmv, null);
+  assert.equal(profile.metrics.businessScore, null);
+});
+
+test('merchant view distinguishes missing evidence from a real zero', () => {
+  const container = { innerHTML: '' };
+  const profile = buildMerchantProfile({
+    id: 'm1', merchantName: '零分商家', businessScore: 0,
+    paymentGmv: null, redeemedGmv: null,
+  });
+  renderMerchant(container, { merchantProfile: profile, merchantSearch: { state: 'matched', matches: [profile] } });
+  assert.match(container.innerHTML, /支付 GMV<\/span><strong>待同步/);
+  assert.match(container.innerHTML, /核销 GMV<\/span><strong>待同步/);
+  assert.match(container.innerHTML, /经营分<\/span><strong>0<\/strong>/);
+  assert.doesNotMatch(container.innerHTML, /支付 GMV<\/span><strong>¥0/);
 });
 
 test('merchant search returns disambiguation instead of picking a same-name merchant', () => {

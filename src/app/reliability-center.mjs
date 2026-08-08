@@ -1,4 +1,4 @@
-import { createDurableBackup } from './data-durability.mjs?v=2.2.0';
+import { createDurableBackup } from './data-durability.mjs?v=2.3.0';
 
 export function listRestorableItems(tombstones = [], options = {}) {
   const nowMs = new Date(options.now || new Date().toISOString()).getTime();
@@ -20,7 +20,7 @@ export function listRestorableItems(tombstones = [], options = {}) {
 }
 
 export function buildSafeBackup({ state = {}, baseRevisions = {}, createdAt = new Date().toISOString() } = {}) {
-  return createDurableBackup({ state, baseRevisions, createdAt, appVersion: '2.2.0' });
+  return createDurableBackup({ state, baseRevisions, createdAt, appVersion: '2.3.0' });
 }
 
 export function reminderSnoozeAt(choice, options = {}) {

@@ -88,7 +88,16 @@ test('Wanjia merchant search and Huahuo availability query consume current sourc
     life: [{ id: 'life-1', title: '看医生', startAt: '2026-08-05T10:00:00+08:00', endAt: '2026-08-05T11:00:00+08:00', privacy: 'private' }],
   });
   const app = createApp(store, {
-    wanjia: { records: [{ id: 'm1', merchantId: 'M001', merchantName: '海景餐厅', paymentGmv: 8800, actions: [] }] },
+    wanjia: {
+      dataStatus: {
+        state: 'realtime_validated', dataDate: '2026-08-03', validation: 'passed',
+        lastSyncedAt: '2026-08-03T08:55:00+08:00', sourceTables: ['01.04.04｜林客每日汇总'],
+      },
+      records: [{
+        id: 'm1', merchantId: 'M001', merchantName: '海景餐厅', paymentGmv: 8800,
+        dataDate: '2026-08-03', updatedAt: '2026-08-03T08:55:00+08:00', actions: [],
+      }],
+    },
     huahuo: { records: [{
       id: 'p1', projectName: '婚礼跟拍', shootingDate: '2026-08-05',
       startAt: '2026-08-05T09:00:00+08:00', endAt: '2026-08-05T12:00:00+08:00',

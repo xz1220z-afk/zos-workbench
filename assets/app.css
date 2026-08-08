@@ -2290,3 +2290,91 @@ body { overflow-x: hidden; }
 @media (max-width: 720px) {
   .task-agent-context { grid-template-columns: 1fr; }
 }
+
+/* ===== v2.3 WanJia local-life operations console ===== */
+.wanjia-shell { display: grid; gap: 14px; color: var(--cc-text); }
+.wanjia-status-panel, .wanjia-section, .wanjia-history-reference {
+  border: 1px solid var(--cc-border); border-radius: 16px;
+  background: linear-gradient(155deg, rgba(17,28,46,.98), rgba(8,15,27,.98));
+  box-shadow: 0 16px 42px rgba(0,0,0,.16);
+}
+.wanjia-status-panel { display: grid; grid-template-columns: minmax(260px, 1.25fr) minmax(360px, 1fr); gap: 20px; padding: 20px; border-left: 4px solid var(--cc-accent-gold); }
+.wanjia-status-panel[data-state="realtime_validated"] { border-left-color: var(--cc-success); background: linear-gradient(135deg, rgba(16,185,129,.09), rgba(8,15,27,.98) 42%); }
+.wanjia-status-panel[data-state="validation_failed"] { border-left-color: var(--cc-risk); background: linear-gradient(135deg, rgba(244,63,94,.09), rgba(8,15,27,.98) 42%); }
+.wanjia-status-panel h2 { margin: 5px 0 10px; font-size: clamp(22px, 3vw, 31px); }
+.wanjia-status-panel p { margin: 0; color: var(--cc-text-muted); line-height: 1.65; }
+.wanjia-status-panel dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0; }
+.wanjia-status-panel dl div { padding: 10px 12px; border: 1px solid var(--cc-border); border-radius: 11px; background: rgba(255,255,255,.025); }
+.wanjia-status-panel dt, .wanjia-status-panel small { color: var(--cc-text-muted); font-size: 11px; }
+.wanjia-status-panel dd { margin: 5px 0 0; font-weight: 700; }
+.wanjia-status-panel > small { grid-column: 1 / -1; }
+.wanjia-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.wanjia-kpi-card { min-width: 0; min-height: 116px; padding: 15px; text-align: left; color: var(--cc-text); border: 1px solid var(--cc-border); border-radius: 14px; background: rgba(17,28,46,.96); cursor: pointer; transition: transform 120ms ease, border-color 160ms ease, box-shadow 160ms ease; }
+.wanjia-kpi-card:hover { transform: translateY(-2px); border-color: rgba(216,180,106,.48); box-shadow: 0 14px 30px rgba(0,0,0,.22); }
+.wanjia-kpi-card:active { transform: scale(.98); }
+.wanjia-kpi-card span, .wanjia-kpi-card small { display: block; color: var(--cc-text-muted); }
+.wanjia-kpi-card strong { display: block; margin: 12px 0 7px; font-size: clamp(20px, 3vw, 28px); }
+.wanjia-kpi-card[data-unavailable="true"] strong { color: var(--cc-accent-gold); font-size: 18px; }
+.wanjia-history-reference { padding: 13px 16px; color: var(--cc-text-muted); border-color: rgba(216,180,106,.3); }
+.wanjia-history-reference summary { color: var(--cc-accent-gold); cursor: pointer; }
+.wanjia-history-reference div { display: flex; flex-wrap: wrap; gap: 14px 28px; padding-top: 12px; }
+.wanjia-section { padding: 18px; }
+.wanjia-urgent-grid, .wanjia-opportunity-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.wanjia-urgent-card, .wanjia-opportunity-grid article { min-width: 0; padding: 15px; border: 1px solid var(--cc-border); border-radius: 13px; background: rgba(255,255,255,.025); }
+.wanjia-urgent-card[data-priority="P0"] { border-top: 3px solid var(--cc-risk); }
+.wanjia-urgent-card[data-priority="P1"] { border-top: 3px solid #f59e0b; }
+.wanjia-urgent-card[data-priority="P2"] { border-top: 3px solid #38bdf8; }
+.wanjia-urgent-card header, .wanjia-opportunity-grid article header, .wanjia-urgent-card footer, .wanjia-opportunity-grid footer { display: flex; align-items: center; gap: 9px; }
+.wanjia-urgent-card header h4 { flex: 1; margin: 0; }
+.wanjia-urgent-card header span, .wanjia-opportunity-grid article header span { padding: 3px 7px; border-radius: 999px; color: var(--cc-accent-gold); background: rgba(216,180,106,.11); font-size: 11px; }
+.wanjia-urgent-card header small { color: var(--cc-text-muted); }
+.wanjia-urgent-card > p { min-height: 38px; color: var(--cc-text-muted); }
+.wanjia-urgent-card dl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; }
+.wanjia-urgent-card dl div { padding: 8px; border-radius: 9px; background: rgba(0,0,0,.15); }
+.wanjia-urgent-card dt { color: var(--cc-text-muted); font-size: 10px; }
+.wanjia-urgent-card dd { margin: 4px 0 0; font-size: 12px; }
+.wanjia-suggestion { display: grid; gap: 4px; min-height: 56px; margin-bottom: 12px; }
+.wanjia-suggestion span { color: var(--cc-text-muted); line-height: 1.45; }
+.wanjia-urgent-card footer { flex-wrap: wrap; }
+.wanjia-filter-bar { display: grid; grid-template-columns: minmax(220px, 1.5fr) repeat(4, minmax(110px, .7fr)); gap: 8px; margin: 14px 0; }
+.wanjia-filter-bar input, .wanjia-filter-bar select { min-width: 0; min-height: 42px; padding: 8px 10px; border: 1px solid var(--cc-border); border-radius: 9px; background: #07101d; color: var(--cc-text); color-scheme: dark; }
+.wanjia-table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--cc-border); border-radius: 12px; }
+.wanjia-table-wrap table { width: 100%; min-width: 1180px; border-collapse: collapse; }
+.wanjia-table-wrap th, .wanjia-table-wrap td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--cc-border); font-size: 12px; vertical-align: top; }
+.wanjia-table-wrap th { position: sticky; top: 0; z-index: 2; color: var(--cc-text-muted); background: #0a1423; }
+.wanjia-table-wrap td small { display: block; margin-top: 4px; color: var(--cc-text-muted); }
+.wanjia-table-link { padding: 0; color: var(--cc-text); border: 0; background: none; font-weight: 700; cursor: pointer; }
+.wanjia-table-link:hover { color: var(--cc-accent-gold); }
+.wanjia-health { display: inline-block; padding: 3px 7px; border-radius: 999px; background: rgba(34,197,94,.12); color: var(--cc-success); }
+.wanjia-health[data-health="关注"] { color: #38bdf8; background: rgba(56,189,248,.12); }
+.wanjia-health[data-health="高风险"], .wanjia-health[data-health="数据待核验"] { color: #fb7185; background: rgba(251,113,133,.12); }
+.wanjia-opportunity-grid article p { display: grid; gap: 4px; color: var(--cc-text-muted); line-height: 1.5; }
+.wanjia-opportunity-grid article p b { color: var(--cc-text); }
+.wanjia-opportunity-grid footer { justify-content: space-between; }
+.wanjia-opportunity-grid footer span { color: var(--cc-text-muted); font-size: 11px; }
+.wanjia-empty { grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--cc-text-muted); border: 1px dashed var(--cc-border); border-radius: 12px; }
+.merchant-diagnostic { margin-top: 14px; padding: 18px; border: 1px solid rgba(216,180,106,.3); border-radius: 14px; background: rgba(216,180,106,.035); }
+.merchant-diagnostic header h3 { margin: 5px 0; }
+.merchant-diagnostic header p { color: var(--cc-text-muted); }
+.merchant-diagnostic dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.merchant-diagnostic dl div { padding: 12px; border: 1px solid var(--cc-border); border-radius: 10px; background: rgba(0,0,0,.12); }
+.merchant-diagnostic dt { color: var(--cc-accent-gold); font-weight: 700; }
+.merchant-diagnostic dd { margin: 7px 0 0; color: var(--cc-text-muted); line-height: 1.55; }
+.merchant-diagnostic ul { margin: 0; padding-left: 18px; }
+
+@media (max-width: 1180px) {
+  .wanjia-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wanjia-urgent-grid, .wanjia-opportunity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wanjia-filter-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .wanjia-filter-bar input { grid-column: span 2; }
+  .merchant-diagnostic dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .wanjia-status-panel { grid-template-columns: 1fr; padding: 15px; }
+  .wanjia-status-panel dl { grid-template-columns: 1fr 1fr; }
+  .wanjia-kpi-grid, .wanjia-urgent-grid, .wanjia-opportunity-grid, .merchant-diagnostic dl { grid-template-columns: 1fr; }
+  .wanjia-section { padding: 13px; }
+  .wanjia-filter-bar { grid-template-columns: 1fr 1fr; }
+  .wanjia-filter-bar input { grid-column: 1 / -1; }
+  .wanjia-filter-bar .v13-action { width: auto; }
+}

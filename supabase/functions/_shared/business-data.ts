@@ -56,6 +56,11 @@ function summarizeWanjia(records: FeishuRecord[]) {
   };
 }
 
+function latestWanjiaDataDate(records: FeishuRecord[]) {
+  return records.map((record) => sourceUpdatedAt(record, pick(record, '数据日期', '业务日期', '最近更新时间', '更新时间')))
+    .filter(Boolean).sort().at(-1)?.slice(0, 10) || null;
+}
+
 function summarizeHuahuo(projects: FeishuRecord[], deliveries: FeishuRecord[], receipts: FeishuRecord[]) {
   const contractAmount = roundMoney(sum(projects, '合同金额', '【预算】合同金额'));
   const receivedAmount = receipts
@@ -264,7 +269,16 @@ export async function readBusinessSources(requestedSource: BusinessSource = 'all
   const durationMs = Date.now() - startedAt;
   const health = (recordCount: number) => ({ recordCount, durationMs, lastSuccessAt: completedAt, safeCode: null });
   return {
-    wanjia: { summary: summarizeWanjia(merchants), records: buildWanjiaRecords(merchants), health: health(merchants.length), contractVersion: '1.3' },
+    wanjia: {
+      summary: summarizeWanjia(merchants), records: buildWanjiaRecords(merchants),
+      health: health(merchants.length), contractVersion: '1.4',
+      dataStatus: {
+        state: 'historical_snapshot', validation: 'not_applicable',
+        dataDate: latestWanjiaDataDate(merchants), lastSyncedAt: completedAt,
+        sourceLabel: '旧林客快照 / 历史月报',
+        sourceTables: ['01.04 商家管理（定时收集）'],
+      },
+    },
     huahuo: { summary: summarizeHuahuo(projects, deliveries, receipts), records: buildHuahuoRecords(projects), health: health(projects.length + deliveries.length + receipts.length), contractVersion: '1.3' },
     lingli: {
       summary: summarizeLingli({ leads, students, income, costs, lessons, classes }, { asOf: completedAt }),

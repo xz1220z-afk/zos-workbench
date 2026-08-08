@@ -16,6 +16,12 @@ function uniqueActions(actions) {
   });
 }
 
+function optionalNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
 export function searchMerchants(merchants = [], query = '') {
   const needle = normalized(query);
   if (!needle) return { state: 'empty_query', matches: [] };
@@ -59,13 +65,13 @@ export function buildMerchantProfile(merchant = {}, options = {}) {
     metrics: {
       isListed: merchant.isListed ?? null,
       isActive: merchant.isActive ?? null,
-      businessScore: Number(merchant.businessScore) || 0,
-      paymentGmv: Number(merchant.paymentGmv) || 0,
-      redeemedGmv: Number(merchant.redeemedGmv) || 0,
-      refundGmv: Number(merchant.refundGmv) || 0,
-      paymentCoupons: Number(merchant.paymentCoupons) || 0,
-      redeemedCoupons: Number(merchant.redeemedCoupons) || 0,
-      refundCoupons: Number(merchant.refundCoupons) || 0,
+      businessScore: optionalNumber(merchant.businessScore),
+      paymentGmv: optionalNumber(merchant.paymentGmv),
+      redeemedGmv: optionalNumber(merchant.redeemedGmv),
+      refundGmv: optionalNumber(merchant.refundGmv),
+      paymentCoupons: optionalNumber(merchant.paymentCoupons),
+      redeemedCoupons: optionalNumber(merchant.redeemedCoupons),
+      refundCoupons: optionalNumber(merchant.refundCoupons),
     },
     actions: bucketMerchantActions(actions, expectedLabels, options),
     evidence: {

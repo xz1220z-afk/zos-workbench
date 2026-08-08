@@ -66,6 +66,10 @@ assert.match(runtimeSource, /1254302/,
 assert.match(runtimeSource, /1254045/,
   'Function classifies missing or inaccessible Feishu field names safely');
 assert.match(runtimeSource, /wanjia/);
+assert.match(sharedBusiness, /state:\s*'historical_snapshot'/,
+  'The existing Wanjia source is explicitly historical until the daily tables are connected and validated');
+assert.match(sharedBusiness, /sourceTables:\s*\['01\.04 商家管理（定时收集）'\]/,
+  'The old Wanjia table is named as a historical source instead of an implicit realtime feed');
 assert.match(runtimeSource, /huahuo/);
 assert.match(runtimeSource, /开始时间|拍摄开始时间/,
   'Huahuo read contract requests a proven shooting start field alias');

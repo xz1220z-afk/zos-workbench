@@ -362,7 +362,50 @@ test('service worker caches the complete transitive browser module graph', async
     'src/app/auto-refresh-controller.mjs',
     'src/app/daily-digest.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.2\.0`/);
+  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.3\.0`/);
+});
+
+test('Wanjia operations keeps legacy numbers historical and opens only a merchant task draft', () => {
+  const document = renderDocument();
+  const app = createCeoOsApplication({
+    document,
+    now: () => '2026-08-08T09:00:00+08:00',
+    storage: { getItem: () => 'device-1', setItem() {} },
+    store: fakeStore(),
+  });
+  app.runtime.sources = {
+    wanjia: {
+      summary: { totalMerchants: 342, activeMerchants: 218, paymentGmv: 2882884 },
+      records: { records: [{
+        id: 'm1', merchantId: 'L-001', merchantName: '老街奶茶', owner: '阿林',
+        paymentGmv: 0, redeemedGmv: 0, dataDate: '2026-07-31', updatedAt: '2026-07-31T10:00:00Z',
+      }] },
+      fetchedAt: '2026-08-07T02:00:00Z',
+    },
+  };
+  const model = app.viewModel().wanjiaOps;
+  assert.equal(model.status.state, 'historical_snapshot');
+  assert.equal(model.kpis.every((item) => item.display === '待同步'), true);
+  assert.equal(model.merchants.length, 0, 'historical rows must not enter the current merchant work queue');
+  app.runtime.sources.wanjia = {
+    dataStatus: {
+      state: 'realtime_validated', dataDate: '2026-08-08', validation: 'passed',
+      lastSyncedAt: '2026-08-08T08:55:00+08:00', sourceTables: ['01.04.04｜林客每日汇总'],
+    },
+    summary: {
+      totalMerchants: 1, activeMerchants: 0, todayPaymentGmv: 0, todayRedeemedGmv: 0,
+      averageRedemptionRate: 0, exceptionMerchants: 1, pendingExceptions: 1, completedTasksToday: 0,
+    },
+    records: { records: [{
+      id: 'm1', merchantId: 'L-001', merchantName: '老街奶茶', owner: '阿林',
+      paymentGmv: 0, redeemedGmv: 0, dataDate: '2026-08-08', updatedAt: '2026-08-08T08:55:00+08:00',
+    }] },
+  };
+  const draft = app.openWanjiaTaskDraft('m1');
+  assert.equal(draft.company, 'wanjia');
+  assert.equal(draft.businessEntityId, 'm1');
+  assert.match(draft.description, /仅为草案，不会自动派单或写回飞书/);
+  assert.equal(app.store.load().collections.tasks.length, 0, 'opening a draft must not persist or dispatch it');
 });
 
 test('the shell captures raw pre-upgrade state before either application module can migrate it', async () => {
@@ -370,8 +413,8 @@ test('the shell captures raw pre-upgrade state before either application module 
   const html = await readFile(new URL('index.html', root), 'utf8');
   const capture = html.indexOf('window.__ZOS_PRE_UPGRADE_RAW__');
   assert.ok(capture >= 0);
-  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.2.0'));
-  assert.ok(capture < html.indexOf('src/app.mjs?v=2.2.0'));
+  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.3.0'));
+  assert.ok(capture < html.indexOf('src/app.mjs?v=2.3.0'));
 });
 
 test('enabled closed-app reminders synchronize current tasks calendar deadlines and daily digests', async () => {
