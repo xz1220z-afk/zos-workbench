@@ -11,10 +11,10 @@ test('v2 release cache includes the complete content-growth module graph', async
     readFile(new URL('src/app.mjs', root), 'utf8'),
     readFile(new URL('index.html', root), 'utf8'),
   ]);
-  assert.match(sw, /zos-workbench-v2\.4\.0/);
-  assert.equal(manifest.version, '2.4.0');
-  assert.match(app, /APP_VERSION\s*=\s*'2\.4\.0'/);
-  assert.match(html, /\?v=2\.4\.0/);
+  assert.match(sw, /zos-workbench-v2\.5\.0/);
+  assert.equal(manifest.version, '2.5.0');
+  assert.match(app, /APP_VERSION\s*=\s*'2\.5\.0'/);
+  assert.match(html, /\?v=2\.5\.0/);
   for (const asset of [
     'src/app/content-growth.mjs', 'src/app/knowledge-workspace.mjs',
     'src/app/social-insight-center.mjs', 'src/app/agent-workbench.mjs',

@@ -1,3 +1,5 @@
+project_id = "dtwvyramgbwtlyhmkhkd"
+
 [functions.zos-business-data]
 # This endpoint only returns read-only business summaries to authenticated users.
 verify_jwt = true
@@ -24,6 +26,14 @@ verify_jwt = true
 
 [functions.zos-calendar-data]
 # Reads an optional server-side ICS feed and returns only event metadata to authenticated users.
+verify_jwt = true
+
+[functions.zos-ai-assistant]
+# OpenAI is called server-side only after an authenticated user explicitly asks a question.
+verify_jwt = true
+
+[functions.zos-knowledge-context]
+# Stores only user-authorized, short excerpt indexes; never a Vault mirror.
 verify_jwt = true
 
 [functions.zos-business-refresh]

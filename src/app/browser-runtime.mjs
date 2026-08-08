@@ -1,11 +1,12 @@
-import { fetchBusinessData, fetchWanjiaSchema } from '../business-data-client.mjs?v=2.4.0';
-import { createSupabaseAuth } from '../supabase-auth.mjs?v=2.4.0';
-import { createSupabaseTransport } from '../supabase-transport.mjs?v=2.4.0';
-import { createFeishuApprovalClient } from './feishu-approvals.mjs?v=2.4.0';
-import { createOperatingLoop } from './operating-loop.mjs?v=2.4.0';
-import { createSyncController } from './sync-controller.mjs?v=2.4.0';
-import { createPushClient } from './push-notifications.mjs?v=2.4.0';
-import { buildLocalSyncInput, LOCAL_ONLY_ENTITY_TYPES } from '../sync-engine.mjs?v=2.4.0';
+import { fetchBusinessData, fetchWanjiaSchema } from '../business-data-client.mjs?v=2.5.0';
+import { createSupabaseAuth } from '../supabase-auth.mjs?v=2.5.0';
+import { createSupabaseTransport } from '../supabase-transport.mjs?v=2.5.0';
+import { createFeishuApprovalClient } from './feishu-approvals.mjs?v=2.5.0';
+import { createOperatingLoop } from './operating-loop.mjs?v=2.5.0';
+import { createSyncController } from './sync-controller.mjs?v=2.5.0';
+import { createPushClient } from './push-notifications.mjs?v=2.5.0';
+import { createAiAssistantClient } from './ai-assistant-client.mjs?v=2.5.0';
+import { buildLocalSyncInput, LOCAL_ONLY_ENTITY_TYPES } from '../sync-engine.mjs?v=2.5.0';
 
 const DEFAULT_CONFIG = Object.freeze({
   url: 'https://dtwvyramgbwtlyhmkhkd.supabase.co',
@@ -72,6 +73,24 @@ async function loadExternalCalendar(fetchImpl, config, token, { start, end } = {
     fetchedAt: payload.fetchedAt || null,
     range: payload.range || null,
   };
+}
+
+async function loadKnowledgeContextStatus(fetchImpl, config, token) {
+  const endpoint = new URL('/functions/v1/zos-knowledge-context', `${config.url.replace(/\/$/, '')}/`);
+  const response = await fetchImpl(endpoint, { headers: { apikey: config.anonKey, Authorization: `Bearer ${token}` } });
+  if (!response.ok) throw new Error('knowledge_context_status_failed');
+  return response.json();
+}
+
+async function saveKnowledgeContext(fetchImpl, config, token, index) {
+  const endpoint = new URL('/functions/v1/zos-knowledge-context', `${config.url.replace(/\/$/, '')}/`);
+  const response = await fetchImpl(endpoint, {
+    method: 'POST', headers: { apikey: config.anonKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(index),
+  });
+  let payload = {};
+  try { payload = await response.json(); } catch { /* Safe generic error below. */ }
+  if (!response.ok) throw new Error(payload?.error || 'knowledge_context_write_failed');
+  return payload;
 }
 
 export async function createBrowserOperatingRuntime({
@@ -149,6 +168,9 @@ export async function createBrowserOperatingRuntime({
     pushClient: createPushClient({ ...config, accessToken: session.accessToken, fetchImpl }),
     loadIntelligence: (options) => loadIntelligenceRows(fetchImpl, config, session.accessToken, options),
     loadExternalCalendar: (options) => loadExternalCalendar(fetchImpl, config, session.accessToken, options),
+    loadKnowledgeContextStatus: () => loadKnowledgeContextStatus(fetchImpl, config, session.accessToken),
+    saveKnowledgeContext: (index) => saveKnowledgeContext(fetchImpl, config, session.accessToken, index),
+    aiAssistant: createAiAssistantClient({ ...config, getAccessToken, fetchImpl }),
     diagnoseWanjiaSchema: () => fetchWanjiaSchema({ ...config, accessToken: session.accessToken, fetchImpl }),
   };
 }

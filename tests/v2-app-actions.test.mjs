@@ -60,6 +60,23 @@ test('Agent OS invocation prepares the existing task input without claiming exec
   assert.equal(app.viewModel().agentRuns.length, 0);
 });
 
+test('Agent OS direct analysis sends a bounded identity context and never creates an execution record', async () => {
+  const requests = [];
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} }, storage: memoryStorage(), createOperatingRuntime: false,
+    askAi: async (request) => { requests.push(request); return { answer: '建议先核验 P0 商家数据。', sources: [] }; },
+  });
+  app.importAgentOsIndexText(JSON.stringify(agentOsIndex));
+  const result = await app.analyzeAgent('WANJIA-001', '分析今天优先风险');
+  assert.equal(result.state, 'answered');
+  assert.equal(result.answer, '建议先核验 P0 商家数据。');
+  assert.equal(requests[0].mode, 'agent');
+  assert.equal(requests[0].agent.agentId, 'WANJIA-001');
+  assert.equal(app.viewModel().agentRuns.length, 0);
+  app.setAgentOsFilter('private-relations');
+  await assert.rejects(() => app.analyzeAgent('REL-001', '提醒我'), /private_agent_local_only/);
+});
+
 test('Agent invocation saves only a minimal cloud reference while REL-001 stays local-only', () => {
   const app = application();
   app.importAgentOsIndexText(JSON.stringify(agentOsIndex));

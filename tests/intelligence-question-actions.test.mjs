@@ -7,10 +7,12 @@ function memoryStorage() {
   return { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
 }
 
-test('contextual intelligence questions stay runtime-only and preserve the intelligence record', () => {
+test('contextual intelligence questions use the injected assistant and preserve the intelligence record', async () => {
+  const requests = [];
   const app = createCeoOsApplication({
     document: { getElementById: () => null, addEventListener() {} }, storage: memoryStorage(),
     now: () => '2026-08-08T08:00:00.000Z', createOperatingRuntime: false,
+    askAi: async (request) => { requests.push(request); return { state: 'answered', answer: 'Astra 是待评估模型。', sources: [] }; },
   });
   const item = app.store.saveEntity('intelligence', {
     id: 'intelligence:astra', externalId: 'astra', title: 'Astra 延期', sourceName: '行业媒体',
@@ -19,8 +21,10 @@ test('contextual intelligence questions stay runtime-only and preserve the intel
   });
   const before = structuredClone(app.store.load().collections.intelligence);
   app.openIntelligenceQuestion('astra');
-  const answer = app.askIntelligenceQuestion('astra', 'Astra 是什么？');
+  const answer = await app.askIntelligenceQuestion('astra', 'Astra 是什么？');
   assert.equal(answer.state, 'answered');
+  assert.equal(answer.directAnswer, 'Astra 是待评估模型。');
+  assert.equal(requests[0].mode, 'intelligence');
   assert.equal(app.runtime.intelligenceQuestion.question, 'Astra 是什么？');
   assert.deepEqual(app.store.load().collections.intelligence, before);
   assert.equal(app.store.load().collections.intelligence[0].id, item.id);

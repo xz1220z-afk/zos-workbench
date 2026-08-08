@@ -31,7 +31,7 @@ test('question drawer keeps selected context, input, answer boundary and source 
   assert.match(container.innerHTML, /class="intelligence-question-drawer"/);
   assert.match(container.innerHTML, /data-intelligence-question-form/);
   assert.match(container.innerHTML, /data-intelligence-question/);
-  assert.match(container.innerHTML, /基于当前卡片与已载入情报/);
+  assert.match(container.innerHTML, /OPENAI · 只读分析/);
   assert.match(container.innerHTML, /现有证据没有给出 Astra/);
   assert.match(container.innerHTML, /href="https:\/\/example\.com\/astra"/);
   assert.match(container.innerHTML, /data-intelligence-question-close/);

@@ -1,5 +1,5 @@
-import { pageIdFromHash } from './app/router.mjs?v=2.4.0';
-import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAGES } from './app/navigation-preferences.mjs?v=2.4.0';
+import { pageIdFromHash } from './app/router.mjs?v=2.5.0';
+import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAGES } from './app/navigation-preferences.mjs?v=2.5.0';
 
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
@@ -125,7 +125,7 @@ import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAG
 (function() {
   'use strict';
 
-  const APP_VERSION = '2.4.0';
+  const APP_VERSION = '2.5.0';
   const PUBLIC_APP_URL = new URL('.', window.location.href).href;
   const APP_RELEASE_DATE = '2026-08-08';
 

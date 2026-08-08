@@ -1,5 +1,5 @@
-import { AGENT_OS_CATEGORIES } from '../agent-os-center.mjs?v=2.4.0';
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.4.0';
+import { AGENT_OS_CATEGORIES } from '../agent-os-center.mjs?v=2.5.0';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.5.0';
 
 const FILTERS = Object.freeze([
   ['all', '全部可见'], ['shared', '总控与共享中台'], ['wanjia', '万嘉网络'],
@@ -20,7 +20,7 @@ function agentCard(agent) {
       <h3>${escapeHtml(agent.name || agent.agentId)}</h3><code>${escapeHtml(agent.agentId)}</code><p>${escapeHtml(mission)}</p>
       <div class="agent-card-meta"><span data-agent-status="${escapeHtml(agent.status)}">${escapeHtml(STATUS_LABEL[agent.status] || agent.status)}</span><span>${Number(agent.skillIds?.length) || 0} Skills</span><span>${escapeHtml(String(agent.updatedAt || '待更新').slice(0, 10))}</span><span>${escapeHtml(pilot)}</span></div>
     </div>
-    <div class="agent-card-actions"><button class="v13-action" data-agent-details="${escapeHtml(agent.agentId)}">查看详情</button><button class="v13-action v13-action-primary" data-agent-invoke="${escapeHtml(agent.agentId)}">立即调用</button></div>
+    <div class="agent-card-actions"><button class="v13-action" data-agent-details="${escapeHtml(agent.agentId)}">查看详情</button><button class="v13-action v13-action-primary" data-agent-analyze="${escapeHtml(agent.agentId)}">直接分析</button><button class="v13-action" data-agent-invoke="${escapeHtml(agent.agentId)}">任务草稿</button></div>
   </article>`;
 }
 
@@ -49,11 +49,12 @@ function detailsList(items, idKey) {
   return items.slice(0, 12).map((item) => `<span>${escapeHtml(item.name || item[idKey] || '未命名')}</span>`).join('');
 }
 
-function detailsDrawer(detail, reminderDrafts = []) {
+function detailsDrawer(detail, reminderDrafts = [], analysis = null) {
   if (!detail) return '';
   const sections = detail.sections || {};
   const invocation = `请以 ${detail.name || detail.agentId}（${detail.agentId}）身份进行只读分析或起草。先区分事实、推断、建议、待确认，再给出下一步；不得自动写入、外发或执行。`;
   const relation = detail.agentId === 'REL-001' ? `<section class="agent-private-policy"><h4>私密关系 · 本地提醒草稿</h4><p>只使用明确提供的重要日期、已确认偏好、承诺、待关心事项和有效沟通方式；不读取私密聊天全文、性隐私、定位账号密码、猜测、私人财务或医疗细节。</p><div>${reminderDrafts.map((item) => `<span>${escapeHtml(item.title)}<small>本地草稿 · 不自动发送</small></span>`).join('')}</div></section>` : '';
+  const directAnalysis = detail.agentId === 'REL-001' ? '' : `<section class="agent-direct-analysis"><div><span class="growth-kicker">OPENAI · READ ONLY</span><h4>直接调用 ${escapeHtml(detail.name || detail.agentId)}</h4><p>仅输出分析和草稿，不会写 Vault、飞书、日历或外发消息。</p></div><form data-agent-analysis-form="${escapeHtml(detail.agentId)}"><input name="question" value="${escapeHtml(analysis?.agentId === detail.agentId ? analysis.question || '' : '')}" placeholder="输入具体任务，例如：分析本周万嘉商家风险" required><button class="v13-action v13-action-primary" type="submit" ${analysis?.state === 'loading' ? 'disabled' : ''}>${analysis?.state === 'loading' ? '分析中…' : '开始分析'}</button></form>${analysis?.agentId === detail.agentId && analysis.answer ? `<div class="agent-direct-result" data-state="${escapeHtml(analysis.state)}"><strong>${analysis.state === 'answered' ? '分析结果' : '当前状态'}</strong><p>${escapeHtml(analysis.answer)}</p>${analysis.knowledgeState ? `<small>知识依据：${escapeHtml(analysis.knowledgeState === 'matched_approved_excerpt' ? '已匹配你授权的知识摘要' : '未匹配授权摘要，仅作通用分析')}</small>` : ''}</div>` : ''}</section>`;
   return `<aside class="agent-detail-drawer" role="dialog" aria-modal="true" aria-labelledby="agentDetailTitle">
     <header><div><span class="growth-kicker">AGENT IDENTITY</span><h2 id="agentDetailTitle">${escapeHtml(detail.name || detail.agentId)}</h2><code>${escapeHtml(detail.agentId)}</code></div><button data-agent-details-close aria-label="关闭">×</button></header>
     <div class="agent-detail-grid">
@@ -66,9 +67,9 @@ function detailsDrawer(detail, reminderDrafts = []) {
       <section><h4>关联 Workflow</h4><div class="agent-detail-chips">${detailsList(detail.workflows, 'workflowId')}</div></section>
       <section><h4>知识入口</h4><div class="agent-detail-chips">${detail.knowledgeEntries?.length ? detail.knowledgeEntries.slice(0, 12).map((item) => `<span>${escapeHtml(item)}</span>`).join('') : '<span class="agent-detail-empty">执行时按身份卡路径按需读取</span>'}</div></section>
       <section><h4>评估 / 日志 / Runbook</h4><p>${detail.evaluations?.length || 0} 评估 · ${detail.logs?.length || 0} 日志 · ${detail.runbooks?.length || 0} 调用卡</p></section>
-    </div>${relation}
+    </div>${relation}${directAnalysis}
     <section class="agent-invocation-example"><h4>可复制的调用示例</h4><p>${escapeHtml(invocation)}</p></section>
-    <footer><button class="v13-action" data-agent-details-close>关闭</button><button class="v13-action v13-action-primary" data-agent-invoke="${escapeHtml(detail.agentId)}">带入任务草稿</button></footer>
+    <footer><button class="v13-action" data-agent-details-close>关闭</button>${detail.agentId === 'REL-001' ? '' : `<button class="v13-action" data-agent-analyze="${escapeHtml(detail.agentId)}">直接分析</button>`}<button class="v13-action v13-action-primary" data-agent-invoke="${escapeHtml(detail.agentId)}">带入任务草稿</button></footer>
   </aside><div class="agent-detail-backdrop" data-agent-details-close></div>`;
 }
 
@@ -78,12 +79,14 @@ export function render(container, viewModel = {}) {
   const hasIndex = Boolean(viewModel.agentOsIndex);
   const agents = viewModel.agentOsAgents || [];
   const sourceMessage = viewModel.agentOsImportMessage || '工作台只保存身份卡路径、哈希、更新时间与关联关系，不复制 Vault 正文。';
-  container.innerHTML = `<section class="agent-hero"><div><span class="growth-kicker">AGENT OS · CONTROLLED INVOCATION</span><h2>Agent OS 管理与调用中心</h2><p>沿用现有 Agent 工作台和任务入口，动态读取 Agent 身份卡。默认只做扫描、索引、展示、分析与草稿；所有写入和外部动作继续等待确认。</p></div><div class="agent-boundary"><span>默认能力</span><strong>只读分析与草稿</strong><small>不修改 Vault · 不写飞书 · 不自动外发</small><button class="v13-action" data-agent-index-import>导入最新只读索引</button></div></section>
+  const knowledge = viewModel.knowledgeContext || { state: 'unknown', count: 0 };
+  const knowledgeLabel = knowledge.state === 'ready' ? `已授权 ${Number(knowledge.count) || 0} 条知识摘要` : knowledge.state === 'uploading' ? '知识摘要导入中…' : '未导入知识摘要';
+  container.innerHTML = `<section class="agent-hero"><div><span class="growth-kicker">AGENT OS · CONTROLLED INVOCATION</span><h2>Agent OS 管理与调用中心</h2><p>沿用现有 Agent 工作台和任务入口，动态读取 Agent 身份卡。默认只做扫描、索引、展示、分析与草稿；所有写入和外部动作继续等待确认。</p></div><div class="agent-boundary"><span>默认能力</span><strong>只读分析与草稿</strong><small>不修改 Vault · 不写飞书 · 不自动外发</small><button class="v13-action" data-agent-index-import>导入最新只读索引</button><button class="v13-action" data-knowledge-context-import ${knowledge.state === 'uploading' ? 'disabled' : ''}>${escapeHtml(knowledgeLabel)}</button></div></section>
   ${patrolPanel(viewModel)}
   <div class="agent-os-source" data-state="${escapeHtml(viewModel.agentOsImportState || 'idle')}"><span>${escapeHtml(sourceMessage)}</span><small>${hasIndex ? `仅本机保存 · 索引生成：${escapeHtml(String(viewModel.agentOsIndex.generatedAt || '').replace('T', ' ').slice(0, 16))}` : '正式网页受浏览器权限限制，请手动导入本机索引；不会上传云端。'}</small></div>
   <nav class="agent-os-filters" aria-label="Agent 分类">${FILTERS.map(([value, label]) => `<button class="v13-action ${viewModel.agentOsFilter === value ? 'active' : ''}" data-agent-os-filter="${value}">${label}</button>`).join('')}</nav>
   <div class="agent-summary agent-os-summary"><span><b>${Number(viewModel.agentOsOverview?.summary?.total) || 0}</b>动态发现</span><span><b>${Number(summary.total) || 0}</b>历史执行记录</span><span><b>${Number(summary.awaitingApproval) || 0}</b>待审核</span><span><b>${Number(summary.completed) || 0}</b>已完成</span></div>
   <div class="agent-catalog">${hasIndex ? (agents.map(agentCard).join('') || renderState('empty', '该分类暂无 Agent')) : `<div class="agent-os-empty">${renderState('empty', 'Agent OS 索引')}<p>请导入扫描器生成的 JSON 索引；原有执行记录不会丢失。</p><button class="v13-action v13-action-primary" data-agent-index-import>选择索引文件</button></div>`}</div>
   <article class="agent-runs"><header><div><span class="growth-kicker">RUN HISTORY</span><h3>执行记录与审批链</h3></div><small>保留原功能；输入引用与结果摘要均可回查</small></header>${runRows(viewModel.agentRuns || [])}</article>
-  ${detailsDrawer(viewModel.agentOsDetails, viewModel.relationReminderDrafts)}`;
+  ${detailsDrawer(viewModel.agentOsDetails, viewModel.relationReminderDrafts, viewModel.agentAnalysis)}`;
 }

@@ -1,5 +1,5 @@
-import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.4.0';
-import { isSensitiveFieldName } from '../sensitive-fields.mjs?v=2.4.0';
+import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.5.0';
+import { isSensitiveFieldName } from '../sensitive-fields.mjs?v=2.5.0';
 
 export { VIEW_STATES };
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  buildAgentOsOverview, buildAgentInvocationDraft, buildRelationReminderDrafts,
+  buildAgentAnalysisRequest, buildAgentOsOverview, buildAgentInvocationDraft, buildRelationReminderDrafts,
   compareAgentOsIndexes, visibleAgents,
 } from '../src/app/agent-os-center.mjs';
 
@@ -94,6 +94,14 @@ test('invocation opens an existing task draft and never claims execution', () =>
   assert.match(draft.description, /待确认/);
   assert.match(draft.description, /仅输出经营摘要/);
   assert.equal(JSON.stringify(draft).includes('execute'), false);
+});
+
+test('direct agent analysis is bounded to non-private identity metadata', () => {
+  const request = buildAgentAnalysisRequest(index.agents[1], '列出今天应先处理的商家风险');
+  assert.equal(request.mode, 'agent');
+  assert.equal(request.agent.agentId, 'WANJIA-001');
+  assert.equal(request.agent.confidentiality, 'internal');
+  assert.throws(() => buildAgentAnalysisRequest(index.agents.at(-1), '给我提醒'), /private_agent_local_only/);
 });
 
 test('relation reminders are local drafts and contain no external action', () => {

@@ -151,6 +151,25 @@ export function buildAgentInvocationDraft(agent = {}, options = {}) {
   };
 }
 
+export function buildAgentAnalysisRequest(agent = {}, question) {
+  const normalizedAgent = enrich(agent);
+  const asked = String(question || '').trim();
+  if (!asked) throw new Error('agent_question_required');
+  if (isPrivateAgent(normalizedAgent)) throw new Error('private_agent_local_only');
+  return {
+    mode: 'agent', question: asked,
+    agent: {
+      agentId: normalizedAgent.agentId, name: normalizedAgent.name || normalizedAgent.agentId,
+      status: normalizedAgent.status, category: normalizedAgent.category,
+      mission: normalizedAgent.sections?.mission || '', scopeIn: normalizedAgent.sections?.scopeIn || normalizedAgent.sections?.allowedActions || '',
+      scopeOut: normalizedAgent.sections?.scopeOut || normalizedAgent.sections?.forbiddenActions || '',
+      skillIds: normalizedAgent.skillIds || [], knowledgeEntries: normalizedAgent.knowledgeEntries || [],
+      outputContract: normalizedAgent.sections?.outputContract || '事实、推断、建议、待确认、下一步。',
+      confidentiality: normalizedAgent.confidentiality,
+    },
+  };
+}
+
 export function buildRelationReminderDrafts(options = {}) {
   const createdAt = options.now || new Date().toISOString();
   return [

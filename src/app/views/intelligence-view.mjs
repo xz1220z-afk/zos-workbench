@@ -1,4 +1,4 @@
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.4.0';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.5.0';
 
 const COMPANY_LABELS = { wanjia: '万嘉', huahuo: '花火', lingli: '玲丽', ceo: 'CEO' };
 const SOURCE_LABELS = {
@@ -67,22 +67,23 @@ function questionDrawer(viewModel, allItems) {
   const facts = (answer?.knownFacts || []).map((fact) => `<li>${escapeHtml(fact)}</li>`).join('');
   const related = (answer?.relatedEvidence || []).map((item) => `<li><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.factSummary)}</span></li>`).join('');
   const sources = (answer?.sources || []).map((source) => sourceLink(source.url, source.name)).join('');
+  const sourceRefs = (answer?.sources || []).map((source) => source.sourceRef ? `<span class="v13-chip">${escapeHtml(source.title || source.sourceRef)}</span>` : sourceLink(source.url, source.name)).join('');
   const answerMarkup = answer ? `<section class="intelligence-question-answer" data-answer-state="${escapeHtml(answer.state)}">
-      <span class="v13-eyebrow">基于当前卡片与已载入情报</span>
-      <h3>${answer.state === 'insufficient' ? '现有证据不足' : '当前可确认'}</h3>
+      <span class="v13-eyebrow">${answer.localFallback ? '本机证据预览' : 'OPENAI · 只读分析'}</span>
+      <h3>${answer.state === 'loading' ? '正在分析' : answer.state === 'error' ? '本轮未完成' : answer.state === 'insufficient' ? '现有证据不足' : '当前解答'}</h3>
       <p class="intelligence-direct-answer">${escapeHtml(answer.directAnswer)}</p>
       ${facts ? `<div><strong>已知事实</strong><ul>${facts}</ul></div>` : ''}
       ${related ? `<div><strong>相关情报证据</strong><ul class="intelligence-related-evidence">${related}</ul></div>` : ''}
       <div class="intelligence-answer-boundary"><strong>仍待确认</strong><p>${escapeHtml(answer.uncertainty)}</p></div>
       <div><strong>建议下一步</strong><p>${escapeHtml(answer.nextStep)}</p></div>
-      ${sources ? `<div class="intelligence-answer-sources">${sources}</div>` : ''}
+      ${sources || sourceRefs ? `<div class="intelligence-answer-sources">${sources}${sourceRefs}</div>` : ''}
     </section>` : `<div class="intelligence-question-prompt"><strong>你可以直接问</strong><p>例如：“Astra 是什么？”、“为什么延期？”或“这件事对万嘉有什么影响？”</p></div>`;
   return `<aside class="intelligence-question-drawer" role="dialog" aria-modal="true" aria-labelledby="intelligenceQuestionTitle">
     <header><div><span class="v13-eyebrow">ASK THIS INTELLIGENCE</span><h2 id="intelligenceQuestionTitle">问这条情报</h2></div><button class="v13-icon-action" data-intelligence-question-close aria-label="关闭">×</button></header>
     <section class="intelligence-question-context"><span>${escapeHtml(selected.sourceName)}</span><h3>${escapeHtml(selected.title)}</h3><p>${escapeHtml(selected.factSummary)}</p></section>
     <form data-intelligence-question-form><label for="intelligenceQuestionInput">你想弄懂什么？</label><div><input id="intelligenceQuestionInput" data-intelligence-question name="question" value="${escapeHtml(context.question || '')}" placeholder="输入概念或问题，例如：Astra 模型是什么？" autocomplete="off" required><button class="v13-action v13-action-primary" type="submit">回答</button></div></form>
     ${answerMarkup}
-    <footer><small>答案只使用当前卡片和工作台已载入的相关情报，不上传你的问题，不替代原始来源。</small>${sourceLink(selected.sourceUrl)}</footer>
+    <footer><small>AI 只收到当前情报卡、你的问题和你明确授权的知识摘要；不会读取整库正文，也不会执行外部动作。</small>${sourceLink(selected.sourceUrl)}</footer>
   </aside><div class="task-drawer-backdrop" data-intelligence-question-close></div>`;
 }
 

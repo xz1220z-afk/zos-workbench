@@ -1,5 +1,5 @@
-import { calendarVisibleRange } from './calendar-range.mjs?v=2.4.0';
-import { expandRecurringEvents } from './calendar-recurrence.mjs?v=2.4.0';
+import { calendarVisibleRange } from './calendar-range.mjs?v=2.5.0';
+import { expandRecurringEvents } from './calendar-recurrence.mjs?v=2.5.0';
 
 function iso(value) {
   if (!value) return null;
@@ -81,7 +81,7 @@ export function buildCalendar({
 }
 
 export function calendarLayout(events = [], options = {}) {
-  const view = ['day', 'week', 'month', 'list'].includes(options.view) ? options.view : 'week';
+  const view = ['day', 'week', 'month', 'list'].includes(options.view) ? options.view : 'month';
   const timeZone = options.timeZone || 'Asia/Shanghai';
   const anchor = dateKey(options.anchor || Date.now(), timeZone);
   const range = calendarVisibleRange({ view, anchor, timeZone });

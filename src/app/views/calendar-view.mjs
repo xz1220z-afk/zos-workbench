@@ -1,6 +1,6 @@
-import { calendarLayout } from '../calendar-center.mjs?v=2.4.0';
-import { calendarEventCapabilities } from '../calendar-event.mjs?v=2.4.0';
-import { escapeHtml } from './view-utils.mjs?v=2.4.0';
+import { calendarLayout } from '../calendar-center.mjs?v=2.5.0';
+import { calendarEventCapabilities } from '../calendar-event.mjs?v=2.5.0';
+import { escapeHtml } from './view-utils.mjs?v=2.5.0';
 
 const COMPANY_LABELS = { wanjia: '万嘉', huahuo: '花火', lingli: '玲丽', life: '个人', ceo: 'CEO' };
 const SOURCE_LABELS = {
@@ -180,7 +180,7 @@ function renderCalendarPanel(viewModel) {
 export function renderCalendarHtml(viewModel = {}) {
   const events = viewModel.calendarFiltered || viewModel.calendar || [];
   const conflicts = viewModel.calendarConflicts || [];
-  const currentView = viewModel.calendarView || 'week';
+  const currentView = viewModel.calendarView || 'month';
   const externalCalendarState = viewModel.externalCalendarState || 'pending_configuration';
   const layout = viewModel.calendarLayout || calendarLayout(events, {
     view: currentView,

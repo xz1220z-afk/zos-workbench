@@ -20,7 +20,9 @@ test('Agent OS view keeps execution history and adds dynamic overview, filters a
   assert.match(node.innerHTML, /总控与共享中台/);
   assert.match(node.innerHTML, /我的生活/);
   assert.match(node.innerHTML, /data-agent-index-import/);
+  assert.match(node.innerHTML, /data-knowledge-context-import/);
   assert.match(node.innerHTML, /data-agent-details="WANJIA-001"/);
+  assert.match(node.innerHTML, /data-agent-analyze="WANJIA-001"/);
   assert.match(node.innerHTML, /data-agent-invoke="WANJIA-001"/);
   assert.match(node.innerHTML, /Pilot 待复核/);
   assert.match(node.innerHTML, /执行记录与审批链/);

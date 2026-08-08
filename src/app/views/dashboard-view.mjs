@@ -1,6 +1,6 @@
-import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.4.0';
-import { formatCurrency, humanText } from '../value-utils.mjs?v=2.4.0';
-import { partitionDecisions } from '../decision-center.mjs?v=2.4.0';
+import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.5.0';
+import { formatCurrency, humanText } from '../value-utils.mjs?v=2.5.0';
+import { partitionDecisions } from '../decision-center.mjs?v=2.5.0';
 
 export { VIEW_STATES };
 
@@ -61,6 +61,11 @@ function syncRail(autoRefresh = {}) {
   </section>`;
 }
 
+function weatherSummary(weather = {}) {
+  if (weather.state === 'ready') return `<aside class="v15-weather" aria-label="今日天气"><span>☀</span><div><strong>${escapeHtml(weather.location?.name || '天气')} · ${escapeHtml(weather.summary || '待确认')}</strong><small>${escapeHtml(`${weather.temperatureC ?? '—'}°C`)}${weather.apparentTemperatureC != null ? ` · 体感 ${escapeHtml(`${weather.apparentTemperatureC}°C`)}` : ''}</small></div></aside>`;
+  return `<aside class="v15-weather is-pending" aria-label="今日天气"><span>☀</span><div><strong>天气${weather.state === 'loading' ? '读取中' : '暂不可用'}</strong><small>不读取设备定位</small></div></aside>`;
+}
+
 export function render(container, viewModel = {}) {
   if (!container) return;
   const state = viewModel.state;
@@ -76,7 +81,7 @@ export function render(container, viewModel = {}) {
   const workDates = viewModel.importantDates?.work || [];
   container.innerHTML = `<div class="v14-dashboard">
     ${syncRail(viewModel.autoRefresh)}
-    <section class="v14-hero"><div><span class="v14-kicker">CEO COMMAND CENTER · ${escapeHtml(viewModel.today || '')}</span><h2>今天，先处理最重要的事</h2><p>事实来自飞书与 Supabase；AI 只做建议，所有正式写入须确认。</p><div class="v14-hero-actions"><button class="v13-action v13-action-primary" data-quick-capture>＋ 快速收集</button><details class="v14-quick-menu"><summary>更多操作</summary><div><button class="v13-action" data-agent-draft="ceo">生成 CEO 建议</button><button class="v13-action" data-page="tasks">新建任务</button><button class="v13-action" data-page="enterprise">查看项目</button></div></details></div></div><blockquote>战略决定方向，<br>系统决定效率，<br>执行决定结果。</blockquote></section>
+    <section class="v14-hero"><div><span class="v14-kicker">CEO COMMAND CENTER · ${escapeHtml(viewModel.today || '')}</span><h2>今天，先处理最重要的事</h2><p>事实来自飞书与 Supabase；AI 只做建议，所有正式写入须确认。</p><div class="v14-hero-actions"><button class="v13-action v13-action-primary" data-quick-capture>＋ 快速收集</button><details class="v14-quick-menu"><summary>更多操作</summary><div><button class="v13-action" data-agent-draft="ceo">生成 CEO 建议</button><button class="v13-action" data-page="tasks">新建任务</button><button class="v13-action" data-page="enterprise">查看项目</button></div></details></div></div><div class="v14-hero-aside">${weatherSummary(viewModel.weather)}<blockquote>战略决定方向，<br>系统决定效率，<br>执行决定结果。</blockquote></div></section>
     <div class="v14-kpi-grid">
       <article><span>待我决策</span><strong>${displayValue(activeDecisions.length)}</strong><small>需本人判断</small></article>
       <article><span>目标差距</span><strong>${displayValue(viewModel.gaps?.length)}</strong><small>仅确认目标</small></article>
