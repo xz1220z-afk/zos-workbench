@@ -12,7 +12,7 @@ test('dashboard uses one quiet source summary with expandable details', () => {
 });
 
 test('dashboard hero has one dominant action and secondary content is grouped', () => {
-  const hero = view.match(/<section class="v14-hero">([\s\S]*?)<\/section>/)?.[1] || '';
+  const hero = view.match(/<section class="v14-hero[^\"]*"[^>]*>([\s\S]*?)<\/section>/)?.[1] || '';
   assert.equal((hero.match(/v13-action-primary/g) || []).length, 1);
   assert.match(hero, /v14-quick-menu/);
   assert.match(view, /class="v14-secondary-region"/);

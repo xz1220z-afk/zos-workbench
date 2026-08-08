@@ -81,7 +81,7 @@ export async function fetchBusinessData({ url, anonKey, accessToken, source, fet
         : Array.isArray(selected?.projects)
           ? selected.projects
           : [];
-    return {
+    const normalized = {
       source,
       mode: data.meta.mode,
       summary: selected.summary || {},
@@ -90,6 +90,11 @@ export async function fetchBusinessData({ url, anonKey, accessToken, source, fet
       contractVersion: selected.contractVersion || data.meta.contractVersion || null,
       fetchedAt: data.meta.fetchedAt || null,
     };
+    const history = selected.history || selected.historical || null;
+    // Keep the existing read-only contract byte-for-byte stable for every
+    // source that does not expose a historical adapter yet.
+    if (history) normalized.history = history;
+    return normalized;
   }
   return data;
 }

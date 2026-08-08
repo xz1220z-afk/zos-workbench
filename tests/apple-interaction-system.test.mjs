@@ -18,7 +18,7 @@ test('primary controls share one responsive press contract instead of generic tr
 
 test('route changes use a short content-level entry transition with a reduced-motion fallback', () => {
   assert.match(css, /\.page\.is-entering\s*\{[^}]*animation:\s*pageEnter/s);
-  assert.match(css, /@keyframes\s+pageEnter\s*\{[\s\S]*translateY\(6px\)[\s\S]*translateY\(0\)/);
+  assert.match(css, /@keyframes\s+pageEnter\s*\{[\s\S]*opacity:\s*\.94[\s\S]*translateY\(3px\)[\s\S]*translateY\(0\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.page\.is-entering\s*\{[^}]*animation:\s*none/s);
   assert.match(legacy, /target\.classList\.add\('is-entering'\)/);
   assert.match(legacy, /requestAnimationFrame\([\s\S]*target\.classList\.remove\('is-entering'\)/);

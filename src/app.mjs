@@ -1,73 +1,73 @@
-import { createStateStore, readPersistedStateForBackup } from './app/state-store.mjs?v=2.5.0';
-import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=2.5.0';
-import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.5.0';
-import { render as renderTargets } from './app/views/targets-view.mjs?v=2.5.0';
-import { render as renderHealth } from './app/views/health-view.mjs?v=2.5.0';
-import { render as renderMobile } from './app/views/mobile-view.mjs?v=2.5.0';
-import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.5.0';
-import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=2.5.0';
-import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=2.5.0';
-import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=2.5.0';
-import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=2.5.0';
-import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=2.5.0';
-import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=2.5.0';
-import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=2.5.0';
-import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=2.5.0';
-import { buildImportantDates } from './app/important-dates.mjs?v=2.5.0';
-import { queryAvailability } from './app/availability-center.mjs?v=2.5.0';
-import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=2.5.0';
-import { buildMerchantDiagnostic, buildWanjiaOpsModel } from './app/wanjia-ops-center.mjs?v=2.5.0';
-import { filterIntelligence, normalizeIntelligenceItem, sortIntelligence, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=2.5.0';
-import { buildIntelligenceAnswer } from './app/intelligence-explainer.mjs?v=2.5.0';
-import { fetchSelectedWeather, DEFAULT_WEATHER_LOCATION } from './app/weather-center.mjs?v=2.5.0';
-import { normalizeKnowledgeContextIndex } from './knowledge-context-index.mjs?v=2.5.0';
-import { buildLifeAgenda, summarizeLife } from './app/life-os.mjs?v=2.5.0';
-import { upcomingRituals } from './app/ritual-calendar.mjs?v=2.5.0';
-import { parsePrivateDateMetadata } from './app/private-date-import.mjs?v=2.5.0';
-import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=2.5.0';
-import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=2.5.0';
-import { render as renderCalendar } from './app/views/calendar-view.mjs?v=2.5.0';
-import { render as renderLife } from './app/views/life-view.mjs?v=2.5.0';
-import { render as renderSearch } from './app/views/search-view.mjs?v=2.5.0';
-import { render as renderLingli } from './app/views/lingli-view.mjs?v=2.5.0';
-import { buildRelations } from './app/relation-center.mjs?v=2.5.0';
-import { createReviewDraft } from './app/review-center.mjs?v=2.5.0';
-import { render as renderRelations } from './app/views/relation-view.mjs?v=2.5.0';
-import { render as renderReviews } from './app/views/review-view.mjs?v=2.5.0';
-import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=2.5.0';
-import { render as renderTaskCenter } from './app/views/task-view.mjs?v=2.5.0';
-import { render as renderFocus } from './app/views/focus-view.mjs?v=2.5.0';
-import { render as renderAvailability } from './app/views/availability-view.mjs?v=2.5.0';
-import { render as renderMerchant } from './app/views/merchant-view.mjs?v=2.5.0';
-import { render as renderWanjiaOps } from './app/views/wanjia-ops-view.mjs?v=2.5.0';
-import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=2.5.0';
-import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=2.5.0';
-import { buildCompanyCockpit } from './app/company-cockpit.mjs?v=2.5.0';
-import { render as renderCompanyCockpit } from './app/views/company-cockpit-view.mjs?v=2.5.0';
-import { buildTodayTop3 } from './app/priority-engine.mjs?v=2.5.0';
-import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=2.5.0';
-import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=2.5.0';
-import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=2.5.0';
-import { runCompanyAgent } from './app/company-agent-hub.mjs?v=2.5.0';
-import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=2.5.0';
-import { contentOverview, contentPerformance, evaluateExperiment, normalizeContentItem, transitionContent, buildCompoundCandidate } from './app/content-growth.mjs?v=2.5.0';
-import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.5.0';
-import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.5.0';
-import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.5.0';
-import { validateAgentOsIndex } from './app/agent-os-index-contract.mjs?v=2.5.0';
+import { createStateStore, readPersistedStateForBackup } from './app/state-store.mjs?v=2.6.0';
+import { render as renderDashboard } from './app/views/dashboard-view.mjs?v=2.6.0';
+import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.6.0';
+import { render as renderTargets } from './app/views/targets-view.mjs?v=2.6.0';
+import { render as renderHealth } from './app/views/health-view.mjs?v=2.6.0';
+import { render as renderMobile } from './app/views/mobile-view.mjs?v=2.6.0';
+import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.6.0';
+import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=2.6.0';
+import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=2.6.0';
+import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=2.6.0';
+import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=2.6.0';
+import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=2.6.0';
+import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=2.6.0';
+import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=2.6.0';
+import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=2.6.0';
+import { buildImportantDates } from './app/important-dates.mjs?v=2.6.0';
+import { queryAvailability } from './app/availability-center.mjs?v=2.6.0';
+import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=2.6.0';
+import { buildMerchantDiagnostic, buildWanjiaOpsModel } from './app/wanjia-ops-center.mjs?v=2.6.0';
+import { filterIntelligence, normalizeIntelligenceItem, sortIntelligence, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=2.6.0';
+import { buildIntelligenceAnswer } from './app/intelligence-explainer.mjs?v=2.6.0';
+import { fetchSelectedWeather, DEFAULT_WEATHER_LOCATION } from './app/weather-center.mjs?v=2.6.0';
+import { normalizeKnowledgeContextIndex } from './knowledge-context-index.mjs?v=2.6.0';
+import { buildLifeAgenda, summarizeLife } from './app/life-os.mjs?v=2.6.0';
+import { upcomingRituals } from './app/ritual-calendar.mjs?v=2.6.0';
+import { parsePrivateDateMetadata } from './app/private-date-import.mjs?v=2.6.0';
+import { buildSearchIndex, searchWorkspace } from './app/search-center.mjs?v=2.6.0';
+import { render as renderIntelligence } from './app/views/intelligence-view.mjs?v=2.6.0';
+import { render as renderCalendar } from './app/views/calendar-view.mjs?v=2.6.0';
+import { render as renderLife } from './app/views/life-view.mjs?v=2.6.0';
+import { render as renderSearch } from './app/views/search-view.mjs?v=2.6.0';
+import { render as renderLingli } from './app/views/lingli-view.mjs?v=2.6.0';
+import { buildRelations } from './app/relation-center.mjs?v=2.6.0';
+import { createReviewDraft } from './app/review-center.mjs?v=2.6.0';
+import { render as renderRelations } from './app/views/relation-view.mjs?v=2.6.0';
+import { render as renderReviews } from './app/views/review-view.mjs?v=2.6.0';
+import { render as renderTodayExecution } from './app/views/today-execution-view.mjs?v=2.6.0';
+import { render as renderTaskCenter } from './app/views/task-view.mjs?v=2.6.0';
+import { render as renderFocus } from './app/views/focus-view.mjs?v=2.6.0';
+import { render as renderAvailability } from './app/views/availability-view.mjs?v=2.6.0';
+import { render as renderMerchant } from './app/views/merchant-view.mjs?v=2.6.0';
+import { render as renderWanjiaOps } from './app/views/wanjia-ops-view.mjs?v=2.6.0';
+import { createAutoRefreshController } from './app/auto-refresh-controller.mjs?v=2.6.0';
+import { buildCompanyOperatingContract } from './app/company-operating-contract.mjs?v=2.6.0';
+import { buildCompanyCockpit } from './app/company-cockpit.mjs?v=2.6.0';
+import { render as renderCompanyCockpit } from './app/views/company-cockpit-view.mjs?v=2.6.0';
+import { buildTodayTop3 } from './app/priority-engine.mjs?v=2.6.0';
+import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=2.6.0';
+import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=2.6.0';
+import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=2.6.0';
+import { runCompanyAgent } from './app/company-agent-hub.mjs?v=2.6.0';
+import { buildReliabilityOverview, buildSafeBackup, listRestorableItems, reminderSnoozeAt } from './app/reliability-center.mjs?v=2.6.0';
+import { contentOverview, contentPerformance, evaluateExperiment, normalizeContentItem, transitionContent, buildCompoundCandidate } from './app/content-growth.mjs?v=2.6.0';
+import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.6.0';
+import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.6.0';
+import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.6.0';
+import { validateAgentOsIndex } from './app/agent-os-index-contract.mjs?v=2.6.0';
 import {
   agentDetails, buildAgentAnalysisRequest, buildAgentInvocationDraft, buildAgentOsOverview, buildRelationReminderDrafts,
   compareAgentOsIndexes, visibleAgents,
-} from './app/agent-os-center.mjs?v=2.5.0';
-import { render as renderContentGrowth } from './app/views/content-growth-view.mjs?v=2.5.0';
-import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.5.0';
-import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.5.0';
-import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.5.0';
-import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.5.0';
-import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.5.0';
-import { applyDecisionAction, applyDecisionBatch, partitionDecisions } from './app/decision-center.mjs?v=2.5.0';
+} from './app/agent-os-center.mjs?v=2.6.0';
+import { render as renderContentGrowth } from './app/views/content-growth-view.mjs?v=2.6.0';
+import { render as renderKnowledgeWorkspace } from './app/views/knowledge-workspace-view.mjs?v=2.6.0';
+import { render as renderSocialInsights } from './app/views/social-insights-view.mjs?v=2.6.0';
+import { render as renderAgentWorkbench } from './app/views/agent-workbench-view.mjs?v=2.6.0';
+import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.6.0';
+import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.6.0';
+import { applyDecisionAction, applyDecisionBatch, partitionDecisions } from './app/decision-center.mjs?v=2.6.0';
 
-export const APP_VERSION = '2.5.0';
+export const APP_VERSION = '2.6.0';
 const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
 const SYNC_META_KEY = 'zos_sync_meta_v2';
 const LEGACY_COLLECTION_KEYS = Object.freeze({
@@ -123,6 +123,8 @@ export function createCeoOsApplication(config = {}) {
     taskDrawerOpen: false, taskDraft: null, focusDuration: 25, focusTaskId: null,
     availabilityDate: now().slice(0, 10), merchantQuery: '', selectedMerchantId: null,
     wanjiaFilters: { query: '', industry: 'all', cooperationType: 'all', owner: 'all', health: 'all', abnormal: 'all', active: 'all', live: 'all', video: 'all', groupbuyGmv: 'all' },
+    wanjiaHistoryRange: { preset: 'today', startDate: '', endDate: '' },
+    wanjiaHistoryFilters: { merchantId: '', industry: 'all', owner: 'all', cooperationType: 'all', abnormal: 'all' },
     syncStatus: '等待首次同步', loopConnected: false, reminderTestState: 'idle',
     snapshotCount: 0, protectionState: '本机数据已保护', lastRestoreAt: null,
     ignoredRitualIds: readJson('zos_ignored_rituals', []),
@@ -289,7 +291,7 @@ export function createCeoOsApplication(config = {}) {
           ? readPersistedStateForBackup({ rawSnapshot: preUpgradeRaw, now, deviceId, createId: browserId })
           : currentDurableState());
         await snapshotRepository.save({
-          kind: 'upgrade', appVersion: previousVersion || 'pre-2.5.0',
+          kind: 'upgrade', appVersion: previousVersion || 'pre-2.6.0',
           backup: buildSafeBackup({ state: checkpointState, baseRevisions: store.loadBaseRevisions?.() || {}, createdAt: now() }),
         });
         storage?.setItem?.(LAST_PROTECTED_VERSION_KEY, APP_VERSION);
@@ -397,6 +399,7 @@ export function createCeoOsApplication(config = {}) {
     ]));
     const wanjiaOps = buildWanjiaOpsModel(sources.wanjia || null, {
       today: now().slice(0, 10), tasks, filters: runtime.wanjiaFilters,
+      historyRange: runtime.wanjiaHistoryRange, historyFilters: runtime.wanjiaHistoryFilters,
     });
     const activeFocus = [...focusSessions].reverse().find((item) => ['planned', 'running', 'paused'].includes(item.state)) || null;
     const searchIndex = buildSearchIndex({
@@ -1410,6 +1413,34 @@ export function createCeoOsApplication(config = {}) {
     renderAll();
   }
 
+  function setWanjiaHistoryRange(range = {}) {
+    runtime.wanjiaHistoryRange = { ...runtime.wanjiaHistoryRange, ...range };
+    renderAll();
+    return runtime.wanjiaHistoryRange;
+  }
+
+  function setWanjiaHistoryFilters(filters = {}) {
+    runtime.wanjiaHistoryFilters = { ...runtime.wanjiaHistoryFilters, ...filters };
+    renderAll();
+    return runtime.wanjiaHistoryFilters;
+  }
+
+  function applyWanjiaHistoryQuery({ range = {}, filters = {} } = {}) {
+    runtime.wanjiaHistoryRange = { ...runtime.wanjiaHistoryRange, ...range };
+    runtime.wanjiaHistoryFilters = { ...runtime.wanjiaHistoryFilters, ...filters };
+    renderAll();
+    return {
+      range: runtime.wanjiaHistoryRange,
+      filters: runtime.wanjiaHistoryFilters,
+    };
+  }
+
+  function resetWanjiaHistoryFilters() {
+    runtime.wanjiaHistoryRange = { preset: 'today', startDate: '', endDate: '' };
+    runtime.wanjiaHistoryFilters = { merchantId: '', industry: 'all', owner: 'all', cooperationType: 'all', abnormal: 'all' };
+    renderAll();
+  }
+
   function focusWanjiaKpi(key) {
     if (key === 'completed_tasks_today') {
       showTaskCenter();
@@ -2244,6 +2275,7 @@ export function createCeoOsApplication(config = {}) {
       const merchantSelect = event.target?.closest?.('[data-merchant-select]');
       const wanjiaKpiFilter = event.target?.closest?.('[data-wanjia-kpi-filter]');
       const wanjiaFilterReset = event.target?.closest?.('[data-wanjia-filter-reset]');
+      const wanjiaHistoryReset = event.target?.closest?.('[data-wanjia-history-reset]');
       const wanjiaDiagnose = event.target?.closest?.('[data-wanjia-diagnose]');
       const wanjiaTaskDraft = event.target?.closest?.('[data-wanjia-task-draft]');
       const wanjiaOpportunityDraft = event.target?.closest?.('[data-wanjia-opportunity-draft]');
@@ -2498,6 +2530,7 @@ export function createCeoOsApplication(config = {}) {
           transitionCurrentFocus(focusAction.dataset.focusAction);
         } else if (wanjiaKpiFilter) focusWanjiaKpi(wanjiaKpiFilter.dataset.wanjiaKpiFilter);
         else if (wanjiaFilterReset) resetWanjiaFilters();
+        else if (wanjiaHistoryReset) resetWanjiaHistoryFilters();
         else if (wanjiaDiagnose) diagnoseWanjiaMerchant(wanjiaDiagnose.dataset.wanjiaDiagnose);
         else if (wanjiaTaskDraft) openWanjiaTaskDraft(wanjiaTaskDraft.dataset.wanjiaTaskDraft);
         else if (wanjiaOpportunityDraft) {
@@ -2509,7 +2542,6 @@ export function createCeoOsApplication(config = {}) {
         else if (agentDraft) await generateAgentDraft(agentDraft.dataset.agentDraft || 'ceo');
         else if (pageButton && globalThis.window?.navigateTo) {
           globalThis.window.navigateTo(pageButton.dataset.page);
-          renderAll();
         }
       } catch { runtime.syncStatus = '操作未完成，请检查登录与数据权限'; renderAll(); }
     });
@@ -2639,6 +2671,15 @@ export function createCeoOsApplication(config = {}) {
       if (event.target?.matches?.('[data-wanjia-filter-form]')) {
         event.preventDefault();
         setWanjiaFilters(Object.fromEntries(new FormData(event.target).entries()));
+        return;
+      }
+      if (event.target?.matches?.('[data-wanjia-history-form]')) {
+        event.preventDefault();
+        const values = Object.fromEntries(new FormData(event.target).entries());
+        applyWanjiaHistoryQuery({
+          range: { preset: values.preset, startDate: values.startDate, endDate: values.endDate },
+          filters: { merchantId: values.merchantId, industry: values.industry, owner: values.owner, cooperationType: values.cooperationType, abnormal: values.abnormal },
+        });
         return;
       }
       if (event.target?.id !== 'confirmedTargetForm') return;
@@ -3051,7 +3092,7 @@ export function createCeoOsApplication(config = {}) {
     syncNow, resolveSyncConflict, testReminderDelivery, snoozeReminder, restoreReliabilityItem, exportSafeBackup,
     previewBackupText, importBackupText, undoLastRestore, refreshSnapshotCount, selectBackupFile,
     createFocus, transitionCurrentFocus, queryMerchant, queryHuahuoAvailability,
-    setWanjiaFilters, resetWanjiaFilters, focusWanjiaKpi, diagnoseWanjiaMerchant, openWanjiaTaskDraft,
+    setWanjiaFilters, resetWanjiaFilters, setWanjiaHistoryRange, setWanjiaHistoryFilters, applyWanjiaHistoryQuery, resetWanjiaHistoryFilters, focusWanjiaKpi, diagnoseWanjiaMerchant, openWanjiaTaskDraft,
     openTaskEditor, closeTaskEditor, generateReview, generateAgentDraft,
     saveContentItem, captureContentItem, editContentItem, advanceContentItem,
     captureReadingItem, updateReadingProgress, readingToKnowledgeCard, reviewKnowledgeCard, editKnowledgeCard,

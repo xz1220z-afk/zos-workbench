@@ -1,6 +1,7 @@
-import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.5.0';
-import { formatCurrency, humanText } from '../value-utils.mjs?v=2.5.0';
-import { partitionDecisions } from '../decision-center.mjs?v=2.5.0';
+import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.6.0';
+import { formatCurrency, humanText } from '../value-utils.mjs?v=2.6.0';
+import { partitionDecisions } from '../decision-center.mjs?v=2.6.0';
+import { buildWorkHomepagePresence } from '../homepage-presence.mjs?v=2.6.0';
 
 export { VIEW_STATES };
 
@@ -79,9 +80,10 @@ export function render(container, viewModel = {}) {
   const activeDecisions = partitionDecisions(viewModel.decisions).ceo;
   const companies = viewModel.companyOperating || {};
   const workDates = viewModel.importantDates?.work || [];
+  const presence = buildWorkHomepagePresence(viewModel);
   container.innerHTML = `<div class="v14-dashboard">
     ${syncRail(viewModel.autoRefresh)}
-    <section class="v14-hero"><div><span class="v14-kicker">CEO COMMAND CENTER · ${escapeHtml(viewModel.today || '')}</span><h2>今天，先处理最重要的事</h2><p>事实来自飞书与 Supabase；AI 只做建议，所有正式写入须确认。</p><div class="v14-hero-actions"><button class="v13-action v13-action-primary" data-quick-capture>＋ 快速收集</button><details class="v14-quick-menu"><summary>更多操作</summary><div><button class="v13-action" data-agent-draft="ceo">生成 CEO 建议</button><button class="v13-action" data-page="tasks">新建任务</button><button class="v13-action" data-page="enterprise">查看项目</button></div></details></div></div><div class="v14-hero-aside">${weatherSummary(viewModel.weather)}<blockquote>战略决定方向，<br>系统决定效率，<br>执行决定结果。</blockquote></div></section>
+    <section class="v14-hero v25-glass-hero" data-home-presence="work" data-presence-tone="${escapeHtml(presence.tone)}"><div><span class="v14-kicker">${escapeHtml(presence.kicker)} · ${escapeHtml(viewModel.today || '')}</span><h2>${escapeHtml(presence.title)}</h2><p>${escapeHtml(presence.summary)}</p><div class="v14-hero-actions"><button class="v13-action v13-action-primary" data-page="${escapeHtml(presence.primaryAction.target)}">${escapeHtml(presence.primaryAction.label)}</button><button class="v13-action" data-quick-capture>＋ ${escapeHtml(presence.secondaryAction.label)}</button><details class="v14-quick-menu"><summary>更多操作</summary><div><button class="v13-action" data-agent-draft="ceo">生成 CEO 建议</button><button class="v13-action" data-page="tasks">新建任务</button><button class="v13-action" data-page="enterprise">查看项目</button></div></details></div></div><div class="v14-hero-aside">${weatherSummary(viewModel.weather)}<div class="v25-hero-boundary">事实来自飞书与 Supabase；AI 只做建议，所有正式写入须确认。</div></div></section>
     <div class="v14-kpi-grid">
       <article><span>待我决策</span><strong>${displayValue(activeDecisions.length)}</strong><small>需本人判断</small></article>
       <article><span>目标差距</span><strong>${displayValue(viewModel.gaps?.length)}</strong><small>仅确认目标</small></article>

@@ -1,3 +1,5 @@
+import { buildWanjiaHistoryModel } from './wanjia-history.mjs?v=2.6.0';
+
 const STATUS_LABELS = Object.freeze({
   realtime_validated: '实时已校验',
   pending_sync: '待同步',
@@ -239,9 +241,13 @@ export function buildWanjiaOpsModel(source = null, options = {}) {
     owners: [...new Set(merchants.map((item) => item.owner).filter(Boolean))].sort(),
   };
   const filteredMerchants = sortMerchantsForKpi(filterWanjiaMerchants(merchants, filters), filters.sort);
+  const history = buildWanjiaHistoryModel(source?.history || source?.historical || null, {
+    today, range: options.historyRange, filters: options.historyFilters,
+  });
   return {
     status, kpis, historicalReference: legacy,
     merchants, filteredMerchants, filters, filterOptions,
+    history,
     urgentMerchants: merchants.filter((item) => item.priority).sort((a, b) => a.priority.localeCompare(b.priority)).slice(0, 12),
     opportunities: buildOpportunities(merchants),
   };

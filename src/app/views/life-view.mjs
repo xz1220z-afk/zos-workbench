@@ -1,4 +1,11 @@
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.5.0';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.6.0';
+import { buildLifeHomepagePresence } from '../homepage-presence.mjs?v=2.6.0';
+
+function primaryAction(action = {}) {
+  if (action.target === 'important-dates') return `<button class="v13-action v13-action-primary" data-important-dates-open="life">${escapeHtml(action.label)}</button>`;
+  if (action.target === 'calendar') return `<button class="v13-action v13-action-primary" data-page="calendar">${escapeHtml(action.label)}</button>`;
+  return `<button class="v13-action v13-action-primary" data-life-capture>${escapeHtml(action.label)}</button>`;
+}
 
 export function render(container, viewModel = {}) {
   if (!container) return;
@@ -9,6 +16,7 @@ export function render(container, viewModel = {}) {
   const rituals = viewModel.rituals || [];
   const privateDateSource = viewModel.privateDateSource || { state: 'idle', count: 0 };
   const weather = viewModel.weather || {};
+  const presence = buildLifeHomepagePresence(viewModel);
   const weatherCard = weather.state === 'ready'
     ? `<article class="life-weather-card"><span>☀</span><div><strong>${escapeHtml(weather.location?.name || '天气')} · ${escapeHtml(weather.summary || '待确认')}</strong><p>${escapeHtml(`${weather.temperatureC ?? '—'}°C`)}${weather.apparentTemperatureC != null ? ` · 体感 ${escapeHtml(`${weather.apparentTemperatureC}°C`)}` : ''}</p><small>公开预报 · 不读取定位</small></div></article>`
     : `<article class="life-weather-card is-pending"><span>☀</span><div><strong>今日天气${weather.state === 'loading' ? '读取中' : '暂不可用'}</strong><small>不读取设备定位</small></div></article>`;
@@ -16,7 +24,7 @@ export function render(container, viewModel = {}) {
   const drawer = viewModel.importantDatesPanel === 'life' ? `<aside class="important-dates-drawer" role="dialog" aria-modal="true" aria-label="全部重要日子"><header><div><small>仅自己可见</small><h2>重要日子</h2></div><button data-important-dates-close aria-label="关闭">×</button></header>${dateRows}<footer><button class="v13-action v13-action-primary" data-countdown-capture>＋ 新增重要日子</button></footer></aside><div class="task-drawer-backdrop" data-important-dates-close></div>` : '';
   const agendaRows = nextSevenDays.length ? `<div class="v13-list">${nextSevenDays.map((item) => `<div class="v13-row"><div><strong>${escapeHtml(item.title)}</strong><div class="v13-meta">${escapeHtml(item.occurrence)} · ${escapeHtml(item.category || item.area || '生活')}</div></div><span class="v13-chip">${item.daysUntil === 0 ? '今天' : `${item.daysUntil} 天后`}</span></div>`).join('')}</div>` : renderState('empty', '未来 7 天');
   const ritualCards = rituals.length ? `<div class="ritual-grid">${rituals.slice(0, 6).map((item) => `<article class="ritual-card"><div><span class="v13-chip">${item.daysUntil === 0 ? '今天' : `${item.daysUntil} 天后`}</span><small>${escapeHtml(item.occurrence)}</small></div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.suggestion)}</p><footer><button class="v13-action v13-action-primary" data-ritual-convert="${escapeHtml(item.id)}">加入生活安排</button><button class="v13-action v13-action-quiet" data-ritual-ignore="${escapeHtml(item.id)}">今年忽略</button></footer></article>`).join('')}</div>` : renderState('empty', '近期仪式提醒');
-  container.innerHTML = `<div class="life-hero"><div><span class="v14-kicker">LIFE OS · 仅自己可见</span><h2>把生活安排好，工作才有稳定的能量</h2><p>工作端只会看到私人日程的忙碌占位，不会看到标题、备注和个人财务。</p></div><div class="life-hero-actions"><button class="v13-action" data-private-date-import>导入私人日期</button><button class="v13-action v13-action-primary" data-life-capture>＋ 记录生活事项</button></div></div>
+  container.innerHTML = `<div class="life-hero v25-glass-hero" data-home-presence="life" data-presence-tone="${escapeHtml(presence.tone)}"><div><span class="v14-kicker">${escapeHtml(presence.kicker)} · 仅自己可见</span><h2>${escapeHtml(presence.title)}</h2><p>${escapeHtml(presence.summary)}</p></div><div class="life-hero-actions">${primaryAction(presence.primaryAction)}<button class="v13-action" data-private-date-import>${presence.secondaryAction.event === 'private-date-import' ? escapeHtml(presence.secondaryAction.label) : '导入私人日期'}</button></div></div>
     <div class="life-area-grid">${weatherCard}${summary.map((area) => `<article class="life-area-card"><span>${escapeHtml(area.icon)}</span><h3>${escapeHtml(area.label)}</h3><strong>${area.open}</strong><p>待处理 / ${area.count} 条记录</p></article>`).join('')}</div>
     <div class="v14-main-grid life-dashboard-grid"><div class="v14-section"><div class="v14-section-head"><h3>未来 7 天</h3><span>私有</span></div>${agendaRows}</div><div class="v14-section"><div class="v14-section-head"><h3>🎈 重要日子</h3><button class="v13-action" data-important-dates-open="life">查看全部</button></div>${dateRows}</div></div>
     <section class="v14-section life-ritual-section"><div class="v14-section-head"><div><h3>仪式提醒</h3><p>提前想到，才能把重要的日子过得有记忆。</p></div></div>${ritualCards}</section>

@@ -35,3 +35,27 @@ test('existing local-life route remains and legacy KPI nodes are compatibility-o
   assert.match(section, /hidden/);
   assert.match(section, /id="wanjiaMerchantCount"/);
 });
+
+test('wanjia ops view renders a dated history workspace without treating missing history as zero', () => {
+  const container = { innerHTML: '' };
+  render(container, {
+    wanjiaOps: {
+      status: {}, kpis: [], historicalReference: null, urgentMerchants: [], merchants: [], filteredMerchants: [], opportunities: [],
+      filterOptions: { industries: [], cooperationTypes: [], owners: [] }, filters: {},
+      history: {
+        range: { preset: 'custom', startDate: '2026-08-06', endDate: '2026-08-07' },
+        availability: { state: 'validated', label: '已校验', source: 'local_sqlite', earliestDate: '2026-08-06', latestDate: '2026-08-07', batchCount: 2 },
+        metricRisk: null, insufficient: false, message: '历史数据已校验，所有指标按选定时间范围与字段口径计算。',
+        rangeSummary: { paymentGmv: 310, redeemedGmv: 210, refundGmv: null, redemptionRate: 210 / 310, activeMerchants: 2, exceptionMerchants: 1 },
+        trend: [{ date: '2026-08-06', paymentGmv: 150, redeemedGmv: 110, exceptionMerchants: 0 }, { date: '2026-08-07', paymentGmv: 160, redeemedGmv: 100, exceptionMerchants: 1 }],
+        rankings: { paymentGmv: [{ merchantId: 'm-1', merchantName: '甲店', value: 250 }], redeemedGmv: [], growth: [], decline: [], refund: [], lowRedemption: [], video: [], live: [] },
+        rows: [{ merchantId: 'm-1', merchantName: '甲店', businessDate: '2026-08-06', paymentGmv: 150 }],
+      },
+    },
+  });
+  assert.match(container.innerHTML, /时间范围查询与历史经营分析/);
+  assert.match(container.innerHTML, /data-wanjia-history-form/);
+  assert.match(container.innerHTML, /支付 GMV Top 20/);
+  assert.match(container.innerHTML, /单商家历史趋势/);
+  assert.match(container.innerHTML, /本地 SQLite 历史仓/);
+});
