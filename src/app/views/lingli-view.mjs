@@ -1,5 +1,5 @@
-import { displayValue, renderState } from './view-utils.mjs?v=2.8.2';
-import { formatCurrency } from '../value-utils.mjs?v=2.8.2';
+import { displayValue, renderState } from './view-utils.mjs?v=2.8.3';
+import { formatCurrency } from '../value-utils.mjs?v=2.8.3';
 
 export function render(container, viewModel = {}) {
   if (!container) return;

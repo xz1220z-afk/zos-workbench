@@ -1,5 +1,5 @@
-import { escapeHtml } from './view-utils.mjs?v=2.8.2';
-import { buildWanjiaOpsNavigation } from '../wanjia-ops-navigation.mjs?v=2.8.2';
+import { escapeHtml } from './view-utils.mjs?v=2.8.3';
+import { buildWanjiaOpsNavigation } from '../wanjia-ops-navigation.mjs?v=2.8.3';
 
 function safe(value, fallback = '待同步') {
   return value === null || value === undefined || value === '' ? fallback : escapeHtml(String(value));
@@ -207,5 +207,16 @@ export function render(container, viewModel = {}) {
     container.innerHTML = '<section class="wanjia-shell"><div class="wanjia-empty">万嘉运营模型尚未初始化，请刷新页面。</div></section>';
     return;
   }
-  container.innerHTML = `<div class="wanjia-shell">${statusPanel(model.status)}${contextNavigation(model.navigation)}${activePanel(model)}</div>`;
+  container.innerHTML = `<div class="wanjia-shell">${statusPanel(model.status)}${contextNavigation(model.navigation)}<div data-wanjia-panel-host>${activePanel(model)}</div></div>`;
+}
+
+export function renderActivePanel(container, viewModel = {}) {
+  const model = viewModel.wanjiaOps;
+  const host = container?.querySelector?.('[data-wanjia-panel-host]');
+  if (!model || !host) return false;
+  container.querySelectorAll?.('.wanjia-context-nav [data-wanjia-pane]')?.forEach?.((button) => {
+    button.setAttribute?.('aria-current', button.dataset?.wanjiaPane === model.navigation?.active?.id ? 'page' : 'false');
+  });
+  host.innerHTML = activePanel(model);
+  return true;
 }

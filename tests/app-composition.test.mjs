@@ -195,6 +195,29 @@ test('rendering a Wanjia interaction does not repaint hidden workspace pages', (
   assert.equal(document.writes.get('calendarCenterRoot') || 0, 0);
 });
 
+test('switching Wanjia context repaints only the active panel after first render', () => {
+  const document = activePageDocument('local-life');
+  let panelWrites = 0;
+  let rootWrites = 0;
+  const panelHost = { set innerHTML(value) { panelWrites += 1; this.value = value; } };
+  const root = {
+    get innerHTML() { return this.value || ''; },
+    set innerHTML(value) { rootWrites += 1; this.value = value; },
+    querySelector: (selector) => selector === '[data-wanjia-panel-host]' ? panelHost : null,
+    querySelectorAll: () => [],
+  };
+  document.getElementById = (id) => id === 'wanjiaOperatingRoot' ? root : document.nodes.get(id) || { innerHTML: '', textContent: '', style: {} };
+  const app = createCeoOsApplication({
+    document, storage: { getItem: () => 'device-1', setItem() {} }, store: fakeStore(),
+  });
+
+  app.setWanjiaOpsPane('merchant_ops');
+
+  assert.equal(panelWrites, 1);
+  assert.equal(rootWrites, 0);
+  assert.match(panelHost.value, /商家作战/);
+});
+
 test('rendering from a legacy-only route does not repaint modular workspace pages', () => {
   const document = activePageDocument('settings');
   const app = createCeoOsApplication({
@@ -435,7 +458,7 @@ test('service worker caches the complete transitive browser module graph', async
     'src/app/auto-refresh-controller.mjs',
     'src/app/daily-digest.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.8\.2`/);
+  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.8\.3`/);
 });
 
 test('Wanjia operations keeps legacy numbers historical and opens only a merchant task draft', () => {
@@ -486,8 +509,8 @@ test('the shell captures raw pre-upgrade state before either application module 
   const html = await readFile(new URL('index.html', root), 'utf8');
   const capture = html.indexOf('window.__ZOS_PRE_UPGRADE_RAW__');
   assert.ok(capture >= 0);
-  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.8.2'));
-  assert.ok(capture < html.indexOf('src/app.mjs?v=2.8.2'));
+  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.8.3'));
+  assert.ok(capture < html.indexOf('src/app.mjs?v=2.8.3'));
 });
 
 test('enabled closed-app reminders synchronize current tasks calendar deadlines and daily digests', async () => {
