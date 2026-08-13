@@ -1,6 +1,6 @@
-import { pageIdFromHash } from './app/router.mjs?v=2.8.0';
-import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAGES } from './app/navigation-preferences.mjs?v=2.8.0';
-import { createBusinessDataCache } from './app/business-data-cache.mjs?v=2.8.0';
+import { pageIdFromHash } from './app/router.mjs?v=2.8.1';
+import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAGES } from './app/navigation-preferences.mjs?v=2.8.1';
+import { createBusinessDataCache } from './app/business-data-cache.mjs?v=2.8.1';
 
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
@@ -126,9 +126,9 @@ import { createBusinessDataCache } from './app/business-data-cache.mjs?v=2.8.0';
 (function() {
   'use strict';
 
-  const APP_VERSION = '2.8.0';
+  const APP_VERSION = '2.8.1';
   const PUBLIC_APP_URL = new URL('.', window.location.href).href;
-  const APP_RELEASE_DATE = '2026-08-08';
+  const APP_RELEASE_DATE = '2026-08-13';
 
   // ==================== DATA LAYER ====================
   const KEYS = { TASKS:'zos_tasks', INBOX:'zos_inbox', PROJECTS:'zos_projects', COMMANDS:'zos_commands', TOMBSTONES:'zos_tombstones', ONBOARDED:'zos_onboarded', DEVICE:'zos_device_id', SCHEMA:'zos_schema_version', SYNC_CONFIG:'zos_supabase_config', SYNC_SESSION:'zos_supabase_session' };

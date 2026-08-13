@@ -1,4 +1,5 @@
 const ALLOWED_KINDS = new Set(['daily_increment', 'period_snapshot']);
+const HISTORY_PAGE_SIZE = 1_000;
 
 function text(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
@@ -18,6 +19,17 @@ function mappedRow(row) {
     videoPaymentGmv: amount(row.video_payment_gmv), livePaymentGmv: amount(row.live_payment_gmv),
     exception: row.exception === true, sourceKind,
   };
+}
+
+export async function collectHistoryPages(readPage, pageSize = HISTORY_PAGE_SIZE) {
+  const rows = [];
+  for (let from = 0; ; from += pageSize) {
+    const result = await readPage(from, from + pageSize - 1);
+    if (result?.error) return { rows: [], error: result.error };
+    const page = Array.isArray(result?.data) ? result.data : [];
+    rows.push(...page);
+    if (page.length < pageSize) return { rows, error: null };
+  }
 }
 
 // This is a deliberately narrow read model. It never includes source files,

@@ -105,6 +105,10 @@ assert.match(source, /wanjia:\s*\{\s*\.\.\.\(wanjia as Record<string, unknown>\)
   'History is nested under wanjia so selected-source clients receive it');
 assert.match(source, /zos_wanjia_history_batches/);
 assert.match(source, /zos_wanjia_history_rows/);
+assert.match(source, /\.eq\('user_id', userId\)/,
+  'Service-side history reads remain explicitly scoped to the authenticated user');
+assert.match(source, /collectHistoryPages/,
+  'History reads paginate instead of silently truncating at the Supabase 1000-row response limit');
 assert.doesNotMatch(source, /\.select\('[^']*(raw_json|source_sha256|source_name)/,
   'The Edge response never selects source files, hashes, or raw records');
 assert.match(historyMigration, /enable row level security/ig);

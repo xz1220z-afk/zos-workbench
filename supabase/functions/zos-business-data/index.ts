@@ -9,7 +9,8 @@ import {
 } from '../_shared/feishu.ts';
 import { readBusinessSources } from '../_shared/business-data.ts';
 import { buildCachedBusinessPayload } from '../_shared/business-cache.mjs';
-import { buildHistoryPayload } from '../_shared/wanjia-history.mjs';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import { buildHistoryPayload, collectHistoryPages } from '../_shared/wanjia-history.mjs';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -22,21 +23,29 @@ function response(body: unknown, status = 200) {
 }
 
 async function readWanjiaHistory(
-  supabase: Awaited<ReturnType<typeof requireUser>>['supabase'],
+  userId: string,
   searchParams: URLSearchParams,
 ) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceRoleKey) return buildHistoryPayload([], []);
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
   const { data: batches, error: batchError } = await supabase
     .from('zos_wanjia_history_batches')
     .select('id,business_date,row_count,source_kind,validated_at')
+    .eq('user_id', userId)
     .eq('validation_status', 'validated')
     .order('business_date', { ascending: true });
   if (batchError || !batches?.length) return buildHistoryPayload([], []);
 
   const batchIds = batches.map((batch: { id: number }) => batch.id);
-  const { data: rows, error: rowError } = await supabase
+  const { rows, error: rowError } = await collectHistoryPages((from, to) => supabase
     .from('zos_wanjia_history_rows')
     .select('batch_id,merchant_id,merchant_name,industry,owner,cooperation_type,payment_gmv,redeemed_gmv,refund_gmv,video_payment_gmv,live_payment_gmv,exception')
-    .in('batch_id', batchIds);
+    .in('batch_id', batchIds)
+    .order('batch_id', { ascending: true })
+    .order('merchant_id', { ascending: true })
+    .range(from, to));
   if (rowError) return buildHistoryPayload([], []);
 
   const dateByBatch = new Map(batches.map((batch: { id: number; business_date: string; source_kind: string }) => [batch.id, batch]));
@@ -69,7 +78,7 @@ async function withOptionalHistory(
   searchParams: URLSearchParams,
 ) {
   if (!includeHistory || !['all', 'wanjia'].includes(requestedSource)) return payload;
-  return attachWanjiaHistory(payload, await readWanjiaHistory(identity.supabase, searchParams));
+  return attachWanjiaHistory(payload, await readWanjiaHistory(identity.user.id, searchParams));
 }
 
 Deno.serve(async (req) => {

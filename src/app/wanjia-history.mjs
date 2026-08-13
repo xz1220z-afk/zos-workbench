@@ -98,10 +98,11 @@ function snapshotsDelta(rows, key, range) {
   const startBoundary = shift(range.startDate, -1);
   let found = false; let total = 0;
   for (const entries of byMerchant.values()) {
-    const end = entries.filter((item) => item.businessDate <= range.endDate).sort((a, b) => a.businessDate.localeCompare(b.businessDate)).at(-1);
+    const end = entries.filter((item) => item.businessDate === range.endDate).at(-1);
+    if (!end) return null;
     const before = entries.filter((item) => item.businessDate <= startBoundary).sort((a, b) => a.businessDate.localeCompare(b.businessDate)).at(-1);
     const endValue = finite(end?.[key]); const beforeValue = finite(before?.[key]);
-    if (endValue === null || beforeValue === null) continue;
+    if (endValue === null || beforeValue === null) return null;
     found = true; total += endValue - beforeValue;
   }
   return found ? total : null;

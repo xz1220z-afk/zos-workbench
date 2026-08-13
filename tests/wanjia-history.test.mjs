@@ -68,6 +68,22 @@ test('history missing or too short is shown as accumulation rather than zero per
   assert.match(model.message, /历史数据积累中/);
 });
 
+test('does not reuse the latest snapshot as a zero delta when the selected date is outside history coverage', () => {
+  const model = buildWanjiaHistoryModel({
+    availability: { state: 'validated', source: 'local_sqlite', earliestDate: '2026-08-07', latestDate: '2026-08-08', batchCount: 2 },
+    rows: [
+      { businessDate: '2026-08-07', merchantId: 'L-1', merchantName: '甲店', paymentGmv: 100, redeemedGmv: 50, sourceKind: 'period_snapshot' },
+      { businessDate: '2026-08-08', merchantId: 'L-1', merchantName: '甲店', paymentGmv: 130, redeemedGmv: 80, sourceKind: 'period_snapshot' },
+    ],
+  }, { range: { preset: 'today' }, today: '2026-08-13' });
+
+  assert.equal(model.rows.length, 0);
+  assert.equal(model.rangeSummary.paymentGmv, null);
+  assert.equal(model.rangeSummary.redeemedGmv, null);
+  assert.equal(model.rangeSummary.redemptionRate, null);
+  assert.match(model.message, /对应日期尚无已校验/);
+});
+
 test('accepts a read-only adapter record envelope without changing historical semantics', () => {
   const model = buildWanjiaHistoryModel({
     availability: { state: 'validated', source: 'local_sqlite' },

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildHistoryPayload } from '../supabase/functions/_shared/wanjia-history.mjs';
+import { buildHistoryPayload, collectHistoryPages } from '../supabase/functions/_shared/wanjia-history.mjs';
 
 const batches = [
   { business_date: '2026-08-07', row_count: 351, source_kind: 'period_snapshot', validated_at: '2026-08-08T09:00:00Z' },
@@ -20,4 +20,17 @@ test('maps only the allowlisted 8/7-8 snapshot view and never returns source art
   assert.equal(result.rows[0].paymentGmv, 123.45);
   assert.equal(result.rows[0].sourceKind, 'period_snapshot');
   assert.doesNotMatch(JSON.stringify(result), /source_sha256|source_name|raw_json|private\.xlsx/i);
+});
+
+test('collects every deterministic history page instead of silently stopping at the Supabase 1000-row limit', async () => {
+  const source = Array.from({ length: 2_105 }, (_, index) => ({ merchant_id: `merchant-${index}` }));
+  const requested = [];
+  const result = await collectHistoryPages(async (from, to) => {
+    requested.push([from, to]);
+    return { data: source.slice(from, to + 1), error: null };
+  });
+
+  assert.equal(result.error, null);
+  assert.equal(result.rows.length, 2_105);
+  assert.deepEqual(requested, [[0, 999], [1000, 1999], [2000, 2999]]);
 });
