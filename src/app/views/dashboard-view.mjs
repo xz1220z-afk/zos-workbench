@@ -1,7 +1,7 @@
-import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.8.3';
-import { formatCurrency, humanText } from '../value-utils.mjs?v=2.8.3';
-import { partitionDecisions } from '../decision-center.mjs?v=2.8.3';
-import { buildWorkHomepagePresence } from '../homepage-presence.mjs?v=2.8.3';
+import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.8.4';
+import { formatCurrency, humanText } from '../value-utils.mjs?v=2.8.4';
+import { partitionDecisions } from '../decision-center.mjs?v=2.8.4';
+import { buildWorkHomepagePresence } from '../homepage-presence.mjs?v=2.8.4';
 
 export { VIEW_STATES };
 

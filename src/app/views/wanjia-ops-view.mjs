@@ -1,5 +1,5 @@
-import { escapeHtml } from './view-utils.mjs?v=2.8.3';
-import { buildWanjiaOpsNavigation } from '../wanjia-ops-navigation.mjs?v=2.8.3';
+import { escapeHtml } from './view-utils.mjs?v=2.8.4';
+import { buildWanjiaOpsNavigation } from '../wanjia-ops-navigation.mjs?v=2.8.4';
 
 function safe(value, fallback = '待同步') {
   return value === null || value === undefined || value === '' ? fallback : escapeHtml(String(value));

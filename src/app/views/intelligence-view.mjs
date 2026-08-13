@@ -1,4 +1,4 @@
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.8.3';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.8.4';
 
 const COMPANY_LABELS = { wanjia: '万嘉', huahuo: '花火', lingli: '玲丽', ceo: 'CEO' };
 const SOURCE_LABELS = {
