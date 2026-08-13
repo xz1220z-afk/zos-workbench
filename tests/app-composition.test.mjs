@@ -90,6 +90,25 @@ function renderDocument() {
   };
 }
 
+function activePageDocument(pageId) {
+  const document = renderDocument();
+  const writes = new Map();
+  document.querySelector = (selector) => selector === '.page.active' ? { id: `page-${pageId}` } : null;
+  document.getElementById = (id) => {
+    if (!document.nodes.has(id)) {
+      let html = '';
+      document.nodes.set(id, {
+        get innerHTML() { return html; },
+        set innerHTML(value) { html = value; writes.set(id, (writes.get(id) || 0) + 1); },
+        textContent: '', style: {},
+      });
+    }
+    return document.nodes.get(id);
+  };
+  document.writes = writes;
+  return document;
+}
+
 test('renders cached content before remote startup settles', async () => {
   const calls = [];
   const syncGate = deferred();
@@ -159,6 +178,34 @@ test('Wanjia console switches context without changing operating data or user co
   assert.equal(app.viewModel().wanjiaOps.navigation.active.id, 'data_analysis');
   assert.equal(app.setWanjiaOpsPane('not-a-real-pane'), 'overview');
   assert.deepEqual(app.store.load().collections.tasks, []);
+});
+
+test('rendering a Wanjia interaction does not repaint hidden workspace pages', () => {
+  const document = activePageDocument('local-life');
+  const app = createCeoOsApplication({
+    document, storage: { getItem: () => 'device-1', setItem() {} }, store: fakeStore(),
+  });
+
+  app.render();
+
+  assert.ok((document.writes.get('wanjiaOperatingRoot') || 0) > 0);
+  assert.ok((document.writes.get('merchantCenterRoot') || 0) > 0);
+  assert.equal(document.writes.get('ceoDashboardRoot') || 0, 0);
+  assert.equal(document.writes.get('lifeCenterRoot') || 0, 0);
+  assert.equal(document.writes.get('calendarCenterRoot') || 0, 0);
+});
+
+test('rendering from a legacy-only route does not repaint modular workspace pages', () => {
+  const document = activePageDocument('settings');
+  const app = createCeoOsApplication({
+    document, storage: { getItem: () => 'device-1', setItem() {} }, store: fakeStore(),
+  });
+
+  app.render();
+
+  assert.equal(document.writes.get('ceoDashboardRoot') || 0, 0);
+  assert.equal(document.writes.get('wanjiaOperatingRoot') || 0, 0);
+  assert.equal(document.writes.get('agentWorkbenchRoot') || 0, 0);
 });
 
 test('application badge counts only decisions that require CEO judgment', async () => {
@@ -388,7 +435,7 @@ test('service worker caches the complete transitive browser module graph', async
     'src/app/auto-refresh-controller.mjs',
     'src/app/daily-digest.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.8\.1`/);
+  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.8\.2`/);
 });
 
 test('Wanjia operations keeps legacy numbers historical and opens only a merchant task draft', () => {
@@ -439,8 +486,8 @@ test('the shell captures raw pre-upgrade state before either application module 
   const html = await readFile(new URL('index.html', root), 'utf8');
   const capture = html.indexOf('window.__ZOS_PRE_UPGRADE_RAW__');
   assert.ok(capture >= 0);
-  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.8.1'));
-  assert.ok(capture < html.indexOf('src/app.mjs?v=2.8.1'));
+  assert.ok(capture < html.indexOf('src/legacy-app.mjs?v=2.8.2'));
+  assert.ok(capture < html.indexOf('src/app.mjs?v=2.8.2'));
 });
 
 test('enabled closed-app reminders synchronize current tasks calendar deadlines and daily digests', async () => {

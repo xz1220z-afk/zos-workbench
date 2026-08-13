@@ -23,8 +23,9 @@ test('global search indexes content, reading, cards, social insight and agent re
 test('v2 heavy workspaces render only for their active route in the browser', async () => {
   const app = await readFile(new URL('src/app.mjs', root), 'utf8');
   assert.match(app, /activePageId/);
-  assert.match(app, /activePage === 'content-growth'/);
-  assert.match(app, /activePage === 'agent-workbench'/);
-  assert.match(app, /activePage === 'zos-brain'/);
-  assert.match(app, /activePage === 'intelligence'/);
+  assert.match(app, /'content-growth': \(\) => renderContentGrowth/);
+  assert.match(app, /'agent-workbench': \(\) => renderAgentWorkbench/);
+  assert.match(app, /'zos-brain': \(\) => renderKnowledgeWorkspace/);
+  assert.match(app, /intelligence: \(\) =>/);
+  assert.match(app, /else renderers\[activePage\]\?\.\(\)/);
 });
