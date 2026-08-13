@@ -218,6 +218,32 @@ test('switching Wanjia context repaints only the active panel after first render
   assert.match(panelHost.value, /商家作战/);
 });
 
+test('switching Wanjia context reuses the existing operating model', () => {
+  const document = activePageDocument('local-life');
+  const panelHost = { innerHTML: '' };
+  const root = {
+    innerHTML: '',
+    querySelector: (selector) => selector === '[data-wanjia-panel-host]' ? panelHost : null,
+    querySelectorAll: () => [],
+  };
+  document.getElementById = (id) => id === 'wanjiaOperatingRoot' ? root : document.nodes.get(id) || { innerHTML: '', textContent: '', style: {} };
+  const store = fakeStore();
+  let loads = 0;
+  const originalLoad = store.load;
+  store.load = () => { loads += 1; return originalLoad(); };
+  const app = createCeoOsApplication({ document, storage: { getItem: () => 'device-1', setItem() {} }, store });
+
+  app.render();
+  const loadsAfterFirstRender = loads;
+  app.setWanjiaOpsPane('merchant_ops');
+  const loadsAfterMerchant = loads;
+  app.setWanjiaOpsPane('growth_review');
+
+  assert.ok(loadsAfterFirstRender > 0);
+  assert.equal(loadsAfterMerchant - loadsAfterFirstRender, 1);
+  assert.equal(loads - loadsAfterMerchant, 1);
+});
+
 test('rendering from a legacy-only route does not repaint modular workspace pages', () => {
   const document = activePageDocument('settings');
   const app = createCeoOsApplication({

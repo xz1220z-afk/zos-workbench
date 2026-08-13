@@ -18,7 +18,7 @@ import { buildImportantDates } from './app/important-dates.mjs?v=2.8.3';
 import { queryAvailability } from './app/availability-center.mjs?v=2.8.3';
 import { searchMerchants, buildMerchantProfile } from './app/merchant-center.mjs?v=2.8.3';
 import { buildMerchantDiagnostic, buildWanjiaOpsModel } from './app/wanjia-ops-center.mjs?v=2.8.3';
-import { normalizeWanjiaOpsPane } from './app/wanjia-ops-navigation.mjs?v=2.8.3';
+import { buildWanjiaOpsNavigation, normalizeWanjiaOpsPane } from './app/wanjia-ops-navigation.mjs?v=2.8.3';
 import { filterIntelligence, normalizeIntelligenceItem, sortIntelligence, todayMustRead, transitionIntelligence } from './app/intelligence-center.mjs?v=2.8.3';
 import { buildIntelligenceAnswer } from './app/intelligence-explainer.mjs?v=2.8.3';
 import { fetchSelectedWeather, requestCurrentWeatherLocation, DEFAULT_WEATHER_LOCATION } from './app/weather-center.mjs?v=2.8.3';
@@ -173,6 +173,7 @@ export function createCeoOsApplication(config = {}) {
   let decisionUndoTimer = null;
   let decisionActionWork = null;
   let decisionReturnFocus = null;
+  let wanjiaModelCache = null;
   const legacyProjectionRetryDelays = Array.isArray(config.legacyProjectionRetryDelays)
     ? config.legacyProjectionRetryDelays : [0, 5_000, 30_000, 120_000];
 
@@ -526,15 +527,26 @@ export function createCeoOsApplication(config = {}) {
     };
   }
 
-  function wanjiaViewModel() {
+  function invalidateWanjiaModel() {
+    wanjiaModelCache = null;
+  }
+
+  function wanjiaViewModel(options = {}) {
     const state = store.load();
     const tasks = state.collections.tasks || [];
     const decisions = runtime.loopConnected ? runtime.decisions : (state.collections.decisions || []);
-    const wanjiaOps = buildWanjiaOpsModel(runtime.sources?.wanjia || null, {
-      today: now().slice(0, 10), tasks, filters: runtime.wanjiaFilters,
-      historyRange: runtime.wanjiaHistoryRange, historyFilters: runtime.wanjiaHistoryFilters,
-      activePane: runtime.wanjiaOpsPane,
-    });
+    if (!wanjiaModelCache || options.fresh) {
+      wanjiaModelCache = buildWanjiaOpsModel(runtime.sources?.wanjia || null, {
+        today: now().slice(0, 10), tasks, filters: runtime.wanjiaFilters,
+        historyRange: runtime.wanjiaHistoryRange, historyFilters: runtime.wanjiaHistoryFilters,
+        activePane: runtime.wanjiaOpsPane,
+      });
+    }
+    const wanjiaOps = {
+      ...wanjiaModelCache,
+      navigation: buildWanjiaOpsNavigation(runtime.wanjiaOpsPane),
+      history: { ...wanjiaModelCache.history },
+    };
     wanjiaOps.history.queryFeedback = runtime.wanjiaHistoryFeedback;
     return {
       ...runtime, tasks, decisions, wanjiaOps,
@@ -552,6 +564,7 @@ export function createCeoOsApplication(config = {}) {
       syncStatus: next.conflicts?.length ? '发现同步冲突' : '经营闭环已连接',
       brief: brief || next.briefs?.at(-1) || null,
     });
+    invalidateWanjiaModel();
     const knownHealth = new Map((runtime.health || []).map((item) => [item.source, item]));
     runtime.health = ['wanjia', 'huahuo', 'lingli', 'projects', 'brain', 'sync', 'feishu_write']
       .map((source) => knownHealth.get(source) || { source, state: 'pending', recordCount: null, lastSuccessAt: null });
@@ -1524,6 +1537,7 @@ export function createCeoOsApplication(config = {}) {
 
   function setWanjiaFilters(filters = {}) {
     runtime.wanjiaFilters = { ...runtime.wanjiaFilters, ...filters };
+    invalidateWanjiaModel();
     renderAll();
     return runtime.wanjiaFilters;
   }
@@ -1540,17 +1554,20 @@ export function createCeoOsApplication(config = {}) {
       query: '', industry: 'all', cooperationType: 'all', owner: 'all', health: 'all',
       abnormal: 'all', active: 'all', live: 'all', video: 'all', groupbuyGmv: 'all', sort: '',
     };
+    invalidateWanjiaModel();
     renderAll();
   }
 
   function setWanjiaHistoryRange(range = {}) {
     runtime.wanjiaHistoryRange = { ...runtime.wanjiaHistoryRange, ...range };
+    invalidateWanjiaModel();
     renderAll();
     return runtime.wanjiaHistoryRange;
   }
 
   function setWanjiaHistoryFilters(filters = {}) {
     runtime.wanjiaHistoryFilters = { ...runtime.wanjiaHistoryFilters, ...filters };
+    invalidateWanjiaModel();
     renderAll();
     return runtime.wanjiaHistoryFilters;
   }
@@ -1558,7 +1575,8 @@ export function createCeoOsApplication(config = {}) {
   function applyWanjiaHistoryQuery({ range = {}, filters = {} } = {}) {
     runtime.wanjiaHistoryRange = { ...runtime.wanjiaHistoryRange, ...range };
     runtime.wanjiaHistoryFilters = { ...runtime.wanjiaHistoryFilters, ...filters };
-    const history = viewModel().wanjiaOps.history;
+    invalidateWanjiaModel();
+    const history = wanjiaViewModel().wanjiaOps.history;
     const label = `${history.range.startDate} 至 ${history.range.endDate}`;
     runtime.wanjiaHistoryFeedback = history.availability?.state === 'validated'
       ? `已应用查询：${label}。已按当前时间范围与筛选条件更新。`
@@ -1574,6 +1592,7 @@ export function createCeoOsApplication(config = {}) {
     runtime.wanjiaHistoryRange = { preset: 'today', startDate: '', endDate: '' };
     runtime.wanjiaHistoryFilters = { merchantId: '', industry: 'all', owner: 'all', cooperationType: 'all', abnormal: 'all' };
     runtime.wanjiaHistoryFeedback = '已恢复今天范围与全部筛选条件。';
+    invalidateWanjiaModel();
     renderAll();
   }
 
@@ -3213,7 +3232,10 @@ export function createCeoOsApplication(config = {}) {
   async function start() {
     if (started) return viewModel();
     started = true;
-    unsubscribeStore = store.subscribe(renderAll);
+    unsubscribeStore = store.subscribe(() => {
+      invalidateWanjiaModel();
+      renderAll();
+    });
     bindActions();
     renderAll();
     scheduleUpgradeCheckpoint();
