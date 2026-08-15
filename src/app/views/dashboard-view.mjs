@@ -2,6 +2,7 @@ import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils
 import { formatCurrency, humanText } from '../value-utils.mjs?v=2.8.4';
 import { partitionDecisions } from '../decision-center.mjs?v=2.8.4';
 import { buildWorkHomepagePresence } from '../homepage-presence.mjs?v=2.8.4';
+import { renderAiCommandHtml } from './ai-command-view.mjs?v=2.8.4';
 
 export { VIEW_STATES };
 
@@ -84,6 +85,7 @@ export function render(container, viewModel = {}) {
   const presence = buildWorkHomepagePresence(viewModel);
   container.innerHTML = `<div class="v14-dashboard">
     ${syncRail(viewModel.autoRefresh)}
+    ${renderAiCommandHtml(viewModel.aiCommand)}
     <section class="v14-hero v25-glass-hero" data-home-presence="work" data-presence-tone="${escapeHtml(presence.tone)}"><div><span class="v14-kicker">${escapeHtml(presence.kicker)} · ${escapeHtml(viewModel.today || '')}</span><h2>${escapeHtml(presence.title)}</h2><p>${escapeHtml(presence.summary)}</p><div class="v14-hero-actions"><button class="v13-action v13-action-primary" data-page="${escapeHtml(presence.primaryAction.target)}">${escapeHtml(presence.primaryAction.label)}</button><button class="v13-action" data-quick-capture>＋ ${escapeHtml(presence.secondaryAction.label)}</button><details class="v14-quick-menu"><summary>更多操作</summary><div><button class="v13-action" data-agent-draft="ceo">生成 CEO 建议</button><button class="v13-action" data-page="tasks">新建任务</button><button class="v13-action" data-page="enterprise">查看项目</button></div></details></div></div><div class="v14-hero-aside">${weatherSummary(viewModel.weather)}<div class="v25-hero-boundary">事实来自飞书与 Supabase；AI 只做建议，所有正式写入须确认。</div></div></section>
     <div class="v14-kpi-grid">
       <article><span>待我决策</span><strong>${displayValue(activeDecisions.length)}</strong><small>需本人判断</small></article>

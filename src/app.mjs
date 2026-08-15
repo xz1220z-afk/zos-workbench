@@ -75,6 +75,7 @@ import { applyDecisionAction, applyDecisionBatch, partitionDecisions } from './a
 import { createAiCommand, normalizeAiCommandResult, transitionAiCommand } from './app/ai-command-center.mjs?v=2.8.4';
 import { routeIntent } from './app/intent-router.mjs?v=2.8.4';
 import { executeControlledAction } from './app/controlled-execution.mjs?v=2.8.4';
+import { createVoiceInput } from './app/voice-input.mjs?v=2.8.4';
 
 export const APP_VERSION = '2.8.4';
 const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
@@ -103,6 +104,10 @@ export function createCeoOsApplication(config = {}) {
   const document = config.document || globalThis.document;
   const storage = config.storage || globalThis.localStorage;
   const now = config.now || (() => new Date().toISOString());
+  const SpeechRecognition = Object.hasOwn(config, 'SpeechRecognition')
+    ? config.SpeechRecognition
+    : document?.defaultView?.SpeechRecognition || document?.defaultView?.webkitSpeechRecognition
+      || globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition;
   const deviceId = storage?.getItem?.('zos_device_id') || browserId();
   const preUpgradeState = config.preUpgradeState || null;
   const preUpgradeRaw = config.preUpgradeRaw || globalThis.__ZOS_PRE_UPGRADE_RAW__ || null;
@@ -154,7 +159,7 @@ export function createCeoOsApplication(config = {}) {
     weather: { state: 'loading', location: DEFAULT_WEATHER_LOCATION },
     aiCommand: {
       ...createAiCommand('', { id: 'ai-command-home', now: now() }),
-      voice: { supported: false, state: 'unsupported' },
+      voice: { supported: typeof SpeechRecognition === 'function', state: typeof SpeechRecognition === 'function' ? 'idle' : 'unsupported' },
       result: null, preview: null, undo: null,
     },
   };
@@ -182,6 +187,10 @@ export function createCeoOsApplication(config = {}) {
   let decisionActionWork = null;
   let decisionReturnFocus = null;
   let wanjiaModelCache = null;
+  let aiVoiceInput = null;
+  let aiVoiceHoldTimer = null;
+  let aiVoiceHoldActive = false;
+  let aiVoiceIgnoreClick = false;
   const legacyProjectionRetryDelays = Array.isArray(config.legacyProjectionRetryDelays)
     ? config.legacyProjectionRetryDelays : [0, 5_000, 30_000, 120_000];
 
@@ -404,6 +413,65 @@ export function createCeoOsApplication(config = {}) {
     signalLocalChange();
     renderAll();
     return true;
+  }
+
+  function setAiCommandInput(input, options = {}) {
+    runtime.aiCommand = { ...runtime.aiCommand, input: String(input || '') };
+    if (options.render !== false) renderAll();
+    return runtime.aiCommand.input;
+  }
+
+  function setAiCommandScope(scope) {
+    const allowed = new Set(['auto', 'wanjia', 'huahuo', 'lingli', 'life', 'knowledge', 'intelligence', 'agent']);
+    runtime.aiCommand = { ...runtime.aiCommand, scope: allowed.has(scope) ? scope : 'auto' };
+    renderAll();
+    return runtime.aiCommand.scope;
+  }
+
+  function ensureAiVoiceInput() {
+    if (aiVoiceInput) return aiVoiceInput;
+    aiVoiceInput = createVoiceInput({
+      Recognition: SpeechRecognition,
+      globalObject: document?.defaultView || globalThis,
+      onState: (state) => {
+        runtime.aiCommand = {
+          ...runtime.aiCommand,
+          state,
+          voice: { supported: state !== 'unsupported', state },
+          error: state === 'permission_denied' ? '未获麦克风权限，请继续使用键盘。' : runtime.aiCommand.error,
+        };
+        renderAll();
+      },
+      onTranscript: (transcript) => {
+        runtime.aiCommand = { ...runtime.aiCommand, input: transcript };
+        renderAll();
+      },
+      onError: (state) => {
+        const message = state === 'permission_denied'
+          ? '未获麦克风权限，请继续使用键盘。'
+          : '语音识别暂不可用，请继续使用键盘。';
+        runtime.aiCommand = { ...runtime.aiCommand, error: message };
+      },
+    });
+    return aiVoiceInput;
+  }
+
+  function startAiVoice() {
+    const voice = ensureAiVoiceInput();
+    if (!voice.supported) {
+      runtime.aiCommand = { ...runtime.aiCommand, state: 'unsupported', voice: { supported: false, state: 'unsupported' } };
+      renderAll();
+      return false;
+    }
+    return voice.start();
+  }
+
+  function stopAiVoice() {
+    return ensureAiVoiceInput().stop();
+  }
+
+  function toggleAiVoice() {
+    return runtime.aiCommand?.voice?.state === 'listening' ? stopAiVoice() : startAiVoice();
   }
 
   function viewModel() {
@@ -2578,8 +2646,19 @@ export function createCeoOsApplication(config = {}) {
       const agentTaskAnalyze = event.target?.closest?.('[data-agent-task-analyze]');
       const agentContextConfirm = event.target?.closest?.('[data-agent-context-confirm]');
       const agentContextReject = event.target?.closest?.('[data-agent-context-reject]');
+      const aiCommandAction = event.target?.closest?.('[data-ai-command-action]');
+      const aiCommandUndo = event.target?.closest?.('[data-ai-command-undo]');
+      const aiCommandScope = event.target?.closest?.('[data-ai-command-scope]');
+      const aiVoiceToggle = event.target?.closest?.('[data-ai-voice-toggle]');
       try {
-        if (knowledgeContextImport) selectKnowledgeContextFile();
+        if (aiCommandAction) await executeAiCommandAction(aiCommandAction.dataset.aiCommandAction);
+        else if (aiCommandUndo) undoAiCommandAction();
+        else if (aiCommandScope) setAiCommandScope(aiCommandScope.dataset.aiCommandScope);
+        else if (aiVoiceToggle) {
+          if (aiVoiceIgnoreClick) aiVoiceIgnoreClick = false;
+          else toggleAiVoice();
+        }
+        else if (knowledgeContextImport) selectKnowledgeContextFile();
         else if (agentIndexImport) selectAgentOsIndexFile();
         else if (agentOsFilter) setAgentOsFilter(agentOsFilter.dataset.agentOsFilter);
         else if (agentDetailsButton) openAgentDetails(agentDetailsButton.dataset.agentDetails);
@@ -2801,6 +2880,13 @@ export function createCeoOsApplication(config = {}) {
       } catch { runtime.syncStatus = '操作未完成，请检查登录与数据权限'; renderAll(); }
     });
     document.addEventListener('submit', async (event) => {
+      if (event.target?.matches?.('[data-ai-command-form]')) {
+        event.preventDefault();
+        const data = new FormData(event.target);
+        try { await submitAiCommand(data.get('task'), { scope: runtime.aiCommand.scope }); }
+        catch { /* submitAiCommand already preserves the input and safe error. */ }
+        return;
+      }
       if (event.target?.matches?.('[data-intelligence-question-form]')) {
         event.preventDefault();
         const data = new FormData(event.target);
@@ -2976,6 +3062,34 @@ export function createCeoOsApplication(config = {}) {
         renderAll();
       }
     });
+    document.addEventListener('input', (event) => {
+      if (event.target?.matches?.('[data-ai-command-input]')) setAiCommandInput(event.target.value, { render: false });
+    });
+    document.addEventListener('pointerdown', (event) => {
+      if (!event.target?.closest?.('[data-ai-voice-toggle]')) return;
+      const clock = document?.defaultView || globalThis;
+      if (aiVoiceHoldTimer) clock.clearTimeout?.(aiVoiceHoldTimer);
+      aiVoiceHoldActive = false;
+      aiVoiceHoldTimer = clock.setTimeout?.(() => {
+        aiVoiceHoldTimer = null;
+        aiVoiceHoldActive = true;
+        startAiVoice();
+      }, 240);
+    });
+    const releaseAiVoice = (event) => {
+      if (!event.target?.closest?.('[data-ai-voice-toggle]')) return;
+      const clock = document?.defaultView || globalThis;
+      if (aiVoiceHoldTimer) clock.clearTimeout?.(aiVoiceHoldTimer);
+      aiVoiceHoldTimer = null;
+      if (aiVoiceHoldActive) {
+        stopAiVoice();
+        aiVoiceHoldActive = false;
+        aiVoiceIgnoreClick = true;
+        clock.setTimeout?.(() => { aiVoiceIgnoreClick = false; }, 0);
+      }
+    };
+    document.addEventListener('pointerup', releaseAiVoice);
+    document.addEventListener('pointercancel', releaseAiVoice);
     document.addEventListener('input', (event) => {
       if (event.target?.matches?.('[data-decision-search]')) setDecisionFilter('search', event.target.value);
       if (event.target?.matches?.('[data-intelligence-search]')) setIntelligenceFilter('search', event.target.value);
@@ -3371,6 +3485,12 @@ export function createCeoOsApplication(config = {}) {
     legacyProjectionIdleHandle = null;
     legacyProjectionRetryQueued = false;
     clearDecisionUndo();
+    const clock = document?.defaultView || globalThis;
+    if (aiVoiceHoldTimer) clock.clearTimeout?.(aiVoiceHoldTimer);
+    aiVoiceHoldTimer = null;
+    aiVoiceHoldActive = false;
+    aiVoiceInput?.destroy?.();
+    aiVoiceInput = null;
     started = false;
   }
 
@@ -3401,6 +3521,7 @@ export function createCeoOsApplication(config = {}) {
     captureContentExperiment, updateContentExperiment, compoundContentItem, reviewCompoundCandidate, updateContentMetrics, editAsset, openBrainstorm,
     launchAgentRun, submitAgentRun, approveAgentRun, deletePrivateEntity,
     submitAiCommand, executeAiCommandAction, undoAiCommandAction,
+    setAiCommandInput, setAiCommandScope, startAiVoice, stopAiVoice, toggleAiVoice,
     get operatingRuntime() { return operatingRuntime; },
   };
 }
