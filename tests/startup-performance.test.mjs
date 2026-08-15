@@ -22,7 +22,7 @@ test('v2.0 renders the local shell before remote startup and updates without a f
   assert.match(startBody, /initializeRemote\(\)\.catch/);
   assert.doesNotMatch(legacy, /controllerchange[\s\S]{0,180}window\.location\.reload\(\)/);
   assert.match(worker, /fetch\(assetUrl, \{ cache: 'reload' \}\)/);
-  assert.match(worker, /zos-workbench-v2\.8\.4/);
+  assert.match(worker, /zos-workbench-v2\.9\.0/);
 });
 
 test('double-clicking index.html redirects immediately to the official app while https stays in place', async () => {

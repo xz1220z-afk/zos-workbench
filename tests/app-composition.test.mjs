@@ -484,7 +484,7 @@ test('service worker caches the complete transitive browser module graph', async
     'src/app/auto-refresh-controller.mjs',
     'src/app/daily-digest.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.8\.4`/);
+  assert.match(serviceWorker, /asset\.endsWith\('\.mjs'\) \? `\$\{asset\}\?v=2\.9\.0`/);
 });
 
 test('Wanjia operations keeps legacy numbers historical and opens only a merchant task draft', () => {
