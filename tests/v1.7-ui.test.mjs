@@ -73,7 +73,7 @@ test('v2.0 PWA cache and manifest include every execution and reliable-schedule 
     'src/app/important-dates.mjs', 'src/app/views/calendar-view.mjs',
     'src/app/daily-digest.mjs', 'src/app/push-notifications.mjs',
   ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
-  assert.equal(manifest.version, '2.8.4');
+  assert.equal(manifest.version, '2.9.0');
   assert.ok(manifest.shortcuts.some((item) => item.url === './#focus'));
 });
 

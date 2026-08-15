@@ -32,7 +32,7 @@ test('double-clicking index.html redirects immediately to the official app while
     protocol: 'file:', hash: '#calendar',
     replace(url) { redirected.push(url); },
   });
-  assert.deepEqual(redirected, ['https://xz1220z-afk.github.io/zos-workbench/?v=2.8.4#calendar']);
+  assert.deepEqual(redirected, ['https://xz1220z-afk.github.io/zos-workbench/?v=2.9.0#calendar']);
 
   const onlineRedirected = [];
   runLocalFileGuard(html, {

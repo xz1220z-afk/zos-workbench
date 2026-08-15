@@ -4,17 +4,17 @@ import { readFile } from 'node:fs/promises';
 
 const root = new URL('../', import.meta.url);
 
-test('v2.8.4 release cache includes the Wanjia operations control tower module graph', async () => {
+test('v2.9.0 release cache includes the AI command and voice module graph', async () => {
   const [sw, manifest, app, html] = await Promise.all([
     readFile(new URL('sw.js', root), 'utf8'),
     readFile(new URL('manifest.json', root), 'utf8').then(JSON.parse),
     readFile(new URL('src/app.mjs', root), 'utf8'),
     readFile(new URL('index.html', root), 'utf8'),
   ]);
-  assert.match(sw, /zos-workbench-v2\.8\.4/);
-  assert.equal(manifest.version, '2.8.4');
-  assert.match(app, /APP_VERSION\s*=\s*'2\.8\.4'/);
-  assert.match(html, /\?v=2\.8\.4/);
+  assert.match(sw, /zos-workbench-v2\.9\.0/);
+  assert.equal(manifest.version, '2.9.0');
+  assert.match(app, /APP_VERSION\s*=\s*'2\.9\.0'/);
+  assert.match(html, /\?v=2\.9\.0/);
   for (const asset of [
     'src/app/content-growth.mjs', 'src/app/knowledge-workspace.mjs',
     'src/app/social-insight-center.mjs', 'src/app/agent-workbench.mjs',
@@ -22,8 +22,11 @@ test('v2.8.4 release cache includes the Wanjia operations control tower module g
     'src/app/company-cockpit.mjs', 'src/app/ritual-calendar.mjs', 'src/app/private-date-import.mjs',
     'src/app/homepage-presence.mjs', 'src/app/wanjia-history.mjs', 'src/app/agent-task-context.mjs',
     'src/app/settings-sync-bridge.mjs', 'src/app/wanjia-ops-navigation.mjs',
+    'src/app/ai-command-center.mjs', 'src/app/intent-router.mjs',
+    'src/app/controlled-execution.mjs', 'src/app/voice-input.mjs',
     'src/app/views/content-growth-view.mjs', 'src/app/views/knowledge-workspace-view.mjs',
     'src/app/views/social-insights-view.mjs', 'src/app/views/agent-workbench-view.mjs',
     'src/app/views/company-cockpit-view.mjs',
+    'src/app/views/ai-command-view.mjs',
   ]) assert.match(sw, new RegExp(asset.replaceAll('.', '\\.')), `${asset} must be cached`);
 });

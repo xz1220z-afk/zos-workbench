@@ -6,8 +6,8 @@
 //
 // `asOf` is injectable so tests are deterministic.
 
-import { WANJIA_DONE_STAGES } from './wanjia-data.mjs?v=2.8.4';
-import { HUAHUO_DONE_STAGES } from './huahuo-data.mjs?v=2.8.4';
+import { WANJIA_DONE_STAGES } from './wanjia-data.mjs?v=2.9.0';
+import { HUAHUO_DONE_STAGES } from './huahuo-data.mjs?v=2.9.0';
 
 export const DEFAULT_STALE_DAYS = 7;
 export const DEFAULT_STUCK_DAYS = 14;

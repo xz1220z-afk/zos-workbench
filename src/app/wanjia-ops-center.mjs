@@ -1,5 +1,5 @@
-import { buildWanjiaHistoryModel } from './wanjia-history.mjs?v=2.8.4';
-import { buildWanjiaOpsNavigation } from './wanjia-ops-navigation.mjs?v=2.8.4';
+import { buildWanjiaHistoryModel } from './wanjia-history.mjs?v=2.9.0';
+import { buildWanjiaOpsNavigation } from './wanjia-ops-navigation.mjs?v=2.9.0';
 
 const STATUS_LABELS = Object.freeze({
   realtime_validated: '实时已校验',

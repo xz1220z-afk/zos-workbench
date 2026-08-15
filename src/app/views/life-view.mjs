@@ -1,5 +1,5 @@
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.8.4';
-import { buildLifeHomepagePresence } from '../homepage-presence.mjs?v=2.8.4';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.9.0';
+import { buildLifeHomepagePresence } from '../homepage-presence.mjs?v=2.9.0';
 
 function primaryAction(action = {}) {
   if (action.target === 'important-dates') return `<button class="v13-action v13-action-primary" data-important-dates-open="life">${escapeHtml(action.label)}</button>`;
