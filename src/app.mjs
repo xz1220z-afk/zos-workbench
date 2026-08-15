@@ -72,6 +72,9 @@ import { render as renderAgentWorkbench } from './app/views/agent-workbench-view
 import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.8.4';
 import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.8.4';
 import { applyDecisionAction, applyDecisionBatch, partitionDecisions } from './app/decision-center.mjs?v=2.8.4';
+import { createAiCommand, normalizeAiCommandResult, transitionAiCommand } from './app/ai-command-center.mjs?v=2.8.4';
+import { routeIntent } from './app/intent-router.mjs?v=2.8.4';
+import { executeControlledAction } from './app/controlled-execution.mjs?v=2.8.4';
 
 export const APP_VERSION = '2.8.4';
 const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
@@ -149,6 +152,11 @@ export function createCeoOsApplication(config = {}) {
     agentOsFilter: 'all', agentOsDetailId: null, agentOsPatrol: null,
     agentOsImportState: 'idle', agentOsImportMessage: null, agentAnalysis: null,
     weather: { state: 'loading', location: DEFAULT_WEATHER_LOCATION },
+    aiCommand: {
+      ...createAiCommand('', { id: 'ai-command-home', now: now() }),
+      voice: { supported: false, state: 'unsupported' },
+      result: null, preview: null, undo: null,
+    },
   };
   let operatingRuntime = config.operatingRuntime || null;
   let autoRefreshController = null;
@@ -316,6 +324,86 @@ export function createCeoOsApplication(config = {}) {
   function signalLocalChange() {
     try { (config.eventTarget || globalThis).dispatchEvent(new Event('zos:local-change')); } catch { /* Optional outside browsers. */ }
     queueReminderSchedule();
+  }
+
+  async function submitAiCommand(input, options = {}) {
+    const text = String(input || '').trim();
+    if (!text) throw new Error('ai_command_input_required');
+    const scope = options.scope || runtime.aiCommand?.scope || 'auto';
+    const route = routeIntent(text, { scope, agentId: options.agentId || null });
+    runtime.aiCommand = {
+      ...transitionAiCommand(createAiCommand(text, { id: browserId(), scope, now: now() }), 'routing'),
+      route, voice: runtime.aiCommand?.voice || { supported: false, state: 'unsupported' },
+      result: null, preview: null, undo: null,
+    };
+    renderAll();
+    const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
+    if (typeof ask !== 'function') {
+      runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'failed', { error: 'AI 尚未配置，请先登录并检查服务。' });
+      renderAll();
+      throw new Error('ai_command_failed');
+    }
+    runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'answering');
+    renderAll();
+    try {
+      const response = await ask({ mode: 'command', task: text, route });
+      const actions = Array.isArray(response?.actions) ? response.actions.filter((action) => action && typeof action === 'object') : [];
+      const result = normalizeAiCommandResult(response, {
+        task: text,
+        execution: { level: route.riskLevel, actions },
+      });
+      runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'completed', { result, error: null });
+      renderAll();
+      return result;
+    } catch {
+      runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'failed', { error: 'AI 暂时不可用，请稍后重试。' });
+      renderAll();
+      throw new Error('ai_command_failed');
+    }
+  }
+
+  async function executeAiCommandAction(indexOrAction = 0) {
+    const action = typeof indexOrAction === 'object'
+      ? indexOrAction
+      : runtime.aiCommand?.result?.execution?.actions?.[Number(indexOrAction)];
+    if (!action) throw new Error('ai_command_action_required');
+    const navigate = config.navigateTo || globalThis.window?.navigateTo;
+    const result = await executeControlledAction(action, {
+      navigate: (target) => typeof navigate === 'function' ? navigate(target) : null,
+      saveTaskDraft: (draft) => saveTask({
+        title: String(draft.title || 'AI 任务草案').trim(),
+        description: String(draft.description || draft.summary || '').trim(),
+        status: 'open', priority: draft.priority || 'normal', company: draft.company || runtime.aiCommand?.route?.scope || 'ceo',
+        tags: ['ai-command', 'draft'], sourceType: 'ai_command', sourceId: runtime.aiCommand?.id,
+      }),
+      saveInboxDraft: (draft) => {
+        const record = store.saveEntity('inbox', {
+          title: String(draft.title || 'AI 收集箱草案').trim(),
+          description: String(draft.description || draft.summary || '').trim(),
+          status: 'draft', company: draft.company || runtime.aiCommand?.route?.scope || 'ceo',
+          sourceType: 'ai_command', sourceId: runtime.aiCommand?.id,
+        }, { action: 'ai_command_draft' });
+        signalLocalChange();
+        return record;
+      },
+    });
+    if (result.status === 'preview_required') {
+      runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'preview_required', { preview: result.preview, undo: null });
+    } else {
+      runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'completed', { preview: null, undo: result.undo || null });
+    }
+    renderAll();
+    return result;
+  }
+
+  function undoAiCommandAction() {
+    const undo = runtime.aiCommand?.undo;
+    if (!undo?.entityType || !undo.recordId) throw new Error('ai_command_undo_unavailable');
+    store.deleteEntity(undo.entityType, undo.recordId);
+    runtime.aiCommand = { ...runtime.aiCommand, undo: null };
+    signalLocalChange();
+    renderAll();
+    return true;
   }
 
   function viewModel() {
@@ -3312,6 +3400,7 @@ export function createCeoOsApplication(config = {}) {
     captureBrainstorm, captureAsset, captureSocialInsight, editSocialInsight, socialInsightToContent,
     captureContentExperiment, updateContentExperiment, compoundContentItem, reviewCompoundCandidate, updateContentMetrics, editAsset, openBrainstorm,
     launchAgentRun, submitAgentRun, approveAgentRun, deletePrivateEntity,
+    submitAiCommand, executeAiCommandAction, undoAiCommandAction,
     get operatingRuntime() { return operatingRuntime; },
   };
 }
