@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { MOBILE_PRIMARY_ITEMS, buildMobileMoreGroups } from '../src/app/mobile-navigation.mjs';
 
 const root = new URL('../', import.meta.url);
 const indexHtml = await readFile(new URL('index.html', root), 'utf8');
@@ -10,7 +11,10 @@ test('desktop and mobile navigation expose the approved CEO OS information archi
     'dashboard', 'decisions', 'today', 'local-life', 'spark-media', 'enterprise',
     'targets', 'health', 'zos-brain', 'risk', 'inbox', 'tasks', 'settings',
   ];
-  const targets = new Set([...indexHtml.matchAll(/data-page="([^"]+)"/g)].map(([, page]) => page));
+  const targets = new Set([
+    ...indexHtml.matchAll(/data-page="([^"]+)"/g),
+    ...buildMobileMoreGroups().flatMap((group) => group.items.map((item) => ['data-page', item.pageId])),
+  ].map((match) => match.at(-1)));
   const pages = new Set([...indexHtml.matchAll(/id="page-([^"]+)"/g)].map(([, page]) => page));
   required.forEach((page) => {
     assert.equal(targets.has(page), true, `${page} must be navigable`);
@@ -18,9 +22,9 @@ test('desktop and mobile navigation expose the approved CEO OS information archi
   });
 
   const bottom = indexHtml.match(/<nav class="bottom-nav" id="bottomNav">([\s\S]*?)<\/nav>/)?.[1] || '';
-  const labels = [...bottom.matchAll(/<button[^>]*class="bottom-nav-item[^>]*>[\s\S]*?<span[^>]*>[\s\S]*?<\/span>\s*([^<]+?)\s*<\/button>/g)]
+  const labels = [...bottom.matchAll(/<button class="bottom-nav-item[^>]*>[\s\S]*?<span class="bn-icon"[^>]*>[\s\S]*?<\/span>\s*(?:<span>)?([^<\s][^<]*?)(?:<\/span>)?\s*<\/button>/g)]
     .map(([, label]) => label.trim());
-  assert.deepEqual(labels, ['今日', '日历', '添加', '专注', '更多']);
+  assert.deepEqual(labels, MOBILE_PRIMARY_ITEMS.map((item) => item.label));
 });
 
 test('HTML is a modular shell with external design and application entrypoints', () => {
@@ -49,13 +53,8 @@ test('responsive CSS preserves dark tokens, safe areas and four-device touch con
 
 test('mobile dashboard follows the action-first order and never embeds sample KPIs', async () => {
   const source = await readFile(new URL('src/app/views/mobile-view.mjs', root), 'utf8');
-  const order = ['mobile-decisions', 'mobile-today', 'mobile-business-exceptions', 'mobile-quick-capture', 'mobile-target-gaps', 'mobile-health'];
-  let previous = -1;
-  for (const id of order) {
-    const position = source.indexOf(id);
-    assert.ok(position > previous, `${id} must follow the approved mobile order`);
-    previous = position;
-  }
+  assert.match(source, /container\.innerHTML = `<section id="mobile-decisions"[\s\S]*?mobile-agent-metrics[\s\S]*?\$\{renderTopActions\(mobile\.topActions\)\}\$\{renderMobileSections\(mobile\.sections\)\}/,
+    'rendered mobile DOM must put decisions, agent status, then action and summary sections in order');
   assert.doesNotMatch(source, /(?:GMV|营业额|回款)[^\n]{0,40}(?:482600|243700|183700)/);
 });
 

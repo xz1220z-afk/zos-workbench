@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
+import { buildMobileMoreGroups } from '../src/app/mobile-navigation.mjs';
 
 const [shellHtml, legacySource, appCss] = await Promise.all([
   readFile(new URL('../index.html', import.meta.url), 'utf8'),
@@ -9,6 +10,7 @@ const [shellHtml, legacySource, appCss] = await Promise.all([
   readFile(new URL('../assets/app.css', import.meta.url), 'utf8'),
 ]);
 const indexHtml = `${shellHtml}\n${legacySource}\n${appCss}`;
+const appSource = await readFile(new URL('../src/app.mjs', import.meta.url), 'utf8');
 
 test('CEO command center renders source-aware sections and all data states without sample business KPIs', () => {
   assert.match(indexHtml, /function renderCommandCenter\s*\(/,
@@ -113,15 +115,17 @@ test('mobile navigation has five primary destinations and routes secondary pages
   assert.match(bottomNav, /data-page="agent-workbench"/,
     'Agent must remain a primary mobile destination');
   const moreMenu = indexHtml.match(/<section class="mobile-more-menu" id="mobileMoreMenu"[\s\S]*?<\/section>/)?.[0] || '';
+  const routes = new Set(buildMobileMoreGroups().flatMap((group) => group.items.map((item) => item.pageId)));
   for (const pageId of [
     'local-life', 'spark-media', 'lingli', 'enterprise', 'targets',
     'intelligence', 'content-growth', 'zos-brain', 'search',
     'life', 'relations', 'reviews', 'inbox', 'tasks', 'risk', 'privacy', 'settings',
     'dashboard', 'decisions', 'health', 'today', 'focus',
   ]) {
-    assert.match(moreMenu, new RegExp(`data-page="${pageId}"`), `${pageId} must remain reachable from More`);
+    assert.equal(routes.has(pageId), true, `${pageId} must remain reachable from dynamic More`);
   }
-  assert.doesNotMatch(moreMenu, /data-page="agent-workbench"/);
+  assert.equal(routes.has('agent-workbench'), false);
+  assert.match(moreMenu, /data-mobile-more-group="business"/);
   assert.match(indexHtml, /\.bottom-nav-item:focus-visible[\s\S]{0,180}outline:/,
     'mobile navigation must expose a visible keyboard focus indicator');
   assert.match(indexHtml, /\.bottom-nav-item[\s\S]{0,180}min-height:\s*44px/,
@@ -133,6 +137,8 @@ test('selecting a More route moves focus out of the menu before it becomes hidde
     'a More route must have an explicit page-focus handoff');
   assert.match(indexHtml, /function navigateTo\(pageId, options\)[\s\S]{0,980}options\.focusPage[\s\S]{0,120}focusPageContent\(target\)/,
     'navigation must apply the requested page-focus handoff after changing pages');
-  assert.match(indexHtml, /\.mobile-more-item\[data-page\][\s\S]{0,240}navigateTo\(this\.dataset\.page, \{ focusPage: true \}\)/,
-    'More item selection must request the page-focus handoff');
+  assert.match(appSource, /const mobileMorePage = event\.target\?\.closest\?\.\('\[data-mobile-more-item\]\[data-page\]'\)/,
+    'the dynamically rendered More item must have a delegated event path');
+  assert.match(appSource, /mobileMorePage && globalThis\.window\?\.navigateTo[\s\S]{0,180}navigateTo\(mobileMorePage\.dataset\.page, \{ focusPage: true \}\)/,
+    'delegated dynamic More selection must request the page-focus handoff');
 });

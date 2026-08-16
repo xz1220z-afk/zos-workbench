@@ -15,10 +15,13 @@ function taskCard(task) {
   </article>`;
 }
 
-function taskMatchesQuickFilter(task, filter, today) {
+function taskMatchesQuickFilter(task, filter, today, localDeviceId) {
   if (filter === 'today') return [task.startAt, task.dueAt, task.dueDate].some((value) => String(value || '').slice(0, 10) === today);
   if (filter === 'overdue') return !['done', 'completed', 'cancelled'].includes(task.status) && Boolean(task.dueAt || task.dueDate) && String(task.dueAt || task.dueDate).slice(0, 10) < today;
-  if (filter === 'mine') return !task.createdBy || ['me', 'self'].includes(String(task.createdBy || task.creatorId || '').toLowerCase());
+  if (filter === 'mine') {
+    const creator = String(task.creatorId || task.createdBy || task.deviceId || '').trim();
+    return Boolean(creator && localDeviceId && creator === localDeviceId);
+  }
   if (filter === 'todo') return !['done', 'completed', 'cancelled'].includes(task.status);
   if (filter === 'done') return ['done', 'completed'].includes(task.status);
   return true;
@@ -36,7 +39,7 @@ export function render(container, viewModel = {}) {
   if (!container) return;
   const allTasks = [...(viewModel.tasks || []), ...(viewModel.localAgentTasks || [])];
   const activeFilter = viewModel.taskQuickFilter || 'all';
-  const tasks = allTasks.filter((task) => taskMatchesQuickFilter(task, activeFilter, viewModel.today || new Date().toISOString().slice(0, 10)));
+  const tasks = allTasks.filter((task) => taskMatchesQuickFilter(task, activeFilter, viewModel.today || new Date().toISOString().slice(0, 10), viewModel.taskOwnerDeviceId || viewModel.deviceId));
   const draft = viewModel.taskDraft || {};
   const drawer = viewModel.taskDrawerOpen ? `<aside class="task-drawer" role="dialog" aria-modal="true" aria-labelledby="taskEditorTitle">
     <form id="richTaskForm" data-task-form>

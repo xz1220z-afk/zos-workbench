@@ -126,6 +126,7 @@ export function createCeoOsApplication(config = {}) {
     health: [], gaps: [], briefs: [], conflicts: [], approvals: [], decisions: [], targets: [],
     businessExceptions: [], intelligence: [], intelligenceState: 'loading', intelligenceCompany: 'all',
     intelligenceFilters: { company: 'all', source: 'all', credibility: 'all', status: 'all', age: 'all', search: '', sortBy: 'newest' },
+    intelligenceFiltersDisclosureOpen: false,
     intelligenceQuestion: null, intelligenceAnswer: null, knowledgeContext: { state: 'unknown', count: 0, latestAt: null },
     contentCompany: 'all', contentOwner: 'all',
     intelligenceSources: {}, intelligenceFetchedAt: null,
@@ -139,7 +140,7 @@ export function createCeoOsApplication(config = {}) {
     notificationState: 'pending_configuration', notificationPublicKey: null, inAppNotificationState: 'permission_required',
     reminderScheduleState: 'disabled', reminderScheduleCount: 0,
     showFocus: false, importantDatesPanel: null, searchQuery: '', searchResults: [],
-    taskDrawerOpen: false, taskDraft: null, taskQuickFilter: 'all', focusDuration: 25, focusTaskId: null,
+    taskDrawerOpen: false, taskDraft: null, taskQuickFilter: 'all', taskOwnerDeviceId: deviceId, focusDuration: 25, focusTaskId: null,
     availabilityDate: now().slice(0, 10), merchantQuery: '', selectedMerchantId: null,
     wanjiaFilters: { query: '', industry: 'all', cooperationType: 'all', owner: 'all', health: 'all', abnormal: 'all', active: 'all', live: 'all', video: 'all', groupbuyGmv: 'all' },
     wanjiaOpsPane: 'overview',
@@ -1170,11 +1171,34 @@ export function createCeoOsApplication(config = {}) {
     return item;
   }
 
+  function captureIntelligenceFilterFocus() {
+    const active = document?.activeElement;
+    if (!active?.matches) return null;
+    const selector = active.matches('[data-intelligence-search]')
+      ? '[data-intelligence-search]'
+      : active.matches('[data-intelligence-filter]')
+        ? `[data-intelligence-filter="${active.dataset.intelligenceFilter}"]`
+        : active.matches('[data-intelligence-sort]') ? '[data-intelligence-sort]' : null;
+    if (!selector) return null;
+    return { selector, selectionStart: active.selectionStart, selectionEnd: active.selectionEnd };
+  }
+
+  function restoreIntelligenceFilterFocus(focus) {
+    if (!focus) return;
+    const target = document?.querySelector?.(focus.selector);
+    target?.focus?.({ preventScroll: true });
+    if (Number.isInteger(focus.selectionStart) && target?.setSelectionRange) {
+      target.setSelectionRange(focus.selectionStart, focus.selectionEnd ?? focus.selectionStart);
+    }
+  }
+
   function setIntelligenceFilter(kind, value) {
     if (!['company', 'source', 'credibility', 'status', 'age', 'search', 'sortBy'].includes(kind)) throw new Error('unsupported intelligence filter');
+    const focus = captureIntelligenceFilterFocus();
     runtime.intelligenceFilters = { ...runtime.intelligenceFilters, [kind]: String(value || (kind === 'search' ? '' : kind === 'sortBy' ? 'newest' : 'all')) };
     runtime.intelligenceCompany = runtime.intelligenceFilters.company;
     renderAll();
+    restoreIntelligenceFilterFocus(focus);
     return { ...runtime.intelligenceFilters };
   }
 
@@ -2595,6 +2619,10 @@ export function createCeoOsApplication(config = {}) {
     (document?.defaultView || globalThis)?.addEventListener?.('zos:open-ai-command', openMobileAiSheet);
     document.addEventListener('toggle', (event) => {
       const details = event.target;
+      if (details?.matches?.('details[data-intelligence-filters]')) {
+        runtime.intelligenceFiltersDisclosureOpen = details.open === true;
+        return;
+      }
       if (details?.matches?.('details[data-agent-organization]')) {
         const organizationId = details.dataset.agentOrganization;
         if (details.open) {
@@ -2638,6 +2666,7 @@ export function createCeoOsApplication(config = {}) {
       const refreshAllButton = event.target?.closest?.('[data-refresh-all]');
       const captureButton = event.target?.closest?.('[data-quick-capture]');
       const pageButton = event.target?.closest?.('[data-page]');
+      const mobileMorePage = event.target?.closest?.('[data-mobile-more-item][data-page]');
       const intelligenceButton = event.target?.closest?.('[data-intelligence-status]');
       const intelligenceAsk = event.target?.closest?.('[data-intelligence-ask]');
       const intelligenceOpen = event.target?.closest?.('[data-intelligence-open]');
@@ -2989,7 +3018,9 @@ export function createCeoOsApplication(config = {}) {
         else if (merchantSelect) queryMerchant(runtime.merchantQuery, { id: merchantSelect.dataset.merchantSelect });
         else if (reviewDraft) generateReview(reviewDraft.dataset.reviewDraft);
         else if (agentDraft) await generateAgentDraft(agentDraft.dataset.agentDraft || 'ceo');
-        else if (pageButton && globalThis.window?.navigateTo) {
+        else if (mobileMorePage && globalThis.window?.navigateTo) {
+          globalThis.window.navigateTo(mobileMorePage.dataset.page, { focusPage: true });
+        } else if (pageButton && globalThis.window?.navigateTo) {
           globalThis.window.navigateTo(pageButton.dataset.page);
         }
       } catch { runtime.syncStatus = '操作未完成，请检查登录与数据权限'; renderAll(); }
@@ -3354,7 +3385,7 @@ export function createCeoOsApplication(config = {}) {
       if (!groupNode) continue;
       const headingId = `mobileMore${group.id.replace(/(^|-)\w/g, (value) => value.replace('-', '').toUpperCase())}`;
       groupNode.setAttribute?.('aria-labelledby', headingId);
-      groupNode.innerHTML = `<h2 class="mobile-more-group-title" id="${headingId}">${group.label}</h2><div class="mobile-more-grid">${group.items.map((item) => `<button type="button" class="mobile-more-item" data-page="${item.pageId}"${item.preferred ? ' data-preferred="true"' : ''}>${item.label}</button>`).join('')}</div>`;
+      groupNode.innerHTML = `<h2 class="mobile-more-group-title" id="${headingId}">${group.label}</h2><div class="mobile-more-grid">${group.items.map((item) => `<button type="button" class="mobile-more-item" data-mobile-more-item data-page="${item.pageId}"${item.preferred ? ' data-preferred="true"' : ''}>${item.label}</button>`).join('')}</div>`;
     }
   }
 
@@ -3640,6 +3671,7 @@ export function createCeoOsApplication(config = {}) {
   function stop() {
     const browserWindow = document?.defaultView;
     clearCalendarTouchPending();
+    clearCalendarEventLongPress();
     if (focusTicker && browserWindow?.clearInterval) browserWindow.clearInterval(focusTicker);
     focusTicker = null;
     unsubscribeStore?.();

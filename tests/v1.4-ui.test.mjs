@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { MOBILE_PRIMARY_ITEMS, buildMobileMoreGroups } from '../src/app/mobile-navigation.mjs';
 
 const root = new URL('../', import.meta.url);
 const html = await readFile(new URL('index.html', root), 'utf8');
@@ -22,13 +23,15 @@ test('v1.4 navigation exposes double homes, three companies and shared centers',
 
 test('mobile primary navigation dedicates a slot to calendar', () => {
   const bottom = html.match(/<nav class="bottom-nav" id="bottomNav">([\s\S]*?)<\/nav>/)?.[1] || '';
-  const labels = [...bottom.matchAll(/<button[^>]*class="bottom-nav-item[^>]*>[\s\S]*?<span[^>]*>[\s\S]*?<\/span>\s*([^<]+?)\s*<\/button>/g)]
+  const labels = [...bottom.matchAll(/<button class="bottom-nav-item[^>]*>[\s\S]*?<span class="bn-icon"[^>]*>[\s\S]*?<\/span>\s*(?:<span>)?([^<\s][^<]*?)(?:<\/span>)?\s*<\/button>/g)]
     .map(([, label]) => label.trim());
-  assert.deepEqual(labels, ['今日', '日历', '添加', '专注', '更多']);
+  assert.deepEqual(labels, MOBILE_PRIMARY_ITEMS.map((item) => item.label));
   const more = html.match(/id="mobileMoreMenu"[\s\S]*?<\/section>/)?.[0] || '';
+  const routes = new Set(buildMobileMoreGroups().flatMap((group) => group.items.map((item) => item.pageId)));
   for (const page of ['local-life', 'spark-media', 'lingli', 'intelligence', 'life', 'search', 'relations', 'reviews']) {
-    assert.match(more, new RegExp(`data-page="${page}"`), `${page} must remain reachable on mobile`);
+    assert.equal(routes.has(page), true, `${page} must remain reachable from dynamic More`);
   }
+  assert.match(more, /data-mobile-more-group="business"/);
 });
 
 test('v1.4 visual system includes work-life mode, intelligence and calendar contracts', () => {

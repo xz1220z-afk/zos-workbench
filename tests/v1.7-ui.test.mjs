@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { buildMobileMoreGroups } from '../src/app/mobile-navigation.mjs';
 
 const root = new URL('../', import.meta.url);
 const [html, css, app] = await Promise.all([
@@ -32,15 +33,17 @@ test('mobile navigation uses the approved five destinations and retains secondar
   assert.match(nav, /data-mobile-ai-command/);
   assert.match(nav, /data-page="agent-workbench"/);
   const more = html.match(/<section class="mobile-more-menu"[\s\S]*?<\/section>/)?.[0] || '';
+  const routes = new Set(buildMobileMoreGroups().flatMap((group) => group.items.map((item) => item.pageId)));
   for (const page of [
     'local-life', 'spark-media', 'lingli', 'enterprise', 'targets',
     'intelligence', 'content-growth', 'zos-brain', 'search',
     'life', 'relations', 'reviews', 'inbox', 'tasks', 'risk', 'privacy', 'settings',
     'dashboard', 'decisions', 'health', 'today', 'focus',
   ]) {
-    assert.match(more, new RegExp(`data-page="${page}"`), `${page} must remain available from More`);
+    assert.equal(routes.has(page), true, `${page} must remain available from dynamic More`);
   }
-  assert.doesNotMatch(more, /data-page="agent-workbench"/);
+  assert.equal(routes.has('agent-workbench'), false);
+  assert.match(more, /data-mobile-more-group="knowledge-ai"/);
 });
 
 test('rich task editor covers planning, business linkage and focus metadata on all screen sizes', () => {

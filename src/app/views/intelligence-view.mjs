@@ -96,8 +96,9 @@ export function render(container, viewModel = {}) {
   const option = (value, label, current) => `<option value="${value}" ${current === value ? 'selected' : ''}>${label}</option>`;
   const allItems = viewModel.intelligenceAll || items;
   const sourceNames = [...new Set(allItems.map((item) => item.sourceName).filter(Boolean))];
+  const filtersOpen = !viewModel.isMobile || viewModel.intelligenceFiltersDisclosureOpen === true;
   container.innerHTML = `${briefing(items, viewModel.intelligenceFetchedAt, viewModel.intelligenceSources)}
-    <details class="mobile-intelligence-filters" ${viewModel.isMobile ? '' : 'open'}><summary>筛选与排序</summary><div class="intelligence-toolbar intelligence-workbench-toolbar">
+    <details class="mobile-intelligence-filters" data-intelligence-filters ${filtersOpen ? 'open' : ''}><summary>筛选与排序</summary><div class="intelligence-toolbar intelligence-workbench-toolbar">
       <input type="search" data-intelligence-search value="${escapeHtml(filters.search)}" placeholder="搜索标题、事实、标签或建议">
       <select data-intelligence-filter="company">${option('all', '全部公司', filters.company)}${option('wanjia', '万嘉', filters.company)}${option('huahuo', '花火', filters.company)}${option('lingli', '玲丽', filters.company)}${option('ceo', 'CEO', filters.company)}</select>
       <select data-intelligence-filter="source">${option('all', '全部来源', filters.source)}${sourceNames.map((name) => option(name, name, filters.source)).join('')}</select>
