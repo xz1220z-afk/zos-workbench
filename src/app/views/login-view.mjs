@@ -51,7 +51,7 @@ export function renderLogin(root, state = {}, actions = {}) {
           </div>
         </details>
         ${state.status === 'blocked' ? '<button class="zos-login-device" type="button" data-login-remove-device>移除此设备的登录记录</button>' : ''}
-        <p class="zos-login-security">密码不会写入工作台、本地存储、网址或日志。离线时仅允许已验证设备进入只读模式。</p>
+        <p class="zos-login-security">密码不会写入工作台、本地存储、网址或日志。离线时不会解锁工作台，联网完成业主核验后方可进入。</p>
       </main>
     </div>`;
 

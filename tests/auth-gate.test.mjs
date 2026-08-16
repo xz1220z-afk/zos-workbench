@@ -86,7 +86,7 @@ test('password sign-in remembers only the selected email and verified session', 
   assert.doesNotMatch(JSON.stringify(storage.dump()), /private-password/);
 });
 
-test('offline read-only lease accepts only the same verified user and device for 24 hours', async () => {
+test('offline bootstrap fails closed even when this device has a recent owner lease', async () => {
   const savedSession = session();
   const lease = { userId: 'owner-user', deviceId: 'device-1', verifiedAt: '2026-08-16T08:00:00.000Z' };
   const createOffline = (now, deviceId = 'device-1') => createAuthGate({
@@ -100,9 +100,10 @@ test('offline read-only lease accepts only the same verified user and device for
     now: () => new Date(now),
   });
 
-  const valid = await createOffline('2026-08-17T07:59:59.000Z').bootstrap();
-  assert.equal(valid.status, 'authorized');
-  assert.equal(valid.offlineReadOnly, true);
+  const recent = await createOffline('2026-08-16T09:00:00.000Z').bootstrap();
+  assert.equal(recent.status, 'blocked');
+  assert.equal(recent.reason, 'offline_verification_required');
+  assert.equal(recent.offlineReadOnly, false);
 
   const expired = await createOffline('2026-08-17T08:00:01.000Z').bootstrap();
   assert.equal(expired.status, 'blocked');

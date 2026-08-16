@@ -4,7 +4,6 @@ export const AUTH_STORAGE_KEYS = Object.freeze({
   lease: 'zos_owner_device_lease',
 });
 
-const OFFLINE_LEASE_MS = 24 * 60 * 60 * 1000;
 const SAFE_BLOCK_CODES = new Set([
   'authorization_forbidden',
   'authentication_invalid',
@@ -123,19 +122,6 @@ export function createAuthGate({
       }
 
       if (!isOnline()) {
-        const lease = parseStored(storage, AUTH_STORAGE_KEYS.lease);
-        const verifiedAt = Date.parse(lease?.verifiedAt || '');
-        const age = now().getTime() - verifiedAt;
-        if (
-          lease?.userId === saved.userId
-          && lease?.deviceId === deviceId
-          && Number.isFinite(age)
-          && age >= 0
-          && age <= OFFLINE_LEASE_MS
-        ) {
-          currentSession = { ...saved };
-          return publish('authorized', { userId: saved.userId, offlineReadOnly: true });
-        }
         clearVerifiedSession();
         return publish('blocked', { reason: 'offline_verification_required' });
       }
