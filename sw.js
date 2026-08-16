@@ -137,6 +137,9 @@ self.addEventListener('install', function(event) {
       })
       .catch(function(err) {
         console.error('[SW] Cache addAll failed:', err);
+        return caches.delete(CACHE_NAME)
+          .catch(function() { return false; })
+          .then(function() { throw err; });
       })
   );
 });
