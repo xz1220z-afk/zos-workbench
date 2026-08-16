@@ -108,6 +108,7 @@ const ASSETS_TO_CACHE = [
   'src/app/views/social-insights-view.mjs',
   'src/app/views/agent-workbench-view.mjs',
   'src/app/views/ai-command-view.mjs',
+  'src/app/views/mobile-command-sheet.mjs',
   'icons/icon-192x192.png',
   'icons/icon-512x512.png',
   'icons/icon-maskable-512x512.png',

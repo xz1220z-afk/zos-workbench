@@ -1,4 +1,4 @@
-import { escapeHtml } from './view-utils.mjs?v=2.10.0';
+import { escapeHtml } from './view-utils.mjs?v=2.9.0';
 
 export function renderMobileCommandSheetHtml(model = {}) {
   if (!model.open) return '';
@@ -8,7 +8,8 @@ export function renderMobileCommandSheetHtml(model = {}) {
     <aside class="mobile-ai-sheet" data-mobile-ai-command-sheet role="dialog" aria-modal="true" aria-labelledby="mobileAiTitle">
       <header><div><small>AI OFFICE</small><h2 id="mobileAiTitle">说出或输入任务</h2></div><button type="button" data-mobile-ai-close aria-label="关闭">×</button></header>
       <form data-ai-command-form>
-        <textarea data-ai-command-input name="command" rows="4">${escapeHtml(model.input || '')}</textarea>
+        <label for="mobileAiCommandInput">任务</label>
+        <textarea id="mobileAiCommandInput" data-ai-command-input name="command" rows="4">${escapeHtml(model.input || '')}</textarea>
         <div class="mobile-ai-controls">
           <button type="button" data-ai-voice-toggle aria-pressed="${listening}">${listening ? '松开结束' : '按住说话'}</button>
           <button type="submit" class="v13-action v13-action-primary">交给 AI</button>

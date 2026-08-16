@@ -39,6 +39,7 @@ for (const asset of [
   'src/app/daily-digest.mjs', 'src/app/push-notifications.mjs',
   'src/app/reliability-center.mjs',
   'src/app/settings-sync-bridge.mjs',
+  'src/app/views/mobile-command-sheet.mjs',
 ]) assert.match(serviceWorker, new RegExp(asset.replaceAll('.', '\\.') ), `${asset} must be available offline`);
 assert.equal(manifest.background_color, '#07101d');
 assert.equal(manifest.theme_color, '#0b1626');

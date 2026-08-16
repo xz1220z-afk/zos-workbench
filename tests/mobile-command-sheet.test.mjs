@@ -16,3 +16,9 @@ test('mobile command sheet keeps voice optional and typed input available', () =
   assert.match(html, /当前浏览器不支持语音/);
   assert.doesNotMatch(html, /disabled[^>]*data-ai-command-input/);
 });
+
+test('mobile command sheet labels its keyboard task input', () => {
+  const html = renderMobileCommandSheetHtml({ open: true, voice: { supported: true, state: 'idle' } });
+  assert.match(html, /<label for="mobileAiCommandInput">任务<\/label>/);
+  assert.match(html, /<textarea id="mobileAiCommandInput"[^>]*data-ai-command-input/);
+});

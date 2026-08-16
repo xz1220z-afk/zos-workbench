@@ -76,7 +76,7 @@ import { createAiCommand, normalizeAiCommandResult, transitionAiCommand } from '
 import { routeIntent } from './app/intent-router.mjs?v=2.9.0';
 import { executeControlledAction } from './app/controlled-execution.mjs?v=2.9.0';
 import { createVoiceInput } from './app/voice-input.mjs?v=2.9.0';
-import { renderMobileCommandSheet } from './app/views/mobile-command-sheet.mjs?v=2.10.0';
+import { renderMobileCommandSheet } from './app/views/mobile-command-sheet.mjs?v=2.9.0';
 
 export const APP_VERSION = '2.9.0';
 const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
@@ -190,6 +190,7 @@ export function createCeoOsApplication(config = {}) {
   let decisionReturnFocus = null;
   let wanjiaModelCache = null;
   let aiVoiceInput = null;
+  let mobileAiReturnFocus = null;
   let aiVoiceHoldTimer = null;
   let aiVoiceHoldActive = false;
   let aiVoiceIgnoreClick = false;
@@ -476,14 +477,25 @@ export function createCeoOsApplication(config = {}) {
     return runtime.aiCommand?.voice?.state === 'listening' ? stopAiVoice() : startAiVoice();
   }
 
+  function focusMobileAiSheetInput() {
+    document?.querySelector?.('[data-mobile-ai-command-sheet] [data-ai-command-input]')?.focus?.({ preventScroll: true });
+  }
+
   function openMobileAiSheet() {
+    mobileAiReturnFocus = document?.activeElement?.matches?.('[data-mobile-ai-command]')
+      ? document.activeElement
+      : document?.querySelector?.('[data-mobile-ai-command]') || null;
     runtime.mobileAiSheetOpen = true;
     renderAll();
+    focusMobileAiSheetInput();
   }
 
   function closeMobileAiSheet() {
+    if (runtime.aiCommand?.voice?.state === 'listening') stopAiVoice();
     runtime.mobileAiSheetOpen = false;
     renderAll();
+    mobileAiReturnFocus?.focus?.({ preventScroll: true });
+    mobileAiReturnFocus = null;
   }
 
   function viewModel() {
@@ -2663,11 +2675,9 @@ export function createCeoOsApplication(config = {}) {
       const aiCommandUndo = event.target?.closest?.('[data-ai-command-undo]');
       const aiCommandScope = event.target?.closest?.('[data-ai-command-scope]');
       const aiVoiceToggle = event.target?.closest?.('[data-ai-voice-toggle]');
-      const mobileAiCommand = event.target?.closest?.('[data-mobile-ai-command]');
       const mobileAiClose = event.target?.closest?.('[data-mobile-ai-close]');
       try {
         if (mobileAiClose) closeMobileAiSheet();
-        else if (mobileAiCommand) openMobileAiSheet();
         else if (aiCommandAction) await executeAiCommandAction(aiCommandAction.dataset.aiCommandAction);
         else if (aiCommandUndo) undoAiCommandAction();
         else if (aiCommandScope) setAiCommandScope(aiCommandScope.dataset.aiCommandScope);
@@ -3081,6 +3091,17 @@ export function createCeoOsApplication(config = {}) {
     });
     document.addEventListener('input', (event) => {
       if (event.target?.matches?.('[data-ai-command-input]')) setAiCommandInput(event.target.value, { render: false });
+    });
+    document.addEventListener('keydown', (event) => {
+      if (runtime.mobileAiSheetOpen && event.key === 'Escape') {
+        event.preventDefault?.();
+        closeMobileAiSheet();
+      }
+    });
+    document.addEventListener('focusin', (event) => {
+      if (!runtime.mobileAiSheetOpen) return;
+      const sheet = document?.querySelector?.('[data-mobile-ai-command-sheet]');
+      if (sheet && !sheet.contains?.(event.target)) focusMobileAiSheetInput();
     });
     document.addEventListener('pointerdown', (event) => {
       if (!event.target?.closest?.('[data-ai-voice-toggle]')) return;
