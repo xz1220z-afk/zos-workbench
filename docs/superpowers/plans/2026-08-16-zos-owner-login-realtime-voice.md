@@ -190,7 +190,11 @@ git commit -m "security: restrict company endpoints to owner"
 
 - Modify: `src/supabase-auth.mjs`
 - Create: `src/app/auth-gate.mjs`
+- Create: `src/app/owner-session-client.mjs`
+- Create: `supabase/functions/zos-auth-session/index.ts`
+- Modify: `supabase/config.toml`
 - Create: `tests/auth-gate.test.mjs`
+- Create: `tests/owner-session-edge.test.mjs`
 - Modify: `tests/supabase-auth.test.mjs`
 - Modify: `tests/application-reliability.test.mjs`
 
@@ -209,6 +213,7 @@ Cover the state machine:
 - `requestOtp` sends `create_user: false`;
 - sign-out clears the current session but may preserve remembered email;
 - “remove this device” clears session, remembered email, device lease, and user-scoped local caches through explicit callbacks.
+- the owner-session endpoint returns only a safe authorization state, never user IDs, tokens, business data, or configuration values.
 
 Run:
 
@@ -218,7 +223,11 @@ node --test tests/auth-gate.test.mjs tests/supabase-auth.test.mjs tests/applicat
 
 Expected RED.
 
-**Step 2: Implement `createAuthGate`**
+**Step 2: Add the minimal owner-session endpoint**
+
+Create an authenticated `GET` endpoint that calls `requireOwnerUser(req)` and returns only `{ state: 'authorized' }`. Anonymous/invalid/non-owner/configuration errors preserve the safe `AuthError` code and status. Configure `verify_jwt = true`. This endpoint must not initialize Feishu, OpenAI, service-role clients, or read any business table.
+
+**Step 3: Implement `createAuthGate` and its client**
 
 Inject storage, auth client, owner verifier, clock, connectivity, and cleanup callbacks. Keep it DOM-independent and expose:
 
@@ -232,15 +241,17 @@ Inject storage, auth client, owner verifier, clock, connectivity, and cleanup ca
 
 The offline read-only lease is valid only for the same previously owner-verified user/device and at most 24 hours. It must not permit remote calls or approval execution while offline.
 
-**Step 3: Make OTP non-provisioning**
+`createOwnerSessionClient` calls only `zos-auth-session` with the Supabase access token and accepts only the exact `{ state: 'authorized' }` contract.
+
+**Step 4: Make OTP non-provisioning**
 
 Change `requestOtp` to `create_user: false` in the modular auth client. Add a later cleanup task for the legacy duplicate so this task stays focused.
 
-**Step 4: Re-run focused tests and commit**
+**Step 5: Re-run focused tests and commit**
 
 ```bash
-node --test tests/auth-gate.test.mjs tests/supabase-auth.test.mjs tests/application-reliability.test.mjs
-git add src/supabase-auth.mjs src/app/auth-gate.mjs tests/auth-gate.test.mjs tests/supabase-auth.test.mjs tests/application-reliability.test.mjs
+node --test tests/auth-gate.test.mjs tests/owner-session-edge.test.mjs tests/supabase-auth.test.mjs tests/application-reliability.test.mjs
+git add src/supabase-auth.mjs src/app/auth-gate.mjs src/app/owner-session-client.mjs supabase/functions/zos-auth-session/index.ts supabase/config.toml tests/auth-gate.test.mjs tests/owner-session-edge.test.mjs tests/supabase-auth.test.mjs tests/application-reliability.test.mjs
 git commit -m "feat: add owner login state machine"
 ```
 
