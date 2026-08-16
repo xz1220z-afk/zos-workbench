@@ -26,16 +26,15 @@ test('v1.7 exposes execution, focus, merchant and availability surfaces', () => 
 
 test('mobile navigation uses the approved five destinations and retains secondary routes in More', () => {
   const nav = html.match(/<nav class="bottom-nav" id="bottomNav">([\s\S]*?)<\/nav>/)?.[1] || '';
-  const labels = [...nav.matchAll(/<button[^>]*class="bottom-nav-item[^>]*>[\s\S]*?<span[^>]*>[\s\S]*?<\/span>\s*([^<]+?)\s*<\/button>/g)]
+  const labels = [...nav.matchAll(/<button[^>]*class="bottom-nav-item[^>]*>[\s\S]*?<span class="bn-icon"[^>]*>[\s\S]*?<\/span>\s*(?:<span>)?([^<]+?)(?:<\/span>)?\s*<\/button>/g)]
     .map((match) => match[1].trim());
-  assert.deepEqual(labels, ['今日', '日历', '添加', '专注', '更多']);
-  assert.match(nav, /data-mobile-add/);
+  assert.deepEqual(labels, ['今日', '日历', '语音', 'Agent', '更多']);
+  assert.match(nav, /data-mobile-ai-command/);
+  assert.match(nav, /data-page="agent-workbench"/);
   const more = html.match(/<section class="mobile-more-menu"[\s\S]*?<\/section>/)?.[0] || '';
   for (const page of ['dashboard', 'decisions', 'inbox', 'tasks', 'local-life', 'spark-media', 'intelligence', 'zos-brain']) {
     assert.match(more, new RegExp(`data-page="${page}"`), `${page} must remain available from More`);
   }
-  assert.match(app, /taskCapture\)\s*\{\s*showTaskCenter\(\);\s*openTaskEditor\(\);/,
-    'mobile Add must reveal the task page before mounting its editor drawer');
 });
 
 test('rich task editor covers planning, business linkage and focus metadata on all screen sizes', () => {

@@ -1,6 +1,7 @@
 import { pageIdFromHash } from './app/router.mjs?v=2.9.0';
 import { normalizeNavigationMode, shouldExpandNavigation, PRIMARY_NAVIGATION_PAGES } from './app/navigation-preferences.mjs?v=2.9.0';
 import { createBusinessDataCache } from './app/business-data-cache.mjs?v=2.9.0';
+import { mobilePrimaryPage } from './app/mobile-navigation.mjs?v=2.9.0';
 
 // Sync runtime is intentionally bundled here so the public static deployment
   // has no fragile module-path dependency. Source modules remain in /src for tests.
@@ -2154,7 +2155,6 @@ import { createBusinessDataCache } from './app/business-data-cache.mjs?v=2.9.0';
   let sidebarCollapsed = false;
   const navigationPreferenceKey = 'zos_navigation_mode_v1';
   let navigationMode = normalizeNavigationMode(localStorage.getItem(navigationPreferenceKey));
-      const mobileMorePageIds = ['dashboard', 'decisions', 'life', 'local-life', 'spark-media', 'lingli', 'intelligence', 'content-growth', 'agent-workbench', 'search', 'relations', 'reviews', 'enterprise', 'targets', 'health', 'inbox', 'tasks', 'zos-brain', 'risk', 'privacy', 'settings'];
 
   document.querySelectorAll('.sidebar-nav .nav-item[data-page]').forEach(function(item) {
     item.dataset.navPriority = PRIMARY_NAVIGATION_PAGES.has(item.dataset.page) ? 'primary' : 'secondary';
@@ -2210,6 +2210,11 @@ import { createBusinessDataCache } from './app/business-data-cache.mjs?v=2.9.0';
     options = options || {};
     const target = document.getElementById('page-' + pageId);
     if (!target) return;
+    const mobileTarget = mobilePrimaryPage(pageId);
+    document.querySelectorAll('#bottomNav .bottom-nav-item').forEach((item) => {
+      const itemId = item.dataset.page || (item.id === 'mobileMoreToggle' ? 'more' : 'voice');
+      item.classList.toggle('active', itemId === mobileTarget);
+    });
     closeMobileMoreMenu(false);
     if (pageId === currentPage) {
       if (options.focusPage) focusPageContent(target);
@@ -2228,11 +2233,6 @@ import { createBusinessDataCache } from './app/business-data-cache.mjs?v=2.9.0';
     requestAnimationFrame(function() {
       window.setTimeout(function() { target.classList.remove('is-entering'); }, 260);
     });
-
-    document.querySelectorAll('#bottomNav .bottom-nav-item[data-page]').forEach(el => {
-      el.classList.toggle('active', el.dataset.page === pageId);
-    });
-    document.getElementById('mobileMoreToggle')?.classList.toggle('active', mobileMorePageIds.includes(pageId));
 
     pageTitle.textContent = pageTitles[pageId] || pageId;
     currentPage = pageId;
@@ -2271,6 +2271,11 @@ import { createBusinessDataCache } from './app/business-data-cache.mjs?v=2.9.0';
 
   document.querySelectorAll('#bottomNav .bottom-nav-item[data-page]').forEach(el => {
     el.addEventListener('click', function() { navigateTo(this.dataset.page); });
+  });
+  document.querySelectorAll('#bottomNav [data-mobile-ai-command]').forEach(el => {
+    el.addEventListener('click', function() {
+      window.dispatchEvent(new CustomEvent('zos:open-ai-command', { detail: { source: 'mobile-navigation' } }));
+    });
   });
   document.getElementById('mobileMoreToggle')?.addEventListener('click', toggleMobileMoreMenu);
   document.querySelector('.mobile-more-close')?.addEventListener('click', function() { closeMobileMoreMenu(true); });
