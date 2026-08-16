@@ -205,6 +205,7 @@ export function createCeoOsApplication(config = {}) {
   let aiVoiceHoldActive = false;
   let aiVoiceHoldPointer = null;
   let aiVoiceIgnoreClick = false;
+  const aiVoiceCancelDistance = 44;
   let aiCommandWork = null;
   const intelligenceQuestionWork = new Map();
   const agentAnalysisWork = new Map();
@@ -481,7 +482,10 @@ export function createCeoOsApplication(config = {}) {
           voice: { supported: state !== 'unsupported', state },
           error: state === 'permission_denied' ? '未获麦克风权限，请继续使用键盘。' : runtime.aiCommand.error,
         };
-        if (discard || (session && state === 'idle')) aiVoiceDraftSession = null;
+        const awaitingHoldRelease = session?.deferCommit
+          && session.outcome === 'recording'
+          && state === 'idle';
+        if (discard || (session && state === 'idle' && !awaitingHoldRelease)) aiVoiceDraftSession = null;
         renderAll();
       },
       onTranscript: (transcript) => {
@@ -526,12 +530,18 @@ export function createCeoOsApplication(config = {}) {
   }
 
   function stopAiVoice() {
+    const voice = ensureAiVoiceInput();
     const session = aiVoiceDraftSession?.generation === aiVoiceInputGeneration ? aiVoiceDraftSession : null;
     if (session) {
       session.outcome = 'commit';
       if (session.transcript) runtime.aiCommand = { ...runtime.aiCommand, input: session.transcript };
     }
-    return ensureAiVoiceInput().stop();
+    const stopped = voice.stop();
+    if (session && !stopped && aiVoiceDraftSession === session) {
+      aiVoiceDraftSession = null;
+      renderAll();
+    }
+    return stopped;
   }
 
   function abortAiVoice(options = {}) {
@@ -582,7 +592,7 @@ export function createCeoOsApplication(config = {}) {
       && (event?.pointerId == null || event.pointerId === aiVoiceHoldPointer.pointerId));
   }
 
-  function cancelAiVoiceHold({ abort = false, render = true } = {}) {
+  function cancelAiVoiceHold({ abort = false, render = true, persistClickSuppression = false } = {}) {
     const clock = document?.defaultView || globalThis;
     if (aiVoiceHoldTimer) clock.clearTimeout?.(aiVoiceHoldTimer);
     aiVoiceHoldTimer = null;
@@ -592,8 +602,10 @@ export function createCeoOsApplication(config = {}) {
     if (wasActive) {
       if (abort) abortAiVoice({ render });
       else stopAiVoice();
+    }
+    if (wasActive || persistClickSuppression) {
       aiVoiceIgnoreClick = true;
-      clock.setTimeout?.(() => { aiVoiceIgnoreClick = false; }, 0);
+      if (!persistClickSuppression) clock.setTimeout?.(() => { aiVoiceIgnoreClick = false; }, 0);
     }
     return wasActive;
   }
@@ -3418,12 +3430,24 @@ export function createCeoOsApplication(config = {}) {
       if (event.button != null && event.button !== 0) return;
       const clock = document?.defaultView || globalThis;
       cancelAiVoiceHold({ abort: true });
-      aiVoiceHoldPointer = { pointerId: event.pointerId, target: voiceButton };
+      aiVoiceIgnoreClick = false;
+      aiVoiceHoldPointer = {
+        pointerId: event.pointerId,
+        target: voiceButton,
+        startY: Number.isFinite(event.clientY) ? event.clientY : null,
+      };
       aiVoiceHoldTimer = clock.setTimeout?.(() => {
         if (!aiVoiceHoldPointer) return;
         aiVoiceHoldTimer = null;
         aiVoiceHoldActive = startAiVoice({ deferCommit: true }) === true;
       }, 240);
+    });
+    document.addEventListener('pointermove', (event) => {
+      if (!voiceHoldMatches(event)) return;
+      const startY = aiVoiceHoldPointer?.startY;
+      if (!Number.isFinite(startY) || !Number.isFinite(event.clientY)) return;
+      if (startY - event.clientY < aiVoiceCancelDistance) return;
+      cancelAiVoiceHold({ abort: true, persistClickSuppression: true });
     });
     const releaseAiVoice = (event) => {
       if (!voiceHoldMatches(event)) return;

@@ -13,6 +13,7 @@ class FakeRecognition {
   start() { this.started = true; }
   stop() { this.stopped = true; }
   abort() { this.aborted = true; }
+  end() { this.onend?.(); }
 
   result(text, final = true) {
     const value = [{ transcript: text }];
@@ -161,4 +162,61 @@ test('closing the mobile sheet cancels a pending hold and aborts an active hold 
   assert.equal(recognition.stopped, undefined);
   assert.equal(app.viewModel().aiCommand.input, '关闭后仍保留的草稿');
   assert.notEqual(app.viewModel().aiCommand.voice.state, 'listening');
+});
+
+test('a natural recognition end before pointerup still commits the staged transcript exactly once', (t) => {
+  const { app, browser } = createPointerVoiceApp(t);
+  const button = voiceButton();
+  app.setAiCommandInput('原有键盘草稿');
+
+  browser.emit('pointerdown', {
+    target: button, pointerId: 12, pointerType: 'touch', button: 0, clientX: 100, clientY: 300,
+  });
+  browser.runDelay(240);
+  const recognition = FakeRecognition.instances[0];
+  recognition.result('自然结束前的最终语音');
+  recognition.end();
+
+  assert.equal(app.viewModel().aiCommand.input, '原有键盘草稿');
+  browser.emit('pointerup', { target: outsideTarget, pointerId: 12, pointerType: 'touch' });
+  assert.equal(app.viewModel().aiCommand.input, '自然结束前的最终语音');
+
+  app.setAiCommandInput('提交后的人工修改');
+  recognition.end();
+  browser.emit('pointerup', { target: outsideTarget, pointerId: 12, pointerType: 'touch' });
+  assert.equal(app.viewModel().aiCommand.input, '提交后的人工修改');
+});
+
+test('an upward swipe cancels only after the movement threshold and preserves the keyboard draft', (t) => {
+  const { app, browser } = createPointerVoiceApp(t);
+  const button = voiceButton();
+  app.setAiCommandInput('上滑取消后要保留的草稿');
+
+  browser.emit('pointerdown', {
+    target: button, pointerId: 13, pointerType: 'touch', button: 0, clientX: 120, clientY: 300,
+  });
+  browser.runDelay(240);
+  const recognition = FakeRecognition.instances[0];
+  recognition.result('上滑后必须丢弃的临时语音');
+
+  browser.emit('pointermove', {
+    target: outsideTarget, pointerId: 13, pointerType: 'touch', clientX: 123, clientY: 280,
+  });
+  assert.equal(recognition.aborted, undefined);
+  assert.equal(app.viewModel().aiCommand.voice.state, 'listening');
+
+  browser.emit('pointermove', {
+    target: outsideTarget, pointerId: 13, pointerType: 'touch', clientX: 124, clientY: 250,
+  });
+  assert.equal(recognition.aborted, true);
+  assert.equal(recognition.stopped, undefined);
+  assert.equal(app.viewModel().aiCommand.input, '上滑取消后要保留的草稿');
+  assert.notEqual(app.viewModel().aiCommand.voice.state, 'listening');
+
+  browser.emit('pointerup', { target: outsideTarget, pointerId: 13, pointerType: 'touch' });
+  browser.emit('click', { target: button });
+  assert.equal(FakeRecognition.instances.length, 1);
+  assert.notEqual(app.viewModel().aiCommand.voice.state, 'listening');
+  recognition.result('取消后的迟到结果');
+  assert.equal(app.viewModel().aiCommand.input, '上滑取消后要保留的草稿');
 });
