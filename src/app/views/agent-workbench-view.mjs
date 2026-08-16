@@ -24,6 +24,18 @@ function agentCard(agent) {
   </article>`;
 }
 
+function mobileAgentRows(agents = []) {
+  return agents.map((agent) => {
+    const isPrivateRelationship = agent.agentId === 'REL-001';
+    return `<article class="mobile-agent-row" data-agent-id="${escapeHtml(agent.agentId)}"><div><strong>${escapeHtml(agent.name || agent.agentId)}</strong><small>${escapeHtml(agent.agentId)} · ${escapeHtml(STATUS_LABEL[agent.status] || agent.status || '草稿')}${agent.recent ? ' · 最近调用' : ''}</small></div><div class="mobile-agent-row-actions"><button class="v13-action" data-agent-details="${escapeHtml(agent.agentId)}">详情</button>${isPrivateRelationship ? '' : `<button class="v13-action" data-agent-analyze="${escapeHtml(agent.agentId)}">分析</button>`}<button class="v13-action v13-action-primary" data-agent-invoke="${escapeHtml(agent.agentId)}">派任务</button></div></article>`;
+  }).join('');
+}
+
+function mobileAgentDirectory(directory = []) {
+  if (!directory.length) return '';
+  return `<section class="mobile-agent-directory" aria-label="手机 Agent 组织目录"><header><span class="growth-kicker">MOBILE AGENT DIRECTORY</span><h3>按组织与部门查找 Agent</h3><p>身份、规则、知识入口、上下文摘要与任务历史继续使用原有 Agent OS 记录。</p></header>${directory.map((organization) => `<details class="mobile-agent-organization" data-agent-organization="${escapeHtml(organization.name)}"><summary><span>${escapeHtml(organization.name)}</span><strong>${organization.departments.reduce((total, department) => total + department.agents.length, 0)} Agents</strong></summary><div class="mobile-agent-departments">${organization.departments.map((department) => `<details class="mobile-agent-department"><summary>${escapeHtml(department.name)}<small>${department.agents.length} Agents</small></summary>${mobileAgentRows(department.agents)}</details>`).join('')}</div></details>`).join('')}</section>`;
+}
+
 function runRows(runs) {
   if (!runs.length) return renderState('empty', 'Agent 执行记录');
   const visible = runs.slice().reverse().slice(0, 30);
@@ -90,6 +102,7 @@ export function render(container, viewModel = {}) {
   const summary = viewModel.agentSummary || {};
   const hasIndex = Boolean(viewModel.agentOsIndex);
   const agents = viewModel.agentOsAgents || [];
+  const directory = viewModel.mobileAgentDirectory || [];
   const sourceMessage = viewModel.agentOsImportMessage || '工作台只保存身份卡路径、哈希、更新时间与关联关系，不复制 Vault 正文。';
   const knowledge = viewModel.knowledgeContext || { state: 'unknown', count: 0 };
   const knowledgeLabel = knowledge.state === 'ready' ? `已授权 ${Number(knowledge.count) || 0} 条知识摘要` : knowledge.state === 'uploading' ? '知识摘要导入中…' : '未导入知识摘要';
@@ -98,6 +111,7 @@ export function render(container, viewModel = {}) {
   <div class="agent-os-source" data-state="${escapeHtml(viewModel.agentOsImportState || 'idle')}"><span>${escapeHtml(sourceMessage)}</span><small>${hasIndex ? `仅本机保存 · 索引生成：${escapeHtml(String(viewModel.agentOsIndex.generatedAt || '').replace('T', ' ').slice(0, 16))}` : '正式网页受浏览器权限限制，请手动导入本机索引；不会上传云端。'}</small></div>
   <nav class="agent-os-filters" aria-label="Agent 分类">${FILTERS.map(([value, label]) => `<button class="v13-action ${viewModel.agentOsFilter === value ? 'active' : ''}" data-agent-os-filter="${value}">${label}</button>`).join('')}</nav>
   <div class="agent-summary agent-os-summary"><span><b>${Number(viewModel.agentOsOverview?.summary?.total) || 0}</b>动态发现</span><span><b>${Number(summary.total) || 0}</b>历史执行记录</span><span><b>${Number(summary.awaitingApproval) || 0}</b>待审核</span><span><b>${Number(summary.completed) || 0}</b>已完成</span></div>
+  ${hasIndex ? mobileAgentDirectory(directory) : ''}
   <div class="agent-catalog">${hasIndex ? (agents.map(agentCard).join('') || renderState('empty', '该分类暂无 Agent')) : `<div class="agent-os-empty">${renderState('empty', 'Agent OS 索引')}<p>请导入扫描器生成的 JSON 索引；原有执行记录不会丢失。</p><button class="v13-action v13-action-primary" data-agent-index-import>选择索引文件</button></div>`}</div>
   <article class="agent-runs"><header><div><span class="growth-kicker">RUN HISTORY</span><h3>执行记录与审批链</h3></div><small>保留原功能；输入引用与结果摘要均可回查</small></header>${runRows(viewModel.agentRuns || [])}</article>
   ${detailsDrawer(viewModel.agentOsDetails, viewModel.relationReminderDrafts, viewModel.agentAnalysis, viewModel.agentTaskArchives, viewModel.agentContextCandidates)}`;

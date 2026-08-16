@@ -2184,6 +2184,7 @@ body { overflow-x: hidden; }
 .agent-os-source[data-state="error"] { border-color: rgba(226,102,102,.25); color: #e79a9a; }
 .agent-os-filters { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
 .agent-os-filters button.active { border-color: rgba(216,180,106,.45); color: var(--cc-accent-gold); background: rgba(216,180,106,.1); }
+.mobile-agent-directory { display: none; }
 .agent-os-card { grid-template-columns: auto minmax(0,1fr); min-height: 228px; }
 .agent-card-copy { min-width: 0; }
 .agent-card-eyebrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -2295,6 +2296,25 @@ body { overflow-x: hidden; }
   .agent-os-source { flex-direction: column; }
   .agent-detail-grid { grid-template-columns: 1fr; }
   .agent-detail-drawer { width: 100vw; padding: 18px; }
+  .mobile-agent-directory { display: grid; gap: 9px; margin-bottom: 12px; }
+  .mobile-agent-directory > header { padding: 2px 4px; }
+  .mobile-agent-directory h3 { margin: 4px 0; font-size: 16px; }
+  .mobile-agent-directory p { margin: 0; color: var(--cc-text-muted); font-size: 10px; line-height: 1.55; }
+  .mobile-agent-organization, .mobile-agent-department { border: 1px solid var(--cc-border); border-radius: 13px; background: rgba(10,18,31,.9); }
+  .mobile-agent-organization > summary, .mobile-agent-department > summary { display: flex; align-items: center; justify-content: space-between; min-height: 50px; padding: 0 13px; cursor: pointer; list-style: none; }
+  .mobile-agent-organization > summary::-webkit-details-marker, .mobile-agent-department > summary::-webkit-details-marker { display: none; }
+  .mobile-agent-organization > summary span { font-size: 14px; font-weight: 700; }
+  .mobile-agent-organization > summary strong, .mobile-agent-department > summary small { color: var(--cc-accent-gold); font-size: 10px; }
+  .mobile-agent-departments { display: grid; gap: 8px; padding: 0 10px 10px; }
+  .mobile-agent-department { border-color: rgba(135,160,190,.2); border-radius: 10px; background: rgba(255,255,255,.025); }
+  .mobile-agent-department > summary { min-height: 46px; font-size: 12px; font-weight: 700; }
+  .mobile-agent-row { display: grid; gap: 9px; padding: 11px; border-top: 1px solid rgba(135,160,190,.15); }
+  .mobile-agent-row strong, .mobile-agent-row small { display: block; }
+  .mobile-agent-row strong { font-size: 12px; }
+  .mobile-agent-row small { margin-top: 4px; color: var(--cc-text-muted); font-size: 9px; }
+  .mobile-agent-row-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+  .mobile-agent-row-actions button { min-height: 44px; padding: 7px 10px; font-size: 10px; }
+  .agent-catalog { display: none; }
   .agent-task-archives > header, .agent-task-row { align-items: stretch; flex-direction: column; }
   .agent-task-row-actions { justify-content: flex-start; }
   .growth-content-card button, .knowledge-panel button, .social-insight-shell button, .agent-card button, .agent-runs button { min-height: 44px; }

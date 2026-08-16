@@ -25,3 +25,8 @@ test('every browser module import is release-versioned so an old service worker 
   }
   assert.deepEqual(failures, []);
 });
+
+test('service worker caches the static mobile Agent directory module', async () => {
+  const serviceWorker = await readFile(join(root, '..', 'sw.js'), 'utf8');
+  assert.match(serviceWorker, /'src\/app\/mobile-agent-directory\.mjs'/);
+});

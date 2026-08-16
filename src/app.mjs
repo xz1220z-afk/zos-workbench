@@ -57,6 +57,7 @@ import { contentOverview, contentPerformance, evaluateExperiment, normalizeConte
 import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.9.0';
 import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.9.0';
 import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.9.0';
+import { buildMobileAgentDirectory } from './app/mobile-agent-directory.mjs?v=2.9.0';
 import { validateAgentOsIndex } from './app/agent-os-index-contract.mjs?v=2.9.0';
 import {
   agentDetails, buildAgentAnalysisRequest, buildAgentInvocationDraft, buildAgentOsOverview, buildRelationReminderDrafts,
@@ -532,6 +533,11 @@ export function createCeoOsApplication(config = {}) {
     const agentOsOverview = agentOsIndex ? buildAgentOsOverview(agentOsIndex) : null;
     const agentOsDetails = agentOsIndex && runtime.agentOsDetailId
       ? agentDetails(agentOsIndex, runtime.agentOsDetailId) : null;
+    const agentOsAgents = agentOsIndex ? visibleAgents(agentOsIndex, runtime.agentOsFilter).map((agent) => ({
+      ...agent,
+      runtimeAvailability: agentRuntimeAvailability(agent, { aiReady: typeof (config.askAi || operatingRuntime?.aiAssistant?.ask) === 'function' }),
+      confirmedContextCount: confirmedContextForAgent(agentContextCandidates, agent.agentId).length,
+    })) : [];
     const socialInsights = rankSocialOpportunities(state.collections.social_insights || []);
     const contentAssets = state.collections.content_assets || [];
     const brainstorms = state.collections.brainstorms || [];
@@ -692,11 +698,10 @@ export function createCeoOsApplication(config = {}) {
       agentSummary: summarizeAgentRuns(agentRuns),
       agentOsIndex,
       agentOsOverview,
-      agentOsAgents: agentOsIndex ? visibleAgents(agentOsIndex, runtime.agentOsFilter).map((agent) => ({
-        ...agent,
-        runtimeAvailability: agentRuntimeAvailability(agent, { aiReady: typeof (config.askAi || operatingRuntime?.aiAssistant?.ask) === 'function' }),
-        confirmedContextCount: confirmedContextForAgent(agentContextCandidates, agent.agentId).length,
-      })) : [],
+      agentOsAgents,
+      mobileAgentDirectory: buildMobileAgentDirectory(agentOsAgents, {
+        recentAgentIds: agentRuns.slice().reverse().slice(0, 8).map((run) => run.agentId),
+      }),
       agentOsDetails,
       agentTaskArchives,
       agentContextCandidates,

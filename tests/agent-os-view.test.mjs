@@ -29,6 +29,18 @@ test('Agent OS view keeps execution history and adds dynamic overview, filters a
   assert.match(node.innerHTML, /派任务/);
 });
 
+test('mobile Agent directory keeps dynamic identity actions and existing task handoff', () => {
+  const node = container();
+  render(node, {
+    ...base,
+    mobileAgentDirectory: [{ name: '万嘉网络', departments: [{ name: '运营', agents: base.agentOsAgents }] }],
+  });
+  assert.match(node.innerHTML, /mobile-agent-organization/);
+  assert.match(node.innerHTML, /万嘉网络/);
+  assert.match(node.innerHTML, /运营/);
+  assert.match(node.innerHTML, /data-agent-invoke="WANJIA-001"/);
+});
+
 test('Agent details expose local task history and confirmation-only context candidates', () => {
   const node = container();
   render(node, {

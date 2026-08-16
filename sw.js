@@ -42,6 +42,7 @@ const ASSETS_TO_CACHE = [
   'src/app/knowledge-workspace.mjs',
   'src/app/social-insight-center.mjs',
   'src/app/agent-workbench.mjs',
+  'src/app/mobile-agent-directory.mjs',
   'src/app/agent-os-center.mjs',
   'src/app/agent-os-index-contract.mjs',
   'src/app/agent-task-context.mjs',
