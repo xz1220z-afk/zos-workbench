@@ -76,6 +76,7 @@ import { createAiCommand, normalizeAiCommandResult, transitionAiCommand } from '
 import { routeIntent } from './app/intent-router.mjs?v=2.9.0';
 import { executeControlledAction } from './app/controlled-execution.mjs?v=2.9.0';
 import { createVoiceInput } from './app/voice-input.mjs?v=2.9.0';
+import { renderMobileCommandSheet } from './app/views/mobile-command-sheet.mjs?v=2.10.0';
 
 export const APP_VERSION = '2.9.0';
 const LAST_PROTECTED_VERSION_KEY = 'zos_last_protected_app_version';
@@ -157,6 +158,7 @@ export function createCeoOsApplication(config = {}) {
     agentOsFilter: 'all', agentOsDetailId: null, agentOsPatrol: null,
     agentOsImportState: 'idle', agentOsImportMessage: null, agentAnalysis: null,
     weather: { state: 'loading', location: DEFAULT_WEATHER_LOCATION },
+    mobileAiSheetOpen: false,
     aiCommand: {
       ...createAiCommand('', { id: 'ai-command-home', now: now() }),
       voice: { supported: typeof SpeechRecognition === 'function', state: typeof SpeechRecognition === 'function' ? 'idle' : 'unsupported' },
@@ -472,6 +474,16 @@ export function createCeoOsApplication(config = {}) {
 
   function toggleAiVoice() {
     return runtime.aiCommand?.voice?.state === 'listening' ? stopAiVoice() : startAiVoice();
+  }
+
+  function openMobileAiSheet() {
+    runtime.mobileAiSheetOpen = true;
+    renderAll();
+  }
+
+  function closeMobileAiSheet() {
+    runtime.mobileAiSheetOpen = false;
+    renderAll();
   }
 
   function viewModel() {
@@ -2519,6 +2531,7 @@ export function createCeoOsApplication(config = {}) {
   function bindActions() {
     if (actionsBound || !document?.addEventListener) return;
     actionsBound = true;
+    (document?.defaultView || globalThis)?.addEventListener?.('zos:open-ai-command', openMobileAiSheet);
     document.addEventListener('click', async (event) => {
       const previewButton = event.target?.closest?.('[data-preview-decision]');
       const decisionAction = event.target?.closest?.('[data-decision-action]');
@@ -2650,8 +2663,12 @@ export function createCeoOsApplication(config = {}) {
       const aiCommandUndo = event.target?.closest?.('[data-ai-command-undo]');
       const aiCommandScope = event.target?.closest?.('[data-ai-command-scope]');
       const aiVoiceToggle = event.target?.closest?.('[data-ai-voice-toggle]');
+      const mobileAiCommand = event.target?.closest?.('[data-mobile-ai-command]');
+      const mobileAiClose = event.target?.closest?.('[data-mobile-ai-close]');
       try {
-        if (aiCommandAction) await executeAiCommandAction(aiCommandAction.dataset.aiCommandAction);
+        if (mobileAiClose) closeMobileAiSheet();
+        else if (mobileAiCommand) openMobileAiSheet();
+        else if (aiCommandAction) await executeAiCommandAction(aiCommandAction.dataset.aiCommandAction);
         else if (aiCommandUndo) undoAiCommandAction();
         else if (aiCommandScope) setAiCommandScope(aiCommandScope.dataset.aiCommandScope);
         else if (aiVoiceToggle) {
@@ -2883,7 +2900,7 @@ export function createCeoOsApplication(config = {}) {
       if (event.target?.matches?.('[data-ai-command-form]')) {
         event.preventDefault();
         const data = new FormData(event.target);
-        try { await submitAiCommand(data.get('task'), { scope: runtime.aiCommand.scope }); }
+        try { await submitAiCommand(data.get('task') ?? data.get('command'), { scope: runtime.aiCommand.scope }); }
         catch { /* submitAiCommand already preserves the input and safe error. */ }
         return;
       }
@@ -3209,6 +3226,7 @@ export function createCeoOsApplication(config = {}) {
       'lingli', 'local-life', 'spark-media', 'relations', 'reviews', 'today', 'tasks', 'focus',
       'content-growth', 'zos-brain', 'agent-workbench',
     ]);
+    renderMobileAiSheet();
     if (activePage && !modularPages.has(activePage)) return;
     const model = activePage === 'local-life' ? wanjiaViewModel() : viewModel();
     const renderers = {
@@ -3254,6 +3272,16 @@ export function createCeoOsApplication(config = {}) {
       badge.textContent = String(partitionDecisions(model.decisions).ceo.length);
       badge.style.display = badge.textContent === '0' ? 'none' : '';
     }
+  }
+
+  function renderMobileAiSheet() {
+    let container = document?.getElementById?.('mobileAiSheetRoot');
+    if (!container && runtime.mobileAiSheetOpen && document?.createElement && document?.body?.append) {
+      container = document.createElement('div');
+      container.id = 'mobileAiSheetRoot';
+      document.body.append(container);
+    }
+    renderMobileCommandSheet(container, { ...runtime.aiCommand, open: runtime.mobileAiSheetOpen });
   }
 
   function applyIntelligenceResult(result) {
@@ -3522,6 +3550,7 @@ export function createCeoOsApplication(config = {}) {
     launchAgentRun, submitAgentRun, approveAgentRun, deletePrivateEntity,
     submitAiCommand, executeAiCommandAction, undoAiCommandAction,
     setAiCommandInput, setAiCommandScope, startAiVoice, stopAiVoice, toggleAiVoice,
+    openMobileAiSheet, closeMobileAiSheet,
     get operatingRuntime() { return operatingRuntime; },
   };
 }

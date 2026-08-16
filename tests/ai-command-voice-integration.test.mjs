@@ -55,3 +55,16 @@ test('unsupported voice does not block typed command input', () => {
   assert.equal(app.viewModel().aiCommand.input, '仍然可以键盘输入');
   assert.equal(app.viewModel().aiCommand.voice.state, 'unsupported');
 });
+
+test('mobile sheet uses the same AI command state and preserves text when voice is unavailable', () => {
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {}, defaultView: null },
+    storage: memoryStorage(), createOperatingRuntime: false, SpeechRecognition: null,
+  });
+  app.openMobileAiSheet();
+  app.setAiCommandInput('生成今天的 CEO 行动建议');
+  assert.equal(app.viewModel().mobileAiSheetOpen, true);
+  assert.equal(app.viewModel().aiCommand.input, '生成今天的 CEO 行动建议');
+  assert.equal(app.startAiVoice(), false);
+  assert.equal(app.viewModel().aiCommand.input, '生成今天的 CEO 行动建议');
+});
