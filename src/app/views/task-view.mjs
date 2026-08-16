@@ -1,5 +1,5 @@
-import { escapeHtml } from './view-utils.mjs?v=2.10.0';
-import { taskCompletion } from '../task-center.mjs?v=2.10.0';
+import { escapeHtml } from './view-utils.mjs?v=2.11.0';
+import { taskCompletion } from '../task-center.mjs?v=2.11.0';
 
 function option(value, label, selected) {
   return `<option value="${escapeHtml(value)}" ${selected === value ? 'selected' : ''}>${escapeHtml(label)}</option>`;

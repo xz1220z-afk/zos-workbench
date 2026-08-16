@@ -1,4 +1,4 @@
-import { escapeHtml, renderState } from './view-utils.mjs?v=2.10.0';
+import { escapeHtml, renderState } from './view-utils.mjs?v=2.11.0';
 
 const COMPANY = { wanjia: '万嘉', huahuo: '花火', lingli: '玲丽', ceo: 'CEO' };
 

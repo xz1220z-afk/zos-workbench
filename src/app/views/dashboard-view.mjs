@@ -1,8 +1,8 @@
-import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.10.0';
-import { formatCurrency, humanText } from '../value-utils.mjs?v=2.10.0';
-import { partitionDecisions } from '../decision-center.mjs?v=2.10.0';
-import { buildWorkHomepagePresence } from '../homepage-presence.mjs?v=2.10.0';
-import { renderAiCommandHtml } from './ai-command-view.mjs?v=2.10.0';
+import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.11.0';
+import { formatCurrency, humanText } from '../value-utils.mjs?v=2.11.0';
+import { partitionDecisions } from '../decision-center.mjs?v=2.11.0';
+import { buildWorkHomepagePresence } from '../homepage-presence.mjs?v=2.11.0';
+import { renderAiCommandHtml } from './ai-command-view.mjs?v=2.11.0';
 
 export { VIEW_STATES };
 
