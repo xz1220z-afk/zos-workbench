@@ -1,7 +1,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { OwnerAuthorizationError, requireConfiguredOwner } from './owner-authorization.mjs';
 
 export class AuthError extends Error {
-  constructor(readonly code: 'authentication_required' | 'authentication_invalid' | 'service_not_configured', readonly status: number) {
+  constructor(readonly code: 'authentication_required' | 'authentication_invalid' | 'authorization_forbidden' | 'service_not_configured', readonly status: number) {
     super(code);
   }
 }
@@ -35,4 +36,18 @@ export async function requireUser(req: Request) {
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) throw new AuthError('authentication_invalid', 401);
   return { user: data.user, token, supabase };
+}
+
+export async function requireOwnerUser(req: Request) {
+  const identity = await requireUser(req);
+  try {
+    return requireConfiguredOwner(identity, {
+      ownerId: Deno.env.get('ZOS_OWNER_USER_ID'),
+    });
+  } catch (error) {
+    if (error instanceof OwnerAuthorizationError) {
+      throw new AuthError(error.code, error.status);
+    }
+    throw error;
+  }
 }
