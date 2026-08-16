@@ -1004,7 +1004,7 @@ export function createCeoOsApplication(config = {}) {
   }
 
   function notifyCurrentReminders() {
-    const pending = viewModel().reminderQueue.filter((item) => !notifiedReminderIds.has(item.id));
+    const pending = pageViewModel('dashboard').reminderQueue.filter((item) => !notifiedReminderIds.has(item.id));
     const result = notifyGrantedReminders(pending, config.notificationEnvironment || globalThis);
     if (result.state === 'sent') pending.forEach((item) => notifiedReminderIds.add(item.id));
     runtime.inAppNotificationState = result.state;
@@ -1026,7 +1026,7 @@ export function createCeoOsApplication(config = {}) {
 
   function currentDurableReminderJobs() {
     const state = store.load();
-    const model = viewModel();
+    const model = pageViewModel('dashboard');
     const sourceItems = [
       ...(state.collections.tasks || []).map((item) => ({ ...item, entityType: 'task' })),
       ...(state.collections.calendar || []).map((item) => ({ ...item, entityType: 'calendar' })),

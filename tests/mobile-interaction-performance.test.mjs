@@ -46,6 +46,71 @@ test('startup and the focus ticker never rebuild the whole workspace model', () 
   assert.doesNotMatch(startBlock, /return viewModel\(\)/);
 });
 
+test('authenticated startup refresh and push scheduling use reminder-scoped models', async (t) => {
+  let wanjiaHistoryReads = 0;
+  let scheduled = 0;
+  const sources = {
+    wanjia: {
+      records: [], summary: {},
+      get history() {
+        wanjiaHistoryReads += 1;
+        return null;
+      },
+    },
+    huahuo: { records: [], summary: {} },
+    lingli: { records: [], summary: {} },
+    projects: { records: [], summary: {} },
+  };
+  const operatingLoop = {
+    async refresh() {},
+    confirmTargets() {},
+    ensureDailyBrief() { return null; },
+    getState() {
+      return { decisions: [], targets: [], gaps: [], briefs: [], health: [], conflicts: [], approvals: [], sources };
+    },
+  };
+  const application = createCeoOsApplication({
+    document: {
+      defaultView: { innerWidth: 390 },
+      addEventListener() {},
+      getElementById() { return null; },
+      querySelector(selector) { return selector === '.page.active' ? { id: 'page-dashboard' } : null; },
+      querySelectorAll() { return []; },
+    },
+    storage: { getItem(key) { return key === 'zos_device_id' ? 'device-1' : null; }, setItem() {} },
+    operatingRuntime: {
+      session: { userId: 'user-1' },
+      operatingLoop,
+      syncController: { start() {}, async sync() {} },
+      async loadIntelligence() { return { items: [], state: 'cached' }; },
+      async loadExternalCalendar() { return { items: [], state: 'pending_configuration' }; },
+      pushClient: {
+        async status() { return { state: 'enabled', publicKey: 'test-key' }; },
+        async schedule(jobs) {
+          scheduled += 1;
+          return { state: 'enabled', scheduled: jobs.length };
+        },
+      },
+    },
+    autoRefreshFactory: ({ refreshAll, onStatus }) => ({
+      start() {}, stop() {},
+      async refresh(reason) {
+        onStatus({ phase: 'refreshing', reason, succeeded: [], failed: [] });
+        const result = await refreshAll(reason);
+        onStatus({ phase: 'idle', reason, ...result });
+        return result;
+      },
+    }),
+  });
+  t.after(() => application.stop());
+
+  await application.start();
+  await application.whenIdle();
+
+  assert.ok(scheduled > 0, 'the push-enabled startup must exercise durable reminder scheduling');
+  assert.equal(wanjiaHistoryReads, 0, 'startup reminder work must not build the full Wanjia workspace model');
+});
+
 test('navigation keeps each page scroll in runtime memory and restores it after the active page changes', () => {
   assert.match(legacy, /const pageScroll = new Map\(\)/);
   assert.match(legacy, /function rememberPageScroll\(pageId\)/);
