@@ -162,7 +162,7 @@ export function createCeoOsApplication(config = {}) {
     },
     agentOsFilter: 'all', agentOsDetailId: null, agentOsPatrol: null,
     mobileAgentDirectoryDisclosure: { organizationId: null, departmentId: null },
-    agentOsImportState: 'idle', agentOsImportMessage: null, agentAnalysis: null,
+    agentOsImportState: 'idle', agentOsImportMessage: null, agentAnalysis: null, agentAnalysisStates: {},
     weather: { state: 'loading', location: DEFAULT_WEATHER_LOCATION },
     localBusy: { ai: false, agentIds: [], agentTaskArchives: [], intelligenceIds: [], refreshSources: [] },
     intelligenceQuestionStates: {},
@@ -204,7 +204,7 @@ export function createCeoOsApplication(config = {}) {
   let aiVoiceIgnoreClick = false;
   let aiCommandWork = null;
   const intelligenceQuestionWork = new Map();
-  let agentAnalysisWork = null;
+  const agentAnalysisWork = new Map();
   const agentTaskAnalysisWork = new Map();
   let intelligenceRefreshWork = null;
   const refreshSourceWork = new Map();
@@ -1526,6 +1526,7 @@ export function createCeoOsApplication(config = {}) {
     if (!detail) throw new Error('agent_not_found');
     if (detail.agentId === 'REL-001' && runtime.agentOsFilter !== 'private-relations') throw new Error('private_agent_hidden');
     runtime.agentOsDetailId = detail.agentId;
+    runtime.agentAnalysis = runtime.agentAnalysisStates[detail.agentId] || null;
     renderAll();
     return detail;
   }
@@ -1536,44 +1537,50 @@ export function createCeoOsApplication(config = {}) {
     renderAll();
   }
 
+  function setAgentAnalysisState(agentId, analysis) {
+    runtime.agentAnalysisStates = { ...runtime.agentAnalysisStates, [agentId]: analysis };
+    if (runtime.agentOsDetailId === agentId) runtime.agentAnalysis = analysis;
+    return analysis;
+  }
+
   async function analyzeAgent(agentId, question) {
-    if (agentAnalysisWork) return agentAnalysisWork;
-    agentAnalysisWork = (async () => {
-      const detail = agentDetails(currentAgentOsIndex() || {}, agentId);
+    const id = String(agentId || '').trim();
+    if (agentAnalysisWork.has(id)) return agentAnalysisWork.get(id);
+    const work = (async () => {
+      const detail = agentDetails(currentAgentOsIndex() || {}, id);
       if (!detail) throw new Error('agent_not_found');
       if (detail.agentId === 'REL-001' && runtime.agentOsFilter !== 'private-relations') throw new Error('private_agent_hidden');
       if (detail.agentId === 'REL-001') throw new Error('private_agent_local_only');
       runtime.agentOsDetailId = detail.agentId;
       const asked = String(question || '').trim();
       if (!asked) {
-        runtime.agentAnalysis = { agentId: detail.agentId, state: 'ready', question: '', answer: null };
+        const analysis = setAgentAnalysisState(detail.agentId, { agentId: detail.agentId, state: 'ready', question: '', answer: null });
         renderAll();
-        return runtime.agentAnalysis;
+        return analysis;
       }
-      runtime.agentAnalysis = { agentId: detail.agentId, state: 'loading', question: asked, answer: null };
+      setAgentAnalysisState(detail.agentId, { agentId: detail.agentId, state: 'loading', question: asked, answer: null });
       setLocalBusyItem('agentIds', detail.agentId, true);
       renderAll();
       try {
         const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
         if (typeof ask !== 'function') {
-          runtime.agentAnalysis = { agentId: detail.agentId, state: 'error', question: asked, answer: 'AI 服务尚未连接。请登录 Supabase 并完成服务端 OpenAI 配置。', error: 'ai_not_configured' };
-          return runtime.agentAnalysis;
+          return setAgentAnalysisState(detail.agentId, { agentId: detail.agentId, state: 'error', question: asked, answer: 'AI 服务尚未连接。请登录 Supabase 并完成服务端 OpenAI 配置。', error: 'ai_not_configured' });
         }
         const result = await ask(buildAgentAnalysisRequest(detail, asked, {
           confirmedContext: confirmedContextForAgent(store.load().collections.agent_contexts || [], detail.agentId),
         }));
-        runtime.agentAnalysis = { agentId: detail.agentId, state: 'answered', question: asked, answer: result.answer, sources: result.sources || [], knowledgeState: result.knowledgeState || 'general_only' };
+        return setAgentAnalysisState(detail.agentId, { agentId: detail.agentId, state: 'answered', question: asked, answer: result.answer, sources: result.sources || [], knowledgeState: result.knowledgeState || 'general_only' });
       } catch (error) {
         const code = String(error?.message || 'ai_request_failed');
-        runtime.agentAnalysis = { agentId: detail.agentId, state: 'error', question: asked, answer: code === 'ai_not_configured' ? 'AI 服务尚未配置。请先在 Supabase 设置 OPENAI_API_KEY。' : '本轮分析未完成，请检查登录、网络后重试。', error: code };
+        return setAgentAnalysisState(detail.agentId, { agentId: detail.agentId, state: 'error', question: asked, answer: code === 'ai_not_configured' ? 'AI 服务尚未配置。请先在 Supabase 设置 OPENAI_API_KEY。' : '本轮分析未完成，请检查登录、网络后重试。', error: code });
       } finally {
         setLocalBusyItem('agentIds', detail.agentId, false);
         renderAll();
       }
-      return runtime.agentAnalysis;
     })();
-    try { return await agentAnalysisWork; }
-    finally { agentAnalysisWork = null; }
+    agentAnalysisWork.set(id, work);
+    try { return await work; }
+    finally { if (agentAnalysisWork.get(id) === work) agentAnalysisWork.delete(id); }
   }
 
   async function analyzeAgentTask(archiveId) {

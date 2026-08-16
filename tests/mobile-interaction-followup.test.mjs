@@ -61,6 +61,54 @@ test('Agent task analysis coalesces a double click, clears failure busy state, a
   assert.equal(app.viewModel().agentContextCandidates.length, 1);
 });
 
+function directAnalysisDocument(buttons) {
+  return {
+    getElementById: () => null, addEventListener() {},
+    querySelectorAll(selector) { return selector === '[data-agent-analyze]' ? buttons : []; },
+  };
+}
+
+test('direct Agent analysis partitions concurrent work, busy state, and outcomes by Agent ID', async () => {
+  const gates = { 'WANJIA-001': deferred(), 'HUAHUO-001': deferred() };
+  const buttons = ['WANJIA-001', 'HUAHUO-001'].map((agentAnalyze) => ({ ...busyButton(), dataset: { agentAnalyze } }));
+  const requests = [];
+  const app = createCeoOsApplication({
+    document: directAnalysisDocument(buttons), storage: memoryStorage(), createOperatingRuntime: false,
+    askAi: (request) => { requests.push(request.agent.agentId); return gates[request.agent.agentId].promise; },
+  });
+  app.importAgentOsIndexText(JSON.stringify({
+    ...agentOsIndex,
+    agents: [...agentOsIndex.agents, { ...agentOsIndex.agents[0], agentId: 'HUAHUO-001', name: '花火影像 Agent', hash: 'huahuo-hash', relativePath: 'HUAHUO-001.md' }],
+  }));
+
+  const firstA = app.analyzeAgent('WANJIA-001', '分析万嘉风险');
+  const duplicateA = app.analyzeAgent('WANJIA-001', '分析万嘉风险');
+  const firstB = app.analyzeAgent('HUAHUO-001', '分析花火风险');
+  await Promise.resolve();
+  assert.deepEqual(requests.sort(), ['HUAHUO-001', 'WANJIA-001']);
+  assert.deepEqual(app.runtime.localBusy.agentIds.sort(), ['HUAHUO-001', 'WANJIA-001']);
+  assert.equal(buttons[0].hasAttribute('aria-busy'), true);
+  assert.equal(buttons[1].hasAttribute('aria-busy'), true);
+
+  gates['HUAHUO-001'].resolve({ answer: '花火结果', sources: [] });
+  const bResult = await firstB;
+  assert.equal(bResult.agentId, 'HUAHUO-001');
+  assert.equal(bResult.answer, '花火结果');
+  assert.deepEqual(app.runtime.localBusy.agentIds, ['WANJIA-001']);
+  assert.equal(buttons[0].hasAttribute('aria-busy'), true);
+  assert.equal(buttons[1].hasAttribute('aria-busy'), false);
+
+  gates['WANJIA-001'].reject(new Error('offline'));
+  const [aResult, duplicateResult] = await Promise.all([firstA, duplicateA]);
+  assert.equal(aResult.agentId, 'WANJIA-001');
+  assert.equal(aResult.state, 'error');
+  assert.equal(duplicateResult.agentId, 'WANJIA-001');
+  assert.deepEqual(app.runtime.localBusy.agentIds, []);
+  assert.equal(buttons[0].hasAttribute('aria-busy'), false);
+  assert.equal(app.runtime.agentAnalysisStates['HUAHUO-001'].answer, '花火结果');
+  assert.equal(app.runtime.agentAnalysisStates['WANJIA-001'].state, 'error');
+});
+
 function refreshDocument(buttons) {
   const node = () => ({ innerHTML: '', textContent: '', style: {} });
   return {

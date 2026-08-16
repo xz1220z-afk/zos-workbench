@@ -82,3 +82,43 @@ node --test tests/*.test.mjs
 结果：685/685 通过。
 
 静态检查：`git diff --check`、`node --check src/app.mjs`、`node --check src/legacy-app.mjs` 通过；`rg 'transition:\\s*all' assets/app.css` 无匹配。
+
+## Fix round 2/5（2026-08-16）
+
+### 修复范围
+
+- 直接 Agent 分析的 in-flight 由单个 Promise 改为按 `agentId` 的 Map，因而同一 Agent 重入复用同一请求、不同 Agent 可独立并发。
+- 直接 Agent 分析状态同样按 `agentId` 存在 `runtime.agentAnalysisStates`；当前详情只显示当前 Agent 的状态，旧 Agent 的完成或失败不会覆盖另一个 Agent 的结果。
+- `localBusy.agentIds` 的状态粒度与上述 Promise Map 一致：每个 Agent 的按钮仅在自己的请求期间 `aria-busy`/禁用。
+
+### 严格 TDD 记录
+
+RED：先新增“direct Agent analysis partitions concurrent work, busy state, and outcomes by Agent ID”行为测试，执行：
+
+```sh
+node --test tests/mobile-interaction-followup.test.mjs
+```
+
+结果：5 项中 1 项按预期失败；旧全局 `agentAnalysisWork` 仅调用 `WANJIA-001`，`HUAHUO-001` 未发起真实调用。
+
+GREEN：改为 ID Map 并按 ID 保存结果/错误后，执行同一命令结果为 5/5 通过。测试覆盖 A/A 重入仅一条调用、A/B 各自真实调用、B 完成不清 A busy、以及 A 错误与 B 成功的状态归属。
+
+### 验证
+
+定向回归：
+
+```sh
+node --test tests/mobile-interaction-followup.test.mjs tests/mobile-interaction-performance.test.mjs tests/agent-os-view.test.mjs tests/v2-app-actions.test.mjs tests/app-actions.test.mjs tests/intelligence-question-actions.test.mjs
+```
+
+结果：32/32 通过。
+
+全量回归：
+
+```sh
+node --test tests/*.test.mjs
+```
+
+结果：686/686 通过。
+
+静态检查：`git diff --check` 与 `node --check src/app.mjs` 通过。
