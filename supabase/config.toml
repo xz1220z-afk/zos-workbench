@@ -43,3 +43,6 @@ verify_jwt = false
 [functions.zos-reminder-dispatch]
 # Handles user-authenticated subscription changes and internal cron dispatch with its own secret guard.
 verify_jwt = false
+[functions.zos-auth-session]
+# JWT and an exact owner-id match are both required before the shell unlocks.
+verify_jwt = true

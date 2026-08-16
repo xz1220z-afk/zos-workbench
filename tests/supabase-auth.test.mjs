@@ -23,7 +23,7 @@ test('requestOtp sends only the email to Supabase Auth', async () => {
 
   assert.match(calls[0].url, /\/auth\/v1\/otp$/);
   assert.equal(calls[0].options.headers.apikey, 'public-anon-key');
-  assert.deepEqual(JSON.parse(calls[0].options.body), { email: 'ceo@example.com', create_user: true });
+  assert.deepEqual(JSON.parse(calls[0].options.body), { email: 'ceo@example.com', create_user: false });
 });
 
 test('signInWithPassword returns a private sync session without persisting the password', async () => {

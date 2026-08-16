@@ -38,7 +38,7 @@ export function createSupabaseAuth({ url, anonKey, fetchImpl = fetch }) {
   return {
     async requestOtp(email, redirectTo) {
       required(email, 'email');
-      const body = { email, create_user: true };
+      const body = { email, create_user: false };
       if (redirectTo) body.email_redirect_to = redirectTo;
       await requestJson(fetchImpl, endpoint(url, '/auth/v1/otp'), {
         method: 'POST', headers, body: JSON.stringify(body),
