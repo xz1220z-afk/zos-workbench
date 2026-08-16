@@ -46,3 +46,7 @@ verify_jwt = false
 [functions.zos-auth-session]
 # JWT and an exact owner-id match are both required before the shell unlocks.
 verify_jwt = true
+
+[functions.zos-ai-realtime-session]
+# Exchanges owner-authenticated WebRTC SDP without exposing the OpenAI API key.
+verify_jwt = true

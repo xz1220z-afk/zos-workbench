@@ -7,6 +7,7 @@ const endpoints = [
   'zos-feishu-approval-preview',
   'zos-feishu-approval-execute',
   'zos-ai-assistant',
+  'zos-ai-realtime-session',
 ];
 
 for (const endpoint of endpoints) {
