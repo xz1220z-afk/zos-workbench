@@ -63,6 +63,9 @@ import { contentOverview, contentPerformance, evaluateExperiment, normalizeConte
 import { createBrainstorm, createKnowledgeCard, knowledgeReviewQueue, normalizeReadingItem, selectBrainstormDirection } from './app/knowledge-workspace.mjs?v=2.11.0';
 import { normalizeSocialInsight, rankSocialOpportunities } from './app/social-insight-center.mjs?v=2.11.0';
 import { createAgentRun, summarizeAgentRuns } from './app/agent-workbench.mjs?v=2.11.0';
+import { buildAiOffice } from './app/ai-office.mjs?v=2.11.0';
+import { buildExecutionLedger } from './app/execution-ledger.mjs?v=2.11.0';
+import { buildContinuityPrompts } from './app/continuity-engine.mjs?v=2.11.0';
 import { buildMobileAgentDirectory } from './app/mobile-agent-directory.mjs?v=2.11.0';
 import { validateAgentOsIndex } from './app/agent-os-index-contract.mjs?v=2.11.0';
 import {
@@ -80,7 +83,7 @@ import { render as renderAgentWorkbench } from './app/views/agent-workbench-view
 import { buildDurableStateView, parseBackupFile, summarizeBackup } from './app/data-durability.mjs?v=2.11.0';
 import { createIndexedDbSnapshotAdapter, createSnapshotRepository } from './app/snapshot-repository.mjs?v=2.11.0';
 import { applyDecisionAction, applyDecisionBatch, partitionDecisions } from './app/decision-center.mjs?v=2.11.0';
-import { createAiCommand, normalizeAiCommandResult, transitionAiCommand } from './app/ai-command-center.mjs?v=2.11.0';
+import { createAiCommand, normalizeAiCommandResult, sanitizeAiActivity, transitionAiCommand } from './app/ai-command-center.mjs?v=2.11.0';
 import { routeIntent } from './app/intent-router.mjs?v=2.11.0';
 import { executeControlledAction } from './app/controlled-execution.mjs?v=2.11.0';
 import { createVoiceInput } from './app/voice-input.mjs?v=2.11.0';
@@ -429,14 +432,22 @@ export function createCeoOsApplication(config = {}) {
             task: text,
             execution: { level: route.riskLevel, actions },
           });
-          runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'completed', { result, error: null });
+          runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'completed', { result, error: null, updatedAt: now() });
+          try {
+            store.saveEntity('commands', sanitizeAiActivity(runtime.aiCommand));
+            signalLocalChange();
+          } catch { /* The answer remains usable even when local activity history is unavailable. */ }
           renderAll();
         },
       });
       if (!response || !result) throw new Error('ai_command_cancelled');
       return result;
     } catch {
-      runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'failed', { error: 'AI 暂时不可用，请稍后重试。' });
+      runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'failed', { error: 'AI 暂时不可用，请稍后重试。', updatedAt: now() });
+      try {
+        store.saveEntity('commands', sanitizeAiActivity(runtime.aiCommand));
+        signalLocalChange();
+      } catch { /* Keep the visible failure state even when activity history cannot be stored. */ }
       renderAll();
       throw new Error('ai_command_failed');
     } finally {
@@ -793,11 +804,27 @@ export function createCeoOsApplication(config = {}) {
     const agentOsOverview = agentOsIndex ? buildAgentOsOverview(agentOsIndex) : null;
     const agentOsDetails = agentOsIndex && runtime.agentOsDetailId
       ? agentDetails(agentOsIndex, runtime.agentOsDetailId) : null;
+    const aiReady = typeof (config.askAi || operatingRuntime?.aiAssistant?.ask) === 'function';
     const agentOsAgents = agentOsIndex ? visibleAgents(agentOsIndex, runtime.agentOsFilter).map((agent) => ({
       ...agent,
-      runtimeAvailability: agentRuntimeAvailability(agent, { aiReady: typeof (config.askAi || operatingRuntime?.aiAssistant?.ask) === 'function' }),
+      runtimeAvailability: agentRuntimeAvailability(agent, { aiReady }),
       confirmedContextCount: confirmedContextForAgent(agentContextCandidates, agent.agentId).length,
     })) : [];
+    const allAgentOsAgents = agentOsOverview ? Object.values(agentOsOverview.categories || {}).flat() : [];
+    const aiOffice = needsPage('agent-workbench') ? buildAiOffice({
+      agents: allAgentOsAgents, agentRuns, taskArchives: agentTaskArchives, now: now(),
+    }) : null;
+    const executionLedger = needsPage('agent-workbench') ? buildExecutionLedger({
+      commands: state.collections.commands || [], agentRuns, taskArchives: agentTaskArchives, approvals: runtime.approvals || [],
+    }) : [];
+    const capabilityRegistry = needsPage('agent-workbench') ? [
+      { id: 'chatgpt-text', name: 'ChatGPT 文字问答', level: 'L0', state: aiReady ? 'ready' : 'pending', boundary: '只读回答与草稿' },
+      { id: 'quick-voice', name: '快捷语音输入', level: 'L0', state: runtime.aiCommand?.voice?.supported ? 'ready' : 'unsupported', boundary: '转成可编辑文字，不留原始音频' },
+      { id: 'realtime-voice', name: 'ChatGPT 实时语音', level: 'L0', state: runtime.aiCommand?.realtimeVoice?.supported ? 'ready' : 'unsupported', boundary: '会话不保存原始音频或字幕' },
+      { id: 'knowledge', name: '授权知识摘要', level: 'L0', state: runtime.knowledgeContext?.state === 'ready' ? 'ready' : 'pending', boundary: '按需读取已授权摘要' },
+      { id: 'draft', name: '本地草案', level: 'L1', state: 'ready', boundary: '可撤销，不自动外发' },
+      { id: 'external', name: '外部写入与发送', level: 'L2', state: 'confirmation_required', boundary: '精确预览后由朱帅确认' },
+    ] : [];
     const socialInsights = needsPage('intelligence', 'search') ? rankSocialOpportunities(state.collections.social_insights || []) : [];
     const contentAssets = needsContent ? (state.collections.content_assets || []) : [];
     const brainstorms = needsContent ? (state.collections.brainstorms || []) : [];
@@ -854,6 +881,11 @@ export function createCeoOsApplication(config = {}) {
     const homePresence = needsPage('dashboard') ? buildWorkHomepagePresence({
       decisions, importantDates, todayTop3, businessExceptions: runtime.businessExceptions || [], calendarConflicts, mustRead,
     }) : null;
+    const currentTargets = runtime.loopConnected ? runtime.targets : (state.collections.targets || []);
+    const currentGaps = runtime.loopConnected ? runtime.gaps : (runtime.gaps || []);
+    const continuityPrompts = needsPage('dashboard') ? buildContinuityPrompts({
+      targets: currentTargets, gaps: currentGaps, tasks, agentRuns, aiCommand: runtime.aiCommand, now: now(),
+    }) : [];
     const companyOperating = needsCompanyOperating ? buildCompanyOperatingContract(sources) : {};
     const companyCockpits = needsPage('lingli', 'spark-media') ? Object.fromEntries(['wanjia', 'huahuo', 'lingli'].map((company) => [
       company,
@@ -883,7 +915,8 @@ export function createCeoOsApplication(config = {}) {
       ...runtime,
       decisions,
       decisionQueues: partitionDecisions(decisions),
-      targets: runtime.loopConnected ? runtime.targets : (state.collections.targets || []),
+      targets: currentTargets,
+      gaps: currentGaps,
       tasks: state.collections.tasks || [],
       localAgentTasks: state.collections.local_agent_tasks || [],
       inbox: state.collections.inbox || [],
@@ -959,6 +992,10 @@ export function createCeoOsApplication(config = {}) {
       agentOsIndex,
       agentOsOverview,
       agentOsAgents,
+      aiOffice,
+      capabilityRegistry,
+      executionLedger,
+      continuityPrompts,
       mobileAgentDirectory: needsPage('agent-workbench') ? buildMobileAgentDirectory(agentOsAgents, {
         recentAgentIds: agentRuns.slice().reverse().slice(0, 8).map((run) => run.agentId),
         expandedOrganizationId: runtime.mobileAgentDirectoryDisclosure.organizationId,
@@ -3011,6 +3048,7 @@ export function createCeoOsApplication(config = {}) {
       const refreshButton = event.target?.closest?.('[data-refresh-source]');
       const refreshAllButton = event.target?.closest?.('[data-refresh-all]');
       const captureButton = event.target?.closest?.('[data-quick-capture]');
+      const continuityDraft = event.target?.closest?.('[data-continuity-draft]');
       const pageButton = event.target?.closest?.('[data-page]');
       const mobileMorePage = event.target?.closest?.('[data-mobile-more-item][data-page]');
       const intelligenceButton = event.target?.closest?.('[data-intelligence-status]');
@@ -3224,6 +3262,16 @@ export function createCeoOsApplication(config = {}) {
         else if (executeButton) await executeApproval(executeButton.dataset.executeApproval);
         else if (refreshAllButton) await autoRefreshController?.refresh('manual');
         else if (refreshButton) await refreshSource(refreshButton.dataset.refreshSource);
+        else if (continuityDraft) {
+          runtime.taskDraft = {
+            title: String(continuityDraft.dataset.continuityTitle || '确认下一步').trim(),
+            description: '由 AI 推进提醒生成的任务草案；保存前请核对负责人、日期与优先级。',
+            company: 'ceo', priority: 1, tags: ['AI 推进提醒', '草案'],
+          };
+          runtime.taskDrawerOpen = true;
+          showTaskCenter();
+          renderAll();
+        }
         else if (captureButton) quickCapture((config.prompt || globalThis.prompt)?.('记录一条想法或任务'));
         else if (intelligenceAsk) openIntelligenceQuestion(intelligenceAsk.dataset.intelligenceAsk);
         else if (intelligenceQuestionClose) closeIntelligenceQuestion();

@@ -23,6 +23,10 @@ function importantDatesDrawer(viewModel, items) {
   return `<aside class="important-dates-drawer" role="dialog" aria-modal="true" aria-label="全部关键期限"><header><div><small>未来 30 天</small><h2>关键期限</h2></div><button data-important-dates-close aria-label="关闭">×</button></header>${importantDateRows(items)}<footer><button class="v13-action v13-action-primary" data-countdown-capture>＋ 新增关键期限</button></footer></aside><div class="task-drawer-backdrop" data-important-dates-close></div>`;
 }
 
+function continuityPanel(items = []) {
+  return `<article class="v13-panel v14-span-3 ai-continuity-panel"><div class="v14-section-head"><div><span class="v14-kicker">CONTINUITY LOOP</span><h3>✦ AI 推进提醒</h3></div><button class="v13-action" data-page="tasks">任务中心</button></div>${items.length ? `<div class="ai-continuity-list">${items.slice(0, 4).map((item) => `<div class="ai-continuity-row" data-continuity-kind="${escapeHtml(item.kind)}"><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></div>${item.action === 'open_task' ? `<button class="v13-action" data-page="tasks">打开任务</button>` : `<button class="v13-action v13-action-primary" data-continuity-draft="${escapeHtml(item.id)}" data-continuity-title="${escapeHtml(item.title)}">生成任务草案</button>`}</div>`).join('')}</div>` : renderState('empty', 'AI 推进提醒')}</article>`;
+}
+
 const SOURCE_LABELS = Object.freeze({
   sync: '跨端', wanjia: '万嘉', huahuo: '花火', lingli: '玲丽', projects: '项目', intelligence: '情报', calendar: '日历', all: '全部',
 });
@@ -98,6 +102,7 @@ export function render(container, viewModel = {}) {
     <div class="v14-main-grid">
       <article class="v13-panel v14-span-2 v14-today-panel"><div class="v14-section-head"><h3>◎ 今日 Top 3 <span class="v13-chip">${displayValue(viewModel.reminderQueue?.length)} 条提醒</span></h3><button class="v13-action" data-page="today">查看行动</button></div>${(viewModel.todayTop3 || []).length ? `<div class="v13-list">${viewModel.todayTop3.slice(0, 3).map((item, index) => `<div class="v13-row"><div><strong>0${index + 1} · ${escapeHtml(humanText(item.title || item.factSummary || item.id, '待确认行动'))}</strong><div class="v13-meta">${escapeHtml(humanText(item.reason, '待确认优先原因'))}${item.dueAt ? ` · ${escapeHtml(item.dueAt)}` : ''}</div></div><div>${item.sourceType === 'decision' ? `<button class="v13-action" data-preview-decision="${escapeHtml(item.sourceId)}">预览催办</button>` : ''}<span class="v13-chip">${escapeHtml(humanText(item.sourceType, '行动'))}</span></div></div>`).join('')}</div>` : renderState('empty', '今日行动')}</article>
       <article class="v13-panel"><div class="v14-section-head"><h3>◎ 待我决策</h3><button class="v13-action" data-page="decisions">全部</button></div>${decisionRows(activeDecisions)}</article>
+      ${continuityPanel(viewModel.continuityPrompts || [])}
     </div>
     <section class="v14-secondary-region" aria-label="经营与支持信息"><div class="v14-main-grid">
       <article class="v13-panel v14-span-2"><div class="v14-section-head"><h3>◫ 三家公司经营全景</h3><span>真实来源</span></div><div class="company-overview">

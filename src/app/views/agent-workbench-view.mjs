@@ -7,6 +7,8 @@ const FILTERS = Object.freeze([
 ]);
 const STATUS_LABEL = Object.freeze({ draft: '草稿', pilot: '试运行', active: '已启用', deprecated: '已停用' });
 const PILOT_LABEL = Object.freeze({ draft: '草稿', pilot: '试运行', review: '待复核', passed: '已通过', failed: '未通过', active: '已启用', evidence: '有证据' });
+const OFFICE_STATE_LABEL = Object.freeze({ idle: '空闲', draft: '草稿', awaiting_confirmation: '待确认', running: '执行中', completed: '已完成', failed: '异常' });
+const CAPABILITY_STATE_LABEL = Object.freeze({ ready: '可用', pending: '待配置', unsupported: '当前端不支持', confirmation_required: '必须确认' });
 
 function agentCard(agent) {
   const mission = agent.sections?.mission || '职责待身份卡补充';
@@ -49,6 +51,29 @@ function runRows(runs) {
   const visible = runs.slice().reverse().slice(0, 30);
   const remainder = runs.length - visible.length;
   return `${visible.map((run) => `<div class="agent-run-row"><div><strong>${escapeHtml(run.objective)}</strong><small>${escapeHtml(run.agentId)} · ${escapeHtml(run.status)}</small></div><div>${run.status === 'draft' ? `<button data-agent-submit="${escapeHtml(run.id)}">提交审核</button>` : ''}${run.status === 'awaiting_approval' ? `<button data-agent-approve="${escapeHtml(run.id)}">审核通过</button>` : ''}<button data-agent-run-delete="${escapeHtml(run.id)}">删除</button></div></div>`).join('')}${remainder > 0 ? `<p class="growth-list-more">还有 ${remainder} 条，已按最新执行时间优先展示</p>` : ''}`;
+}
+
+function officePanel(viewModel) {
+  const office = viewModel.aiOffice || { summary: {}, organizations: [] };
+  const summary = office.summary || {};
+  const filter = viewModel.agentOsFilter || 'all';
+  const seats = (office.organizations || [])
+    .filter((organization) => filter === 'all' || filter === 'private-relations' || organization.id === filter)
+    .flatMap((organization) => organization.departments || []).flatMap((department) => department.agents || [])
+    .filter((agent) => filter === 'private-relations' ? agent.private : !agent.private);
+  return `<section class="ai-office-panel"><header><div><span class="growth-kicker">AI OFFICE · LIVE STATUS</span><h3>AI Office 实时席位</h3><p>从现有身份卡与任务记录动态计算；“执行中”只表示已有运行记录，不代表后台自行工作。</p></div><button class="v13-action" data-page="tasks">查看全部任务</button></header>
+    <div class="ai-office-summary"><span><b>${Number(summary.total) || 0}</b>Agent</span><span><b>${Number(summary.running) || 0}</b>执行中</span><span><b>${Number(summary.awaitingConfirmation) || 0}</b>待确认</span><span><b>${Number(summary.failed) || 0}</b>异常</span></div>
+    <div class="ai-office-seats">${seats.length ? seats.slice(0, 24).map((agent) => `<article data-office-agent="${escapeHtml(agent.agentId)}" data-office-state="${escapeHtml(agent.officeState)}"><div><strong>${escapeHtml(agent.name || agent.agentId)}</strong><small>${escapeHtml(agent.agentId)} · ${escapeHtml(OFFICE_STATE_LABEL[agent.officeState] || agent.officeState)}</small></div><p>${escapeHtml(agent.currentTask || '当前无任务')}</p><button class="v13-action" data-agent-details="${escapeHtml(agent.agentId)}">详情</button></article>`).join('') : renderState('empty', 'AI Office 席位')}</div>
+  </section>`;
+}
+
+function capabilityPanel(items = []) {
+  return `<section class="ai-office-capabilities"><header><div><span class="growth-kicker">TOOLS & PERMISSIONS</span><h3>能力与权限注册表</h3><p>显示真实可用边界；不会因为出现在这里就自动获得外部写入权限。</p></div></header><div>${items.length ? items.map((item) => `<article data-capability-id="${escapeHtml(item.id)}" data-capability-state="${escapeHtml(item.state)}"><span>${escapeHtml(item.level)}</span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(CAPABILITY_STATE_LABEL[item.state] || item.state)} · ${escapeHtml(item.boundary)}</small></article>`).join('') : renderState('empty', '能力注册表')}</div></section>`;
+}
+
+function ledgerPanel(items = []) {
+  const kindLabel = { ai_command: 'AI 命令', agent_run: 'Agent 运行', agent_task: 'Agent 任务', approval: '变更确认' };
+  return `<section class="ai-office-ledger"><header><div><span class="growth-kicker">EXECUTION LEDGER</span><h3>执行台账</h3><p>只记录安全摘要、状态与时间；不保存原始语音、回答正文或知识库正文。</p></div></header><div>${items.length ? items.slice(0, 30).map((item) => `<article data-ledger-kind="${escapeHtml(item.kind)}"><div><strong>${escapeHtml(item.summary)}</strong><small>${escapeHtml(kindLabel[item.kind] || item.kind)}${item.agentId ? ` · ${escapeHtml(item.agentId)}` : ''}</small></div><span>${escapeHtml(OFFICE_STATE_LABEL[item.state] || item.state)}</span><time>${escapeHtml(String(item.at || '').replace('T', ' ').slice(0, 16))}</time></article>`).join('') : renderState('empty', '执行台账')}</div></section>`;
 }
 
 function patrolPanel(viewModel) {
@@ -115,12 +140,15 @@ export function render(container, viewModel = {}) {
   const knowledge = viewModel.knowledgeContext || { state: 'unknown', count: 0 };
   const knowledgeLabel = knowledge.state === 'ready' ? `已授权 ${Number(knowledge.count) || 0} 条知识摘要` : knowledge.state === 'uploading' ? '知识摘要导入中…' : '未导入知识摘要';
   container.innerHTML = `<section class="agent-hero"><div><span class="growth-kicker">AGENT OS · CONTROLLED INVOCATION</span><h2>Agent OS 管理与调用中心</h2><p>沿用现有 Agent 工作台和任务入口，动态读取 Agent 身份卡。默认只做扫描、索引、展示、分析与草稿；所有写入和外部动作继续等待确认。</p></div><div class="agent-boundary"><span>默认能力</span><strong>只读分析与草稿</strong><small>不修改 Vault · 不写飞书 · 不自动外发</small><button class="v13-action" data-agent-index-import>导入最新只读索引</button><button class="v13-action" data-knowledge-context-import ${knowledge.state === 'uploading' ? 'disabled' : ''}>${escapeHtml(knowledgeLabel)}</button></div></section>
+  ${officePanel(viewModel)}
+  ${capabilityPanel(viewModel.capabilityRegistry || [])}
   ${patrolPanel(viewModel)}
   <div class="agent-os-source" data-state="${escapeHtml(viewModel.agentOsImportState || 'idle')}"><span>${escapeHtml(sourceMessage)}</span><small>${hasIndex ? `仅本机保存 · 索引生成：${escapeHtml(String(viewModel.agentOsIndex.generatedAt || '').replace('T', ' ').slice(0, 16))}` : '正式网页受浏览器权限限制，请手动导入本机索引；不会上传云端。'}</small></div>
   <nav class="agent-os-filters" aria-label="Agent 分类">${FILTERS.map(([value, label]) => `<button class="v13-action ${viewModel.agentOsFilter === value ? 'active' : ''}" data-agent-os-filter="${value}">${label}</button>`).join('')}</nav>
   <div class="agent-summary agent-os-summary"><span><b>${Number(viewModel.agentOsOverview?.summary?.total) || 0}</b>动态发现</span><span><b>${Number(summary.total) || 0}</b>历史执行记录</span><span><b>${Number(summary.awaitingApproval) || 0}</b>待审核</span><span><b>${Number(summary.completed) || 0}</b>已完成</span></div>
   ${hasIndex ? mobileAgentDirectory(directory) : ''}
   <div class="agent-catalog">${hasIndex ? (agents.map(agentCard).join('') || renderState('empty', '该分类暂无 Agent')) : `<div class="agent-os-empty">${renderState('empty', 'Agent OS 索引')}<p>请导入扫描器生成的 JSON 索引；原有执行记录不会丢失。</p><button class="v13-action v13-action-primary" data-agent-index-import>选择索引文件</button></div>`}</div>
+  ${ledgerPanel(viewModel.executionLedger || [])}
   <article class="agent-runs"><header><div><span class="growth-kicker">RUN HISTORY</span><h3>执行记录与审批链</h3></div><small>保留原功能；输入引用与结果摘要均可回查</small></header>${runRows(viewModel.agentRuns || [])}</article>
   ${detailsDrawer(viewModel.agentOsDetails, viewModel.relationReminderDrafts, viewModel.agentAnalysis, viewModel.agentTaskArchives, viewModel.agentContextCandidates)}`;
 }
