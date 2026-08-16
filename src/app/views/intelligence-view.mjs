@@ -41,20 +41,22 @@ function sourceLink(value, label = '查看来源') {
 }
 
 function card(item) {
+  const intelligenceId = item.externalId || item.id || '';
+  const status = item.status || 'candidate';
   const companies = (item.relevantCompanies || []).map((company) => COMPANY_LABELS[company] || company).join(' · ') || '待判断';
   const workflowActions = (() => {
-    if (item.status === 'ignored') return `<button class="v13-action" data-intelligence-status="read" data-intelligence-id="${escapeHtml(item.externalId)}">恢复</button>`;
-    if (item.status === 'actioned' || item.status === 'knowledge_pending') return '';
-    return `${item.status === 'candidate' ? `<button class="v13-action" data-intelligence-status="read" data-intelligence-id="${escapeHtml(item.externalId)}">标记已读</button>` : ''}<button class="v13-action v13-action-quiet" data-intelligence-status="ignored" data-intelligence-id="${escapeHtml(item.externalId)}">忽略</button><button class="v13-action v13-action-primary" data-intelligence-status="actioned" data-intelligence-id="${escapeHtml(item.externalId)}">转为行动</button>`;
+    if (status === 'ignored') return `<button class="v13-action" data-intelligence-status="read" data-intelligence-read="${escapeHtml(intelligenceId)}" data-intelligence-id="${escapeHtml(intelligenceId)}">恢复</button>`;
+    if (status === 'actioned' || status === 'knowledge_pending') return '';
+    return `${status === 'candidate' ? `<button class="v13-action" data-intelligence-status="read" data-intelligence-read="${escapeHtml(intelligenceId)}" data-intelligence-id="${escapeHtml(intelligenceId)}">标记已读</button>` : ''}<button class="v13-action v13-action-quiet" data-intelligence-status="ignored" data-intelligence-id="${escapeHtml(intelligenceId)}">忽略</button><button class="v13-action v13-action-primary" data-intelligence-status="actioned" data-intelligence-task-draft="${escapeHtml(intelligenceId)}" data-intelligence-id="${escapeHtml(intelligenceId)}">转为行动</button>`;
   })();
-  return `<article class="intelligence-card ${item.status === 'candidate' ? 'is-unread' : ''}" data-intelligence-id="${escapeHtml(item.externalId)}" data-intelligence-open="${escapeHtml(item.externalId)}" role="button" tabindex="0" aria-label="打开情报：${escapeHtml(item.title)}">
+  return `<article class="intelligence-card ${status === 'candidate' ? 'is-unread' : ''}" data-intelligence-id="${escapeHtml(intelligenceId)}" data-intelligence-open="${escapeHtml(intelligenceId)}" role="button" tabindex="0" aria-label="打开情报：${escapeHtml(item.title)}">
     <div class="intelligence-card-head"><span class="source-pill">${escapeHtml(item.sourceName)}</span><span class="v13-chip">${escapeHtml(companies)}</span></div>
     <h3>${escapeHtml(item.title)}</h3>
     <p class="intelligence-fact"><strong>事实</strong>${escapeHtml(item.factSummary)}</p>
     <p><strong>影响</strong>${escapeHtml(item.impactAnalysis || '待人工判断')}</p>
     <p><strong>建议</strong>${escapeHtml(item.suggestedAction || '暂无建议动作')}</p>
     <footer><span>可信度 ${escapeHtml(item.credibility)} · 评分 ${escapeHtml(item.score ?? '—')}</span><span>${escapeHtml(item.publishedAt?.slice(0, 10) || item.capturedAt?.slice(0, 10) || '时间待核对')}</span></footer>
-    <div class="intelligence-actions"><button class="v13-action intelligence-ask-action" data-intelligence-ask="${escapeHtml(item.externalId)}">问这条情报</button>${sourceLink(item.sourceUrl)}${workflowActions}</div>
+    <div class="intelligence-actions"><button class="v13-action intelligence-ask-action" data-intelligence-ask="${escapeHtml(intelligenceId)}" data-intelligence-question="${escapeHtml(intelligenceId)}">问这条情报</button>${sourceLink(item.sourceUrl)}${workflowActions}</div>
   </article>`;
 }
 
@@ -89,13 +91,13 @@ function questionDrawer(viewModel, allItems) {
 
 export function render(container, viewModel = {}) {
   if (!container) return;
-  const items = viewModel.intelligence || [];
+  const items = viewModel.intelligence || viewModel.items || [];
   const filters = { company: viewModel.intelligenceCompany || 'all', source: 'all', credibility: 'all', status: 'all', age: 'all', search: '', sortBy: 'newest', ...(viewModel.intelligenceFilters || {}) };
   const option = (value, label, current) => `<option value="${value}" ${current === value ? 'selected' : ''}>${label}</option>`;
   const allItems = viewModel.intelligenceAll || items;
   const sourceNames = [...new Set(allItems.map((item) => item.sourceName).filter(Boolean))];
   container.innerHTML = `${briefing(items, viewModel.intelligenceFetchedAt, viewModel.intelligenceSources)}
-    <div class="intelligence-toolbar intelligence-workbench-toolbar">
+    <details class="mobile-intelligence-filters" ${viewModel.isMobile ? '' : 'open'}><summary>筛选与排序</summary><div class="intelligence-toolbar intelligence-workbench-toolbar">
       <input type="search" data-intelligence-search value="${escapeHtml(filters.search)}" placeholder="搜索标题、事实、标签或建议">
       <select data-intelligence-filter="company">${option('all', '全部公司', filters.company)}${option('wanjia', '万嘉', filters.company)}${option('huahuo', '花火', filters.company)}${option('lingli', '玲丽', filters.company)}${option('ceo', 'CEO', filters.company)}</select>
       <select data-intelligence-filter="source">${option('all', '全部来源', filters.source)}${sourceNames.map((name) => option(name, name, filters.source)).join('')}</select>
@@ -104,7 +106,7 @@ export function render(container, viewModel = {}) {
       <select data-intelligence-filter="age">${option('all', '全部时间', filters.age)}${option('1d', '24 小时', filters.age)}${option('3d', '3 天', filters.age)}${option('7d', '7 天', filters.age)}${option('30d', '30 天', filters.age)}</select>
       <select data-intelligence-sort>${option('newest', '最新优先', filters.sortBy)}${option('score', '评分优先', filters.sortBy)}${option('credibility', '可信度优先', filters.sortBy)}</select>
       <button class="v13-action" data-intelligence-reset>重置</button><button class="v13-action" data-refresh-intelligence>↻ 刷新</button>
-    </div><div class="intelligence-result-count">${items.length} / ${viewModel.intelligenceTotal ?? items.length} 条</div>
+    </div></details><div class="intelligence-result-count">${items.length} / ${viewModel.intelligenceTotal ?? items.length} 条</div>
     <div class="intelligence-source-note">来源：飞书 ZOS 情报候选池 + AI HOT 公开精选 / Supabase 私有缓存 · 自动补采最近 24 小时，只保存摘要与判断，不保存文章正文</div>
     ${items.length ? `<div class="intelligence-grid">${items.map(card).join('')}</div>` : `<div class="intelligence-empty-action">${renderState(viewModel.intelligenceState || 'empty', '每日行业情报')}<button class="v13-action v13-action-primary" data-refresh-intelligence>重新读取情报</button></div>`}
     ${questionDrawer(viewModel, allItems)}`;

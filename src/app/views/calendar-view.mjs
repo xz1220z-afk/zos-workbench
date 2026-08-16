@@ -177,6 +177,17 @@ function renderCalendarPanel(viewModel) {
   return '';
 }
 
+function renderDaySheet(viewModel, events) {
+  if (!viewModel.calendarDaySheetOpen || !viewModel.calendarSelectedDate) return '';
+  const date = viewModel.calendarSelectedDate;
+  const dayEvents = events.filter((event) => String(event.startAt || event.dueAt || '').slice(0, 10) === date);
+  return `<aside class="calendar-drawer calendar-day-sheet" data-calendar-panel="day-sheet" role="dialog" aria-modal="true" aria-labelledby="calendarDaySheetTitle">
+    <header><div><small>已选日期</small><h2 id="calendarDaySheetTitle">${escapeHtml(date)}</h2></div><button data-calendar-day-sheet-close aria-label="关闭">×</button></header>
+    <div class="calendar-day-sheet-events">${dayEvents.length ? dayEvents.map((event) => eventCard(event, viewModel.calendarSyncStates || {})).join('') : '<p class="calendar-day-empty">当天暂无安排。</p>'}</div>
+    <footer><button class="primary" data-calendar-day-create="${escapeHtml(date)}">＋ 新增安排</button></footer>
+  </aside><div class="task-drawer-backdrop" data-calendar-day-sheet-close></div>`;
+}
+
 export function renderCalendarHtml(viewModel = {}) {
   const events = viewModel.calendarFiltered || viewModel.calendar || [];
   const conflicts = viewModel.calendarConflicts || [];
@@ -201,6 +212,7 @@ export function renderCalendarHtml(viewModel = {}) {
     ${conflicts.length ? `<div class="calendar-conflict">发现 ${conflicts.length} 组时间冲突，请优先调整。</div>` : ''}
     ${renderGrid(layout, viewModel.calendarSelection, viewModel.calendarSyncStates || {})}
     ${events.length ? '' : emptyState}
+    ${renderDaySheet(viewModel, events)}
     ${renderCalendarPanel(viewModel)}
   </div>`;
 }

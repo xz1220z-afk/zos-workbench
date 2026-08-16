@@ -1074,6 +1074,7 @@
   .mobile-more-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .mobile-more-item { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 12px; border-radius: var(--radius-sm); text-align: left; }
   .mobile-more-item:hover { background: var(--primary-light); }
+  .mobile-more-item[data-preferred="true"] { background: rgba(216,180,106,.13); color: var(--cc-accent-gold, var(--primary)); }
 
   /* ===== CEO command center shell ===== */
   .zos-command {
@@ -1936,12 +1937,20 @@ body { overflow-x: hidden; }
 .agenda-task span, .agenda-empty { color: var(--cc-text-muted); font-size: 11px; }
 .task-center-list { display: grid; gap: 10px; }
 .task-center-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 13px; align-items: center; padding: 15px; border: 1px solid var(--cc-border); border-radius: 14px; background: rgba(255,255,255,.025); }
-.task-center-card h3 { margin: 6px 0; font-size: 15px; }
+.task-card-open { display: grid; gap: 6px; min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.task-card-open strong { font-size: 15px; }
+.task-card-description { color: var(--cc-text-muted); font-size: 13px; }
 .task-center-card p { margin: 4px 0; }
 .task-center-card small, .task-card-meta { color: var(--cc-text-muted); font-size: 10px; }
 .task-card-meta { justify-content: flex-start; flex-wrap: wrap; }
 .task-card-meta [data-priority="3"] { color: var(--cc-risk); }
 .task-card-meta [data-priority="2"] { color: var(--cc-warning); }
+.mobile-task-quick-filters { display: none; }
+.task-full-filters { margin: 0 0 14px; }
+.task-full-filters summary { cursor: pointer; color: var(--cc-text-muted); }
+.task-full-filter-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.task-full-filter-options button, .mobile-task-quick-filters button { min-height: 44px; padding: 9px 13px; border: 1px solid var(--cc-border); border-radius: 999px; background: rgba(255,255,255,.025); color: var(--cc-text-muted); cursor: pointer; }
+.task-full-filter-options button.active, .mobile-task-quick-filters button.active { border-color: rgba(216,180,106,.6); background: rgba(216,180,106,.14); color: var(--cc-accent-gold); }
 .task-drawer-backdrop { position: fixed; inset: 0; z-index: 1198; background: rgba(1,5,12,.72); backdrop-filter: blur(5px); }
 .task-drawer { position: fixed; z-index: 1199; top: 0; right: 0; width: min(620px, 94vw); height: 100dvh; overflow-y: auto; padding: max(18px, env(safe-area-inset-top)) 20px max(22px, env(safe-area-inset-bottom)); border-left: 1px solid var(--cc-border); background: #0b1524; box-shadow: -30px 0 70px rgba(0,0,0,.38); }
 .task-drawer form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
@@ -2042,6 +2051,8 @@ body { overflow-x: hidden; }
 .calendar-delete-confirm p { line-height: 1.7; color: var(--cc-text-muted); }
 .calendar-delete-confirm footer { justify-content: flex-end; }
 .calendar-drawer a { display: inline-flex; align-items: center; text-decoration: none; }
+.calendar-day-sheet-events { display: grid; gap: 8px; }
+.calendar-day-sheet .calendar-event { padding: 10px; border: 1px solid var(--cc-border); border-radius: 11px; }
 .calendar-editor-drawer form { display: grid; gap: 14px; }
 .calendar-kind-switch { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; padding: 5px; border: 1px solid var(--cc-border); border-radius: 12px; background: rgba(255,255,255,.025); }
 .calendar-kind-switch button { min-height: 42px; border: 0; border-radius: 8px; background: transparent; color: var(--cc-text-muted); cursor: pointer; }
@@ -2256,6 +2267,11 @@ body { overflow-x: hidden; }
   .today-execution-hero, .task-center-shell, .focus-shell, .availability-shell, .merchant-shell { padding: 15px; border-radius: 15px; }
   .task-center-card { grid-template-columns: auto minmax(0, 1fr); }
   .task-center-card > .v13-action { grid-column: 2; justify-self: start; }
+  .mobile-task-quick-filters { display: flex; gap: 8px; margin: 14px 0; overflow-x: auto; scrollbar-width: none; }
+  .mobile-task-quick-filters::-webkit-scrollbar { display: none; }
+  .mobile-task-quick-filters button { flex: 0 0 auto; }
+  .task-full-filters { margin-top: -2px; }
+  .task-full-filters > summary { min-height: 44px; display: flex; align-items: center; }
   .task-drawer { inset: auto 0 0; top: 6vh; width: 100%; height: 94dvh; border-left: 0; border-top: 1px solid var(--cc-border); border-radius: 18px 18px 0 0; }
   .task-drawer form { grid-template-columns: 1fr; }
   .task-drawer header, .task-drawer footer, .task-field-wide { grid-column: 1; }
@@ -2424,6 +2440,8 @@ body { overflow-x: hidden; }
 .intelligence-workbench-toolbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(138px, 1fr)); align-items: center; min-width: 0; max-width: 100%; }
 .intelligence-workbench-toolbar input, .intelligence-workbench-toolbar select { width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--cc-border); border-radius: 9px; background: #07101d; color: var(--cc-text); color-scheme: dark; }
 .intelligence-workbench-toolbar input { grid-column: span 2; min-width: 0; }
+.mobile-intelligence-filters { margin: 0 0 10px; }
+.mobile-intelligence-filters > summary { display: none; }
 .intelligence-result-count { margin: -4px 0 12px; color: var(--cc-text-muted); font-size: 11px; }
 .intelligence-card.is-unread { border-color: rgba(216,180,106,.34); box-shadow: inset 3px 0 0 var(--cc-accent-gold); }
 .intelligence-empty-action { display: grid; justify-items: start; gap: 10px; }
@@ -2468,6 +2486,8 @@ body { overflow-x: hidden; }
   .company-tier { padding: 14px; }
   .company-tier-evidence > header { align-items: stretch; flex-direction: column; }
   .intelligence-workbench-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mobile-intelligence-filters > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--cc-text-muted); }
+  .mobile-intelligence-filters[open] > summary { color: var(--cc-accent-gold); }
   .intelligence-workbench-toolbar input { grid-column: 1 / -1; }
   .intelligence-workbench-toolbar .v13-action { width: auto; }
   .intelligence-question-drawer { inset: auto 0 0; width: 100%; max-height: 92dvh; padding: 18px; border-top: 1px solid rgba(216,180,106,.24); border-left: 0; border-radius: 20px 20px 0 0; animation-name: decisionSheetIn; }

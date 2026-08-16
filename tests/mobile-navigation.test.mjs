@@ -27,9 +27,12 @@ test('mobile navigation exposes Today, Calendar, Voice, Agent and More without d
   assert.equal(routes.includes('agent-workbench'), false);
 });
 
-test('static More markup and the navigation model expose exactly the same routes', () => {
+test('More mounts one dynamic group target per navigation-model group', async () => {
   const moreMenu = html.match(/<section class="mobile-more-menu" id="mobileMoreMenu"[\s\S]*?<\/section>/)?.[0] || '';
-  const staticRoutes = [...moreMenu.matchAll(/class="mobile-more-item" data-page="([^"]+)"/g)].map(([, pageId]) => pageId);
-  const modelRoutes = buildMobileMoreGroups().flatMap((group) => group.items.map((item) => item.pageId));
-  assert.deepEqual(staticRoutes, modelRoutes);
+  const mountedGroupIds = [...moreMenu.matchAll(/data-mobile-more-group="([^"]+)"/g)].map(([, groupId]) => groupId);
+  const modelGroupIds = buildMobileMoreGroups().map((group) => group.id);
+  assert.deepEqual(mountedGroupIds, modelGroupIds);
+  assert.doesNotMatch(moreMenu, /class="mobile-more-item" data-page=/);
+  const app = await readFile(new URL('../src/app.mjs', import.meta.url), 'utf8');
+  assert.match(app, /buildMobileMoreGroups\(/);
 });

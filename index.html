@@ -873,44 +873,10 @@ if (window.location.protocol === 'file:') {
     <span class="mobile-more-menu-title">更多功能</span>
     <button type="button" class="mobile-more-close" aria-label="关闭更多功能">×</button>
   </div>
-  <div class="mobile-more-groups">
-    <div class="mobile-more-group" aria-labelledby="mobileMoreBusiness">
-      <h2 class="mobile-more-group-title" id="mobileMoreBusiness">公司经营</h2>
-      <div class="mobile-more-grid">
-        <button type="button" class="mobile-more-item" data-page="local-life">🏪 万嘉网络</button>
-        <button type="button" class="mobile-more-item" data-page="spark-media">🎬 花火影像</button>
-        <button type="button" class="mobile-more-item" data-page="lingli">🎓 玲丽教育</button>
-        <button type="button" class="mobile-more-item" data-page="enterprise">📋 企业项目</button>
-        <button type="button" class="mobile-more-item" data-page="targets">🎯 经营目标</button>
-      </div>
-    </div>
-    <div class="mobile-more-group" aria-labelledby="mobileMoreKnowledgeAi">
-      <h2 class="mobile-more-group-title" id="mobileMoreKnowledgeAi">知识与 AI</h2>
-      <div class="mobile-more-grid">
-        <button type="button" class="mobile-more-item" data-page="intelligence">◌ 情报中心</button>
-        <button type="button" class="mobile-more-item" data-page="content-growth">↗ 内容增长</button>
-        <button type="button" class="mobile-more-item" data-page="zos-brain">🧠 知识库</button>
-        <button type="button" class="mobile-more-item" data-page="search">⌕ 全局搜索</button>
-      </div>
-    </div>
-    <div class="mobile-more-group" aria-labelledby="mobileMorePersonalSystem">
-      <h2 class="mobile-more-group-title" id="mobileMorePersonalSystem">个人与系统</h2>
-      <div class="mobile-more-grid">
-        <button type="button" class="mobile-more-item" data-page="life">♡ 生活首页</button>
-        <button type="button" class="mobile-more-item" data-page="relations">♧ 关系与跟进</button>
-        <button type="button" class="mobile-more-item" data-page="reviews">↻ 复盘中心</button>
-        <button type="button" class="mobile-more-item" data-page="inbox">📥 收集箱</button>
-        <button type="button" class="mobile-more-item" data-page="tasks">✅ 任务</button>
-        <button type="button" class="mobile-more-item" data-page="risk">🚦 风险中心</button>
-        <button type="button" class="mobile-more-item" data-page="privacy">🔒 隐私与数据</button>
-        <button type="button" class="mobile-more-item" data-page="settings">⚙️ 设置</button>
-        <button type="button" class="mobile-more-item" data-page="dashboard">📊 工作首页</button>
-        <button type="button" class="mobile-more-item" data-page="decisions">◎ 待我决策</button>
-        <button type="button" class="mobile-more-item" data-page="health">◉ 数据健康</button>
-        <button type="button" class="mobile-more-item" data-page="today">☀ 今日视图</button>
-        <button type="button" class="mobile-more-item" data-page="focus">◉ 专注中心</button>
-      </div>
-    </div>
+  <div class="mobile-more-groups" data-mobile-more-groups>
+    <div class="mobile-more-group" data-mobile-more-group="business"></div>
+    <div class="mobile-more-group" data-mobile-more-group="knowledge-ai"></div>
+    <div class="mobile-more-group" data-mobile-more-group="personal-system"></div>
   </div>
 </section>
 

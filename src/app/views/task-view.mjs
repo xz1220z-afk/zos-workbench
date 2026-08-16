@@ -10,9 +10,18 @@ function taskCard(task) {
   const due = task.dueAt ? task.dueAt.slice(0, 16).replace('T', ' ') : '待安排';
   return `<article class="task-center-card" data-task-id="${escapeHtml(task.id || '')}">
     <button class="task-check" data-task-toggle="${escapeHtml(task.id || '')}" aria-label="完成任务">${['done', 'completed'].includes(task.status) ? '✓' : ''}</button>
-    <div><div class="task-card-meta"><span data-priority="${Number(task.priority) || 0}">P${Number(task.priority) || 0}</span><span>${escapeHtml(task.company || 'ceo')}</span><time>${escapeHtml(due)}</time></div><h3>${escapeHtml(task.title)}</h3>${task.description ? `<p>${escapeHtml(task.description)}</p>` : ''}${completion.total ? `<small>子任务 ${completion.completed}/${completion.total} · ${completion.percent}%</small>` : ''}</div>
+    <button class="task-card-open" data-task-edit="${escapeHtml(task.id || '')}" aria-label="打开任务：${escapeHtml(task.title)}"><span class="task-card-meta"><span data-priority="${Number(task.priority) || 0}">P${Number(task.priority) || 0}</span><span>${escapeHtml(task.company || 'ceo')}</span><time>${escapeHtml(due)}</time></span><strong>${escapeHtml(task.title)}</strong>${task.description ? `<span class="task-card-description">${escapeHtml(task.description)}</span>` : ''}${completion.total ? `<small>子任务 ${completion.completed}/${completion.total} · ${completion.percent}%</small>` : ''}</button>
     <button class="v13-action" data-task-edit="${escapeHtml(task.id || '')}">编辑</button>
   </article>`;
+}
+
+function taskMatchesQuickFilter(task, filter, today) {
+  if (filter === 'today') return [task.startAt, task.dueAt, task.dueDate].some((value) => String(value || '').slice(0, 10) === today);
+  if (filter === 'overdue') return !['done', 'completed', 'cancelled'].includes(task.status) && Boolean(task.dueAt || task.dueDate) && String(task.dueAt || task.dueDate).slice(0, 10) < today;
+  if (filter === 'mine') return !task.createdBy || ['me', 'self'].includes(String(task.createdBy || task.creatorId || '').toLowerCase());
+  if (filter === 'todo') return !['done', 'completed', 'cancelled'].includes(task.status);
+  if (filter === 'done') return ['done', 'completed'].includes(task.status);
+  return true;
 }
 
 function agentContextNotice(context) {
@@ -25,7 +34,9 @@ function agentContextNotice(context) {
 
 export function render(container, viewModel = {}) {
   if (!container) return;
-  const tasks = [...(viewModel.tasks || []), ...(viewModel.localAgentTasks || [])];
+  const allTasks = [...(viewModel.tasks || []), ...(viewModel.localAgentTasks || [])];
+  const activeFilter = viewModel.taskQuickFilter || 'all';
+  const tasks = allTasks.filter((task) => taskMatchesQuickFilter(task, activeFilter, viewModel.today || new Date().toISOString().slice(0, 10)));
   const draft = viewModel.taskDraft || {};
   const drawer = viewModel.taskDrawerOpen ? `<aside class="task-drawer" role="dialog" aria-modal="true" aria-labelledby="taskEditorTitle">
     <form id="richTaskForm" data-task-form>
@@ -52,5 +63,6 @@ export function render(container, viewModel = {}) {
       <footer>${draft.id ? `<button type="button" class="v13-action task-delete-action" data-task-delete="${escapeHtml(draft.id)}">删除任务</button>` : ''}<button type="button" class="v13-action" data-task-close>取消</button><button class="v13-action v13-action-primary" type="submit">保存任务</button></footer>
     </form>
   </aside><div class="task-drawer-backdrop" data-task-close></div>` : '';
-  container.innerHTML = `<section class="task-center-shell"><div class="v14-section-head"><div><span class="v14-kicker">TASK CENTER · 跨端同步</span><h3>执行任务</h3><p>任务可绑定公司、项目、商家、提醒与专注记录。</p></div><button class="v13-action v13-action-primary" data-task-capture>＋ 新建任务</button></div><div class="task-center-list">${tasks.map(taskCard).join('') || '<div class="v13-state" data-state="empty">暂无任务，先建立一个明确的下一步动作。</div>'}</div>${drawer}</section>`;
+  const filterButton = (value, label, attribute = 'data-task-quick-filter') => `<button ${attribute}="${value}" class="${activeFilter === value ? 'active' : ''}" aria-pressed="${activeFilter === value}">${label}</button>`;
+  container.innerHTML = `<section class="task-center-shell"><div class="v14-section-head"><div><span class="v14-kicker">TASK CENTER · 跨端同步</span><h3>执行任务</h3><p>任务可绑定公司、项目、商家、提醒与专注记录。</p></div><button class="v13-action v13-action-primary" data-task-capture>＋ 新建任务</button></div><nav class="mobile-task-quick-filters" aria-label="任务快捷筛选">${filterButton('today', '今日')}${filterButton('overdue', '逾期')}${filterButton('mine', '我创建的')}</nav><details class="task-full-filters" ${viewModel.isMobile ? '' : 'open'}><summary>完整筛选</summary><div class="task-full-filter-options" role="group" aria-label="任务完整筛选">${filterButton('all', '全部', 'data-task-full-filter')}${filterButton('todo', '进行中', 'data-task-full-filter')}${filterButton('done', '已完成', 'data-task-full-filter')}</div></details><div class="task-center-list">${tasks.map(taskCard).join('') || '<div class="v13-state" data-state="empty">暂无任务，先建立一个明确的下一步动作。</div>'}</div>${drawer}</section>`;
 }

@@ -12,6 +12,7 @@ import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './ap
 import { calendarSelectionDraft, normalizeCalendarSelection, shouldBeginCalendarSelection } from './app/calendar-selection.mjs?v=2.9.0';
 import { calendarExceptionId, seriesMutationRecords } from './app/calendar-recurrence.mjs?v=2.9.0';
 import { normalizeTask, groupAgenda } from './app/task-center.mjs?v=2.9.0';
+import { buildMobileMoreGroups } from './app/mobile-navigation.mjs?v=2.9.0';
 import { createFocusSession, transitionFocus, focusSnapshot, applyFocusCompletion, summarizeFocus } from './app/focus-center.mjs?v=2.9.0';
 import { normalizeCountdown, countdownDistance } from './app/countdown-center.mjs?v=2.9.0';
 import { buildImportantDates } from './app/important-dates.mjs?v=2.9.0';
@@ -132,12 +133,13 @@ export function createCeoOsApplication(config = {}) {
     selectedCalendarId: null, calendarDraft: null, calendarDraftKind: 'calendar',
     calendarFilter: 'all', calendarPendingDelete: null, calendarUndoDelete: null,
     calendarSelection: null, calendarSelecting: false, calendarTouchPending: null, calendarMutationScope: 'single',
+    calendarSelectedDate: null, calendarDaySheetOpen: false, calendarEventLongPress: null,
     calendarPendingMutation: null, calendarFormError: null, calendarSyncState: 'idle',
     externalCalendar: [], externalCalendarState: 'pending_configuration', externalCalendarRange: null, externalCalendarFetchedAt: null,
     notificationState: 'pending_configuration', notificationPublicKey: null, inAppNotificationState: 'permission_required',
     reminderScheduleState: 'disabled', reminderScheduleCount: 0,
     showFocus: false, importantDatesPanel: null, searchQuery: '', searchResults: [],
-    taskDrawerOpen: false, taskDraft: null, focusDuration: 25, focusTaskId: null,
+    taskDrawerOpen: false, taskDraft: null, taskQuickFilter: 'all', focusDuration: 25, focusTaskId: null,
     availabilityDate: now().slice(0, 10), merchantQuery: '', selectedMerchantId: null,
     wanjiaFilters: { query: '', industry: 'all', cooperationType: 'all', owner: 'all', health: 'all', abnormal: 'all', active: 'all', live: 'all', video: 'all', groupbuyGmv: 'all' },
     wanjiaOpsPane: 'overview',
@@ -1854,6 +1856,13 @@ export function createCeoOsApplication(config = {}) {
     if (typeof navigate === 'function') navigate('tasks');
   }
 
+  function setTaskQuickFilter(filter) {
+    const next = ['all', 'today', 'overdue', 'mine', 'todo', 'done'].includes(filter) ? filter : 'all';
+    runtime.taskQuickFilter = next;
+    renderAll();
+    return next;
+  }
+
   function openTaskEditor(task = null) {
     runtime.taskDraft = task ? normalizeTask(task) : null;
     runtime.taskDrawerOpen = true;
@@ -1940,7 +1949,25 @@ export function createCeoOsApplication(config = {}) {
   function selectCalendar(id) {
     if (!selectedCalendarEvent(id)) throw new Error('calendar_event_required');
     runtime.selectedCalendarId = id;
+    runtime.calendarDaySheetOpen = false;
     runtime.calendarPanel = 'detail';
+    renderAll();
+  }
+
+  function openCalendarDaySheet(date) {
+    const selectedDate = String(date || '').slice(0, 10);
+    runtime.calendarSelectedDate = selectedDate;
+    runtime.calendarSelection = normalizeCalendarSelection(selectedDate, selectedDate);
+    runtime.calendarSelecting = false;
+    runtime.calendarPanel = null;
+    runtime.calendarDaySheetOpen = true;
+    renderAll();
+    return runtime.calendarSelection;
+  }
+
+  function closeCalendarDaySheet() {
+    runtime.calendarDaySheetOpen = false;
+    runtime.calendarSelectedDate = null;
     renderAll();
   }
 
@@ -1966,6 +1993,8 @@ export function createCeoOsApplication(config = {}) {
     runtime.calendarDraftKind = 'calendar';
     runtime.calendarSelection = null;
     runtime.calendarSelecting = false;
+    runtime.calendarDaySheetOpen = false;
+    runtime.calendarSelectedDate = null;
     runtime.selectedCalendarId = null;
     runtime.calendarPendingMutation = null;
     runtime.calendarPendingDelete = null;
@@ -1987,6 +2016,12 @@ export function createCeoOsApplication(config = {}) {
     const pending = runtime.calendarTouchPending;
     if (pending?.timer != null) (document?.defaultView || globalThis).clearTimeout?.(pending.timer);
     runtime.calendarTouchPending = null;
+  }
+
+  function clearCalendarEventLongPress() {
+    const pending = runtime.calendarEventLongPress;
+    if (pending?.timer != null) (document?.defaultView || globalThis).clearTimeout?.(pending.timer);
+    runtime.calendarEventLongPress = null;
   }
 
   function beginCalendarSelection(date) {
@@ -2626,6 +2661,7 @@ export function createCeoOsApplication(config = {}) {
       const taskClose = event.target?.closest?.('[data-task-close]');
       const taskToggle = event.target?.closest?.('[data-task-toggle]');
       const taskDelete = event.target?.closest?.('[data-task-delete]');
+      const taskQuickFilter = event.target?.closest?.('[data-task-quick-filter], [data-task-full-filter]');
       const focusAction = event.target?.closest?.('[data-focus-action]');
       const focusDuration = event.target?.closest?.('[data-focus-duration]');
       const countdownCapture = event.target?.closest?.('[data-countdown-capture]');
@@ -2653,6 +2689,8 @@ export function createCeoOsApplication(config = {}) {
       const calendarConfirmDelete = event.target?.closest?.('[data-calendar-confirm-delete]');
       const calendarUndoDelete = event.target?.closest?.('[data-calendar-undo-delete]');
       const calendarFilter = event.target?.closest?.('[data-calendar-filter]');
+      const calendarDaySheetClose = event.target?.closest?.('[data-calendar-day-sheet-close]');
+      const calendarDayCreate = event.target?.closest?.('[data-calendar-day-create]');
       const merchantSelect = event.target?.closest?.('[data-merchant-select]');
       const wanjiaPane = event.target?.closest?.('[data-wanjia-pane]');
       const wanjiaKpiFilter = event.target?.closest?.('[data-wanjia-kpi-filter]');
@@ -2833,6 +2871,13 @@ export function createCeoOsApplication(config = {}) {
           await refreshCalendarRange({ force: true });
         } else if (calendarTrash) {
           runtime.calendarPanel = 'trash'; renderAll();
+        } else if (calendarDaySheetClose) {
+          closeCalendarDaySheet();
+        } else if (calendarDayCreate) {
+          runtime.calendarDaySheetOpen = false;
+          runtime.calendarSelectedDate = null;
+          runtime.calendarSelection = normalizeCalendarSelection(calendarDayCreate.dataset.calendarDayCreate, calendarDayCreate.dataset.calendarDayCreate);
+          commitCalendarSelection();
         } else if (calendarSelect) {
           selectCalendar(calendarSelect.dataset.calendarSelect);
         } else if (calendarEdit) {
@@ -2909,7 +2954,7 @@ export function createCeoOsApplication(config = {}) {
           showTaskCenter();
           openTaskEditor();
         }
-        else if (taskEdit) openTaskEditor(viewModel().tasks.find((item) => item.id === taskEdit.dataset.taskEdit));
+        else if (taskEdit) openTaskEditor([...viewModel().tasks, ...viewModel().localAgentTasks].find((item) => item.id === taskEdit.dataset.taskEdit));
         else if (taskClose) closeTaskEditor();
         else if (taskDelete) {
           const confirmDelete = config.confirm || globalThis.confirm;
@@ -2919,6 +2964,7 @@ export function createCeoOsApplication(config = {}) {
           }
         }
         else if (taskToggle) toggleTask(taskToggle.dataset.taskToggle);
+        else if (taskQuickFilter) setTaskQuickFilter(taskQuickFilter.dataset.taskQuickFilter || taskQuickFilter.dataset.taskFullFilter);
         else if (focusDuration) {
           const value = focusDuration.dataset.focusDuration === 'custom'
             ? Number((config.prompt || globalThis.prompt)?.('专注分钟数', '25'))
@@ -3175,28 +3221,37 @@ export function createCeoOsApplication(config = {}) {
       if (event.target?.matches?.('[data-intelligence-search]')) setIntelligenceFilter('search', event.target.value);
     });
     document.addEventListener('pointerdown', (event) => {
+      const taskEvent = event.target?.closest?.('[data-calendar-event][data-source="local_task"]');
+      if (!taskEvent || event.pointerType !== 'touch') return;
+      clearCalendarEventLongPress();
+      const pending = { id: taskEvent.dataset.calendarEvent, pointerId: event.pointerId, timer: null };
+      pending.timer = (document?.defaultView || globalThis).setTimeout?.(() => {
+        if (runtime.calendarEventLongPress !== pending) return;
+        runtime.calendarEventLongPress = null;
+        selectCalendar(pending.id);
+      }, 450);
+      runtime.calendarEventLongPress = pending;
+    });
+    document.addEventListener('pointerdown', (event) => {
       const target = event.target?.closest?.('[data-calendar-select-date]');
       if (!target || event.target?.closest?.('[data-calendar-event], button, input, select, textarea, a')) return;
       if (event.button != null && event.button !== 0) return;
       const pointerType = event.pointerType || 'mouse';
+      if (pointerType === 'touch') {
+        clearCalendarTouchPending();
+        runtime.calendarTouchPending = {
+          date: target.dataset.calendarSelectDate,
+          pointerId: event.pointerId,
+          timer: null,
+          mobileDaySheet: true,
+        };
+        return;
+      }
       if (shouldBeginCalendarSelection({ pointerType, elapsedMs: 0 })) {
         event.preventDefault?.();
         beginCalendarSelection(target.dataset.calendarSelectDate);
         return;
       }
-      clearCalendarTouchPending();
-      const timerHost = document?.defaultView || globalThis;
-      const pending = {
-        date: target.dataset.calendarSelectDate,
-        pointerId: event.pointerId,
-        timer: null,
-      };
-      pending.timer = timerHost.setTimeout?.(() => {
-        if (runtime.calendarTouchPending !== pending) return;
-        runtime.calendarTouchPending = null;
-        beginCalendarSelection(pending.date);
-      }, 350);
-      runtime.calendarTouchPending = pending;
     });
     document.addEventListener('pointermove', (event) => {
       if (!runtime.calendarSelecting) return;
@@ -3204,14 +3259,20 @@ export function createCeoOsApplication(config = {}) {
       if (target) extendCalendarSelection(target.dataset.calendarSelectDate);
     });
     document.addEventListener('pointerup', (event) => {
+      if (runtime.calendarEventLongPress && (event.pointerId == null || runtime.calendarEventLongPress.pointerId === event.pointerId)) clearCalendarEventLongPress();
       const pending = runtime.calendarTouchPending;
       if (pending && (event.pointerId == null || pending.pointerId === event.pointerId)) {
         clearCalendarTouchPending();
+        if (pending.mobileDaySheet) {
+          openCalendarDaySheet(pending.date);
+          return;
+        }
         beginCalendarSelection(pending.date);
       }
       if (runtime.calendarSelecting) commitCalendarSelection();
     });
     document.addEventListener('pointercancel', () => {
+      clearCalendarEventLongPress();
       clearCalendarTouchPending();
       runtime.calendarSelecting = false;
       runtime.calendarSelection = null;
@@ -3233,11 +3294,10 @@ export function createCeoOsApplication(config = {}) {
         openIntelligenceQuestion(intelligenceCard.dataset.intelligenceOpen);
       } else if (target && ['Enter', ' '].includes(event.key)) {
         event.preventDefault?.();
-        beginCalendarSelection(target.dataset.calendarSelectDate);
-        commitCalendarSelection();
+        openCalendarDaySheet(target.dataset.calendarSelectDate);
       } else if (event.key === 'Escape' && runtime.decisionUi.action) {
         closeDecisionAction();
-      } else if (event.key === 'Escape' && (runtime.calendarSelecting || runtime.calendarPanel)) {
+      } else if (event.key === 'Escape' && (runtime.calendarSelecting || runtime.calendarPanel || runtime.calendarDaySheetOpen)) {
         closeCalendarPanel();
       }
     });
@@ -3281,6 +3341,23 @@ export function createCeoOsApplication(config = {}) {
     });
   }
 
+  function renderMobileMoreGroups() {
+    const host = document?.querySelector?.('[data-mobile-more-groups]');
+    if (!host) return;
+    const currentPage = String(document?.querySelector?.('.page.active')?.id || '').replace(/^page-/, '');
+    const groups = buildMobileMoreGroups({
+      recentPages: currentPage ? [currentPage] : [],
+      pinnedPages: ['tasks', 'intelligence'],
+    });
+    for (const group of groups) {
+      const groupNode = host.querySelector?.(`[data-mobile-more-group="${group.id}"]`);
+      if (!groupNode) continue;
+      const headingId = `mobileMore${group.id.replace(/(^|-)\w/g, (value) => value.replace('-', '').toUpperCase())}`;
+      groupNode.setAttribute?.('aria-labelledby', headingId);
+      groupNode.innerHTML = `<h2 class="mobile-more-group-title" id="${headingId}">${group.label}</h2><div class="mobile-more-grid">${group.items.map((item) => `<button type="button" class="mobile-more-item" data-page="${item.pageId}"${item.preferred ? ' data-preferred="true"' : ''}>${item.label}</button>`).join('')}</div>`;
+    }
+  }
+
   function renderAll() {
     const activePageId = document?.querySelector?.('.page.active')?.id || '';
     const activePage = activePageId.replace(/^page-/, '');
@@ -3290,8 +3367,10 @@ export function createCeoOsApplication(config = {}) {
       'content-growth', 'zos-brain', 'agent-workbench',
     ]);
     renderMobileAiSheet();
+    renderMobileMoreGroups();
     if (activePage && !modularPages.has(activePage)) return;
-    const model = activePage === 'local-life' ? wanjiaViewModel() : viewModel();
+    const baseModel = activePage === 'local-life' ? wanjiaViewModel() : viewModel();
+    const model = { ...baseModel, isMobile: Number(document?.defaultView?.innerWidth || 0) <= 767 };
     const renderers = {
       dashboard: () => {
         renderDashboard(document?.getElementById('ceoDashboardRoot'), model);
@@ -3598,9 +3677,9 @@ export function createCeoOsApplication(config = {}) {
     setCalendarView, navigateCalendar, goToCalendarToday, refreshCalendarRange, refreshWeather, useCurrentWeatherLocation,
     selectCalendar, openCalendarEditor, closeCalendarPanel, requestCalendarMutation, applyCalendarSeriesScope,
     requestCalendarDeletion, confirmCalendarDeletion, restoreCalendarEntity, undoCalendarDelete, setCalendarFilter,
-    beginCalendarSelection, extendCalendarSelection, commitCalendarSelection, setCalendarDraftKind,
+    beginCalendarSelection, extendCalendarSelection, commitCalendarSelection, setCalendarDraftKind, openCalendarDaySheet, closeCalendarDaySheet,
     saveCalendarArrangement,
-    saveTask, convertIntelligenceToTask, saveCountdown, enableClosedAppReminders, scheduleDurableReminders,
+    saveTask, setTaskQuickFilter, convertIntelligenceToTask, saveCountdown, enableClosedAppReminders, scheduleDurableReminders,
     syncNow, resolveSyncConflict, testReminderDelivery, snoozeReminder, restoreReliabilityItem, exportSafeBackup,
     previewBackupText, importBackupText, undoLastRestore, refreshSnapshotCount, selectBackupFile,
     createFocus, transitionCurrentFocus, queryMerchant, queryHuahuoAvailability,
