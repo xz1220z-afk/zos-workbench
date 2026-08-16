@@ -22,6 +22,10 @@ function departmentFor(agent = {}) {
     : (agent.department || agent.sections?.department || '综合');
 }
 
+function departmentId(organization, department) {
+  return `${organization}::${department}`;
+}
+
 export function buildMobileAgentDirectory(agents = [], options = {}) {
   const organizations = new Map();
   const recentAgentIds = options.recentAgentIds || [];
@@ -33,12 +37,21 @@ export function buildMobileAgentDirectory(agents = [], options = {}) {
     if (!departments.has(department)) departments.set(department, []);
     departments.get(department).push({ ...agent, recent: recentAgentIds.includes(agent.agentId) });
   }
-  return [...organizations].map(([name, departments]) => ({
-    id: name,
-    name,
-    departments: [...departments].map(([departmentName, groupedAgents]) => ({
-      name: departmentName,
-      agents: groupedAgents,
-    })),
-  }));
+  return [...organizations].map(([name, departments]) => {
+    const groupedDepartments = [...departments].map(([departmentName, groupedAgents]) => {
+      const id = departmentId(name, departmentName);
+      return {
+        id,
+        name: departmentName,
+        open: options.expandedDepartmentId === id,
+        agents: groupedAgents,
+      };
+    });
+    return {
+      id: name,
+      name,
+      open: options.expandedOrganizationId === name || groupedDepartments.some((department) => department.open),
+      departments: groupedDepartments,
+    };
+  });
 }

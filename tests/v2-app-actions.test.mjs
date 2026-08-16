@@ -8,6 +8,36 @@ function memoryStorage() {
   return { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
 }
 
+function mobileDirectoryDocument() {
+  const listeners = new Map();
+  const nodes = new Map();
+  return {
+    nodes,
+    getElementById(id) {
+      if (!nodes.has(id)) nodes.set(id, { innerHTML: '', textContent: '', style: {} });
+      return nodes.get(id);
+    },
+    querySelector(selector) {
+      return selector === '.page.active' ? { id: 'page-agent-workbench' } : null;
+    },
+    addEventListener(type, listener) {
+      listeners.set(type, [...(listeners.get(type) || []), listener]);
+    },
+    dispatch(type, target) {
+      for (const listener of listeners.get(type) || []) listener({ target });
+    },
+  };
+}
+
+function directoryDisclosure(type, id, open) {
+  const key = type === 'organization' ? 'agentOrganization' : 'agentDepartment';
+  return {
+    open,
+    dataset: { [key]: id },
+    matches(selector) { return selector === `details[data-agent-${type}]`; },
+  };
+}
+
 function application({ answers = [], confirm = true } = {}) {
   let answer = 0;
   return createCeoOsApplication({
@@ -47,6 +77,32 @@ test('Agent OS import is dynamic, private-safe and preserves existing run histor
   assert.equal(app.viewModel().relationReminderDrafts.length, 3);
   assert.equal(app.viewModel().agentRuns.length, 1);
   assert.equal(Object.hasOwn(app.viewModel().agentOsIndex, 'body'), false);
+});
+
+test('mobile Agent disclosures survive Agent detail redraws and clear when folded', async () => {
+  const document = mobileDirectoryDocument();
+  const app = createCeoOsApplication({
+    document, storage: memoryStorage(), createOperatingRuntime: false,
+    now: () => '2026-08-16T10:00:00.000Z',
+  });
+  app.importAgentOsIndexText(JSON.stringify(agentOsIndex));
+  await app.start();
+  await app.whenIdle();
+
+  const [{ id: organizationId, departments: [{ id: departmentId }] }] = app.viewModel().mobileAgentDirectory;
+  document.dispatch('toggle', directoryDisclosure('organization', organizationId, true));
+  document.dispatch('toggle', directoryDisclosure('department', departmentId, true));
+  assert.deepEqual(app.runtime.mobileAgentDirectoryDisclosure, { organizationId, departmentId });
+
+  app.openAgentDetails('WANJIA-001');
+  const html = document.nodes.get('agentWorkbenchRoot').innerHTML;
+  assert.match(html, new RegExp(`data-agent-organization="${organizationId}" open`));
+  assert.match(html, new RegExp(`data-agent-department="${departmentId}" open`));
+
+  document.dispatch('toggle', directoryDisclosure('organization', organizationId, false));
+  assert.deepEqual(app.runtime.mobileAgentDirectoryDisclosure, { organizationId: null, departmentId: null });
+  app.render();
+  assert.doesNotMatch(document.nodes.get('agentWorkbenchRoot').innerHTML, new RegExp(`data-agent-organization="${organizationId}" open`));
 });
 
 test('Agent OS invocation prepares the existing task input without claiming execution', () => {

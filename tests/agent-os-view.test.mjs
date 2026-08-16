@@ -41,6 +41,19 @@ test('mobile Agent directory keeps dynamic identity actions and existing task ha
   assert.match(node.innerHTML, /data-agent-invoke="WANJIA-001"/);
 });
 
+test('mobile Agent directory renders the selected organization and department disclosures as open', () => {
+  const node = container();
+  render(node, {
+    ...base,
+    mobileAgentDirectory: [{
+      id: '万嘉网络', name: '万嘉网络', open: true,
+      departments: [{ id: '万嘉网络::运营', name: '运营', open: true, agents: base.agentOsAgents }],
+    }],
+  });
+  assert.match(node.innerHTML, /data-agent-organization="万嘉网络" open/);
+  assert.match(node.innerHTML, /data-agent-department="万嘉网络::运营" open/);
+});
+
 test('Agent details expose local task history and confirmation-only context candidates', () => {
   const node = container();
   render(node, {

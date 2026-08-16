@@ -21,8 +21,25 @@ test('REL-001 is kept in the private personal branch when index metadata is inco
   assert.deepEqual(directory, [{
     id: '个人中心',
     name: '个人中心',
-    departments: [{ name: '私密关系', agents: [
+    open: false,
+    departments: [{ id: '个人中心::私密关系', name: '私密关系', open: false, agents: [
       { agentId: 'REL-001', category: 'wanjia', organization: '万嘉网络', department: '运营', confidentiality: 'private', recent: false },
     ] }],
   }]);
+});
+
+test('disclosure state marks only the selected organization and uniquely identified department as open', () => {
+  const directory = buildMobileAgentDirectory([
+    { agentId: 'WANJIA-001', category: 'wanjia', organization: '万嘉网络', department: '运营' },
+    { agentId: 'HUAHUO-001', category: 'huahuo', organization: '花火影像', department: '运营' },
+  ], {
+    expandedOrganizationId: '万嘉网络',
+    expandedDepartmentId: '万嘉网络::运营',
+  });
+
+  assert.equal(directory[0].open, true);
+  assert.equal(directory[0].departments[0].id, '万嘉网络::运营');
+  assert.equal(directory[0].departments[0].open, true);
+  assert.equal(directory[1].departments[0].id, '花火影像::运营');
+  assert.equal(directory[1].departments[0].open, false);
 });

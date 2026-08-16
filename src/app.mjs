@@ -158,6 +158,7 @@ export function createCeoOsApplication(config = {}) {
       selectedIds: [], batchBusy: false, batchError: null,
     },
     agentOsFilter: 'all', agentOsDetailId: null, agentOsPatrol: null,
+    mobileAgentDirectoryDisclosure: { organizationId: null, departmentId: null },
     agentOsImportState: 'idle', agentOsImportMessage: null, agentAnalysis: null,
     weather: { state: 'loading', location: DEFAULT_WEATHER_LOCATION },
     mobileAiSheetOpen: false,
@@ -701,6 +702,8 @@ export function createCeoOsApplication(config = {}) {
       agentOsAgents,
       mobileAgentDirectory: buildMobileAgentDirectory(agentOsAgents, {
         recentAgentIds: agentRuns.slice().reverse().slice(0, 8).map((run) => run.agentId),
+        expandedOrganizationId: runtime.mobileAgentDirectoryDisclosure.organizationId,
+        expandedDepartmentId: runtime.mobileAgentDirectoryDisclosure.departmentId,
       }),
       agentOsDetails,
       agentTaskArchives,
@@ -2555,6 +2558,34 @@ export function createCeoOsApplication(config = {}) {
     if (actionsBound || !document?.addEventListener) return;
     actionsBound = true;
     (document?.defaultView || globalThis)?.addEventListener?.('zos:open-ai-command', openMobileAiSheet);
+    document.addEventListener('toggle', (event) => {
+      const details = event.target;
+      if (details?.matches?.('details[data-agent-organization]')) {
+        const organizationId = details.dataset.agentOrganization;
+        if (details.open) {
+          const departmentId = runtime.mobileAgentDirectoryDisclosure.departmentId;
+          runtime.mobileAgentDirectoryDisclosure = {
+            organizationId,
+            departmentId: departmentId?.startsWith(`${organizationId}::`) ? departmentId : null,
+          };
+        } else if (runtime.mobileAgentDirectoryDisclosure.organizationId === organizationId) {
+          runtime.mobileAgentDirectoryDisclosure = { organizationId: null, departmentId: null };
+        }
+        return;
+      }
+      if (!details?.matches?.('details[data-agent-department]')) return;
+      const departmentId = details.dataset.agentDepartment;
+      if (details.open) {
+        const organizationId = details.closest?.('details[data-agent-organization]')?.dataset?.agentOrganization
+          || runtime.mobileAgentDirectoryDisclosure.organizationId;
+        runtime.mobileAgentDirectoryDisclosure = { organizationId, departmentId };
+      } else if (runtime.mobileAgentDirectoryDisclosure.departmentId === departmentId) {
+        runtime.mobileAgentDirectoryDisclosure = {
+          ...runtime.mobileAgentDirectoryDisclosure,
+          departmentId: null,
+        };
+      }
+    }, true);
     document.addEventListener('click', async (event) => {
       const previewButton = event.target?.closest?.('[data-preview-decision]');
       const decisionAction = event.target?.closest?.('[data-decision-action]');
