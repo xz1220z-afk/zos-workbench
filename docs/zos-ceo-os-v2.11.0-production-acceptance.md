@@ -1,7 +1,7 @@
 # ZOS CEO OS v2.11.0 生产验收
 
 验收日期：待生产发布后回填  
-状态：待生产验收
+状态：生产发布中；OpenAI 服务端配置待补齐
 
 ## 必须通过的生产闸门
 
@@ -16,7 +16,12 @@
 
 ## 证据
 
-尚未执行生产部署；本文件不得在完成正式资源回读和真实交互验收前标记为通过。
+- 修复后三轮全量测试：`771/771`、`771/771`、`771/771`。
+- 最终安全扫描：72 个变更文件完成复核，0 个未解决报告项。
+- Supabase 数据库：`zos_records` 的 RLS、完整 replica identity 与 Realtime publication 已回读验证。
+- Supabase Functions：`zos-auth-session` v1、`zos-business-data` v41、审批 preview/execute v13、`zos-ai-assistant` v2、`zos-ai-realtime-session` v1 均为 `ACTIVE` 且 `verify_jwt=true`；匿名探测全部为 HTTP 401。
+- 阻塞项：生产 Secrets 中存在 `ZOS_OWNER_USER_ID`，但不存在 `OPENAI_API_KEY`。因此不得把 ChatGPT 回答和实时语音宣称为已验收可用。
+- 正式站 HTTP、四尺寸排版、真实老板登录、快捷语音与实时语音证据仍待发布后回填。
 
 ## 回滚
 
