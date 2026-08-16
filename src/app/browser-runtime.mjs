@@ -6,6 +6,8 @@ import { createOperatingLoop } from './operating-loop.mjs?v=2.10.0';
 import { createSyncController } from './sync-controller.mjs?v=2.10.0';
 import { createPushClient } from './push-notifications.mjs?v=2.10.0';
 import { createAiAssistantClient } from './ai-assistant-client.mjs?v=2.10.0';
+import { createRealtimeSyncSignal } from './realtime-sync-signal.mjs?v=2.10.0';
+import { createSupabaseRealtimeChannelFactory } from './supabase-realtime-channel.mjs?v=2.10.0';
 import { buildLocalSyncInput, LOCAL_ONLY_ENTITY_TYPES } from '../sync-engine.mjs?v=2.10.0';
 
 export const BROWSER_SUPABASE_CONFIG = Object.freeze({
@@ -162,9 +164,25 @@ export async function createBrowserOperatingRuntime({
     onStatus: onSyncStatus,
     onConflict: onSyncConflict,
   });
+  const browserWindow = document?.defaultView || eventTarget || globalThis;
+  const WebSocketImpl = browserWindow?.WebSocket || globalThis.WebSocket;
+  const realtimeSignal = typeof WebSocketImpl === 'function'
+    ? createRealtimeSyncSignal({
+      userId: session.userId,
+      getAccessToken,
+      channelFactory: createSupabaseRealtimeChannelFactory({
+        ...config,
+        WebSocketImpl,
+        clock: browserWindow,
+      }),
+      onSignal: (reason) => syncController.signal(reason),
+      BroadcastChannelImpl: browserWindow?.BroadcastChannel || globalThis.BroadcastChannel,
+      clock: browserWindow,
+    })
+    : null;
 
   return {
-    operatingLoop, syncController, session,
+    operatingLoop, syncController, realtimeSignal, session,
     pushClient: createPushClient({ ...config, accessToken: session.accessToken, fetchImpl }),
     loadIntelligence: (options) => loadIntelligenceRows(fetchImpl, config, session.accessToken, options),
     loadExternalCalendar: (options) => loadExternalCalendar(fetchImpl, config, session.accessToken, options),

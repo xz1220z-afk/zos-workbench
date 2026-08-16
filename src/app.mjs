@@ -3826,6 +3826,13 @@ export function createCeoOsApplication(config = {}) {
     }
     const syncController = operatingRuntime?.syncController || config.syncController;
     syncController?.start?.();
+    try {
+      await operatingRuntime?.realtimeSignal?.start?.();
+      if (operatingRuntime?.realtimeSignal) runtime.loopConnected = true;
+    } catch {
+      runtime.loopConnected = false;
+      runtime.syncStatus = '实时连接暂不可用，自动重试与手动同步仍可使用';
+    }
     const factory = config.autoRefreshFactory || createAutoRefreshController;
     autoRefreshController = factory({
       refreshAll: refreshAllSources,
@@ -3926,6 +3933,7 @@ export function createCeoOsApplication(config = {}) {
     unsubscribeStore?.();
     unsubscribeStore = null;
     autoRefreshController?.stop?.();
+    operatingRuntime?.realtimeSignal?.stop?.();
     operatingRuntime?.syncController?.stop?.();
     if (reminderScheduleRetryTimer) reminderClock.clearTimeout?.(reminderScheduleRetryTimer);
     reminderScheduleRetryTimer = null;

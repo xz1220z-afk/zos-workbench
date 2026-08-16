@@ -240,3 +240,25 @@ test('resolving a conflict writes only active collections and never promotes syn
   assert.deepEqual(written.tasks, []);
   assert.equal(written.targets[0].id, 't1');
 });
+
+test('a realtime signal during an active pull schedules exactly one follow-up authoritative pull', async () => {
+  const timer = makeClock();
+  const resolvers = [];
+  let pulls = 0;
+  const controller = createSyncController({
+    userId: 'user-1', deviceId: 'mac-1', clock: timer,
+    transport: {
+      pull: async () => { pulls += 1; if (pulls === 1) return new Promise((resolve) => resolvers.push(resolve)); return []; },
+      upsert: async () => [],
+    },
+    readState: () => ({ tasks: [] }), writeState: () => {},
+  });
+  const first = controller.sync('startup');
+  controller.signal('realtime-signal');
+  controller.signal('realtime-signal');
+  resolvers[0]([]);
+  await first;
+  await timer.flush();
+  assert.equal(pulls, 2);
+  assert.equal(controller.getStatus().reason, 'realtime-signal');
+});

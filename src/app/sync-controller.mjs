@@ -36,6 +36,7 @@ export function createSyncController(config = {}) {
   let started = false;
   let queuedTimer = null;
   let activeSync = null;
+  let followUpReason = null;
   let retryTimer = null;
   let stopped = false;
   let status = {
@@ -103,6 +104,11 @@ export function createSyncController(config = {}) {
         throw error;
       } finally {
         activeSync = null;
+        if (followUpReason && !stopped) {
+          const reason = followUpReason;
+          followUpReason = null;
+          schedule(reason, 0);
+        }
       }
     })();
     return activeSync;
@@ -128,6 +134,16 @@ export function createSyncController(config = {}) {
     schedule('local-change', debounceMs);
   };
 
+  function signal(reason = 'realtime-signal') {
+    if (stopped) return null;
+    if (activeSync) {
+      followUpReason = reason;
+      return activeSync;
+    }
+    schedule(reason, 0);
+    return null;
+  }
+
   return {
     start() {
       if (started) return;
@@ -145,9 +161,11 @@ export function createSyncController(config = {}) {
       visibility?.removeEventListener?.('visibilitychange', visibilityHandler);
       if (queuedTimer) clock.clearTimeout(queuedTimer);
       queuedTimer = null;
+      followUpReason = null;
       clearRetry();
     },
     sync,
+    signal,
     setConflicts(items) {
       conflicts = Array.isArray(items) ? items.slice() : [];
     },

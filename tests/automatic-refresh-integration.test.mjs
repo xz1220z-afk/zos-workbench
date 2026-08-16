@@ -121,3 +121,26 @@ test('dashboard renders a single refresh-all control and source-level status', (
   assert.match(container.innerHTML, /花火/);
   assert.match(container.innerHTML, /部分来源未更新/);
 });
+
+test('authorized application starts and stops realtime with the existing sync lifecycle', async () => {
+  const calls = [];
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} },
+    storage: { getItem: () => 'device-1', setItem() {} }, store: fakeStore(),
+    operatingRuntime: {
+      operatingLoop: {
+        async refresh() {}, confirmTargets() {}, ensureDailyBrief() { return null; },
+        getState() { return { decisions: [], targets: [], gaps: [], briefs: [], health: [], conflicts: [], approvals: [], sources: {} }; },
+      },
+      syncController: { start() { calls.push('sync:start'); }, stop() { calls.push('sync:stop'); }, async sync() {} },
+      realtimeSignal: { async start() { calls.push('realtime:start'); }, stop() { calls.push('realtime:stop'); } },
+      async loadIntelligence() { return { items: [], state: 'cached' }; },
+    },
+    autoRefreshFactory: fakeAutoRefreshFactory(calls),
+  });
+  await app.start();
+  await app.whenIdle();
+  app.stop();
+  assert.ok(calls.indexOf('realtime:start') > calls.indexOf('sync:start'));
+  assert.ok(calls.indexOf('realtime:stop') < calls.indexOf('sync:stop'));
+});
