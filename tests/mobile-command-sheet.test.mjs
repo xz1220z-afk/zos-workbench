@@ -13,7 +13,7 @@ test('mobile command sheet keeps voice optional and typed input available', () =
   assert.match(html, /data-mobile-ai-command-sheet/);
   assert.match(html, /查一下万嘉今天的数据/);
   assert.match(html, /data-ai-command-input/);
-  assert.match(html, /当前浏览器不支持语音/);
+  assert.match(html, /当前浏览器不支持快捷语音/);
   assert.doesNotMatch(html, /disabled[^>]*data-ai-command-input/);
 });
 

@@ -36,7 +36,7 @@ test('AI command uses the existing OpenAI path and keeps the structured result',
   const result = await app.submitAiCommand('今天万嘉有什么风险', { scope: 'auto' });
   assert.equal(requests.length, 1);
   assert.equal(requests[0].mode, 'command');
-  assert.equal(requests[0].route.scope, 'wanjia');
+  assert.equal(requests[0].command.scope, 'wanjia');
   assert.equal(result.sections.facts[0], '数据日期为今天');
   assert.equal(app.viewModel().aiCommand.state, 'completed');
   assert.equal(app.viewModel().aiCommand.result.execution.actions[0].type, 'navigate');
