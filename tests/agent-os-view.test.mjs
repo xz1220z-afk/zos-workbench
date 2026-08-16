@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { render } from '../src/app/views/agent-workbench-view.mjs';
 import { render as renderTasks } from '../src/app/views/task-view.mjs';
+import { buildMobileAgentDirectory } from '../src/app/mobile-agent-directory.mjs';
 
 function container() { return { innerHTML: '' }; }
 
@@ -52,6 +53,45 @@ test('mobile Agent directory renders the selected organization and department di
   });
   assert.match(node.innerHTML, /data-agent-organization="万嘉网络" open/);
   assert.match(node.innerHTML, /data-agent-department="万嘉网络::运营" open/);
+});
+
+test('mobile Agent directory shows recent and abnormal Agents immediately while preserving the full hierarchy', () => {
+  const node = container();
+  const agents = [
+    { agentId: 'RECENT-VISIBLE', name: '近期 Agent', category: 'wanjia', organization: '万嘉网络', department: '运营', status: 'active' },
+    { agentId: 'FAILED-VISIBLE', name: '异常 Agent', category: 'huahuo', organization: '花火影像', department: '制作', status: 'pilot', recentPilot: { status: 'failed' } },
+    { agentId: 'NORMAL-HIERARCHY', name: '常规 Agent', category: 'lingli', organization: '玲丽教育', department: '教务', status: 'active' },
+  ];
+  const directory = buildMobileAgentDirectory(agents, { recentAgentIds: ['RECENT-VISIBLE'] });
+  render(node, { ...base, agentOsAgents: agents, mobileAgentDirectory: directory });
+
+  const priorityStart = node.innerHTML.indexOf('data-mobile-agent-priority');
+  const hierarchyStart = node.innerHTML.indexOf('data-agent-organization');
+  assert.notEqual(priorityStart, -1);
+  assert.ok(priorityStart < hierarchyStart);
+  const priorityMarkup = node.innerHTML.slice(priorityStart, hierarchyStart);
+  assert.match(priorityMarkup, /data-agent-id="RECENT-VISIBLE"/);
+  assert.match(priorityMarkup, /data-agent-id="FAILED-VISIBLE"/);
+  assert.doesNotMatch(priorityMarkup, /data-agent-id="NORMAL-HIERARCHY"/);
+  const hierarchyMarkup = node.innerHTML.slice(hierarchyStart);
+  for (const agent of agents) assert.match(hierarchyMarkup, new RegExp(`data-agent-id="${agent.agentId}"`));
+});
+
+test('mobile priority never duplicates REL-001 outside its open private personal branch', () => {
+  const node = container();
+  const agents = [
+    { agentId: 'REL-001', name: '私密 Agent', category: 'wanjia', organization: '万嘉网络', department: '运营', status: 'pilot', confidentiality: 'private', recentPilot: { status: 'failed' } },
+  ];
+  const directory = buildMobileAgentDirectory(agents, { recentAgentIds: ['REL-001'] });
+  render(node, { ...base, agentOsAgents: agents, mobileAgentDirectory: directory });
+
+  const directoryStart = node.innerHTML.indexOf('<section class="mobile-agent-directory"');
+  const catalogStart = node.innerHTML.indexOf('<div class="agent-catalog">');
+  const directoryMarkup = node.innerHTML.slice(directoryStart, catalogStart);
+  assert.doesNotMatch(directoryMarkup, /data-mobile-agent-priority/);
+  assert.match(directoryMarkup, /data-agent-organization="个人中心" open/);
+  assert.match(directoryMarkup, /data-agent-department="个人中心::私密关系" open/);
+  assert.equal(directoryMarkup.match(/data-agent-id="REL-001"/g)?.length, 1);
 });
 
 test('Agent details expose local task history and confirmation-only context candidates', () => {

@@ -26,6 +26,15 @@ function departmentId(organization, department) {
   return `${organization}::${department}`;
 }
 
+const ABNORMAL_STATES = new Set(['failed', 'error', 'blocked']);
+
+function isAbnormalAgent(agent = {}) {
+  return agent.abnormal === true
+    || ABNORMAL_STATES.has(agent.status)
+    || ABNORMAL_STATES.has(agent.runtimeAvailability)
+    || ABNORMAL_STATES.has(agent.recentPilot?.status);
+}
+
 export function buildMobileAgentDirectory(agents = [], options = {}) {
   const organizations = new Map();
   const recentAgentIds = options.recentAgentIds || [];
@@ -35,15 +44,18 @@ export function buildMobileAgentDirectory(agents = [], options = {}) {
     if (!organizations.has(organization)) organizations.set(organization, new Map());
     const departments = organizations.get(organization);
     if (!departments.has(department)) departments.set(department, []);
-    departments.get(department).push({ ...agent, recent: recentAgentIds.includes(agent.agentId) });
+    const recent = recentAgentIds.includes(agent.agentId);
+    const abnormal = isAbnormalAgent(agent);
+    departments.get(department).push({ ...agent, recent, abnormal, priority: recent || abnormal });
   }
   return [...organizations].map(([name, departments]) => {
     const groupedDepartments = [...departments].map(([departmentName, groupedAgents]) => {
       const id = departmentId(name, departmentName);
+      const prioritizedPrivateAgent = groupedAgents.some((agent) => isPrivateRelationshipAgent(agent) && agent.priority);
       return {
         id,
         name: departmentName,
-        open: options.expandedDepartmentId === id,
+        open: options.expandedDepartmentId === id || prioritizedPrivateAgent,
         agents: groupedAgents,
       };
     });

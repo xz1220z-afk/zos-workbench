@@ -27,13 +27,21 @@ function agentCard(agent) {
 function mobileAgentRows(agents = []) {
   return agents.map((agent) => {
     const isPrivateRelationship = agent.agentId === 'REL-001';
-    return `<article class="mobile-agent-row" data-agent-id="${escapeHtml(agent.agentId)}"><div><strong>${escapeHtml(agent.name || agent.agentId)}</strong><small>${escapeHtml(agent.agentId)} · ${escapeHtml(STATUS_LABEL[agent.status] || agent.status || '草稿')}${agent.recent ? ' · 最近调用' : ''}</small></div><div class="mobile-agent-row-actions"><button class="v13-action" data-agent-details="${escapeHtml(agent.agentId)}">详情</button>${isPrivateRelationship ? '' : `<button class="v13-action" data-agent-analyze="${escapeHtml(agent.agentId)}">分析</button>`}<button class="v13-action v13-action-primary" data-agent-invoke="${escapeHtml(agent.agentId)}">派任务</button></div></article>`;
+    return `<article class="mobile-agent-row" data-agent-id="${escapeHtml(agent.agentId)}"><div><strong>${escapeHtml(agent.name || agent.agentId)}</strong><small>${escapeHtml(agent.agentId)} · ${escapeHtml(STATUS_LABEL[agent.status] || agent.status || '草稿')}${agent.recent ? ' · 最近调用' : ''}${agent.abnormal ? ' · 异常' : ''}</small></div><div class="mobile-agent-row-actions"><button class="v13-action" data-agent-details="${escapeHtml(agent.agentId)}">详情</button>${isPrivateRelationship ? '' : `<button class="v13-action" data-agent-analyze="${escapeHtml(agent.agentId)}">分析</button>`}<button class="v13-action v13-action-primary" data-agent-invoke="${escapeHtml(agent.agentId)}">派任务</button></div></article>`;
   }).join('');
+}
+
+function mobileAgentPriority(directory = []) {
+  const agents = directory
+    .flatMap((organization) => organization.departments.flatMap((department) => department.agents))
+    .filter((agent) => agent.priority && agent.agentId !== 'REL-001');
+  if (!agents.length) return '';
+  return `<details class="mobile-agent-department" data-mobile-agent-priority open><summary><span>最近使用与异常 Agent</span><small>${agents.length} Agents</small></summary>${mobileAgentRows(agents)}</details>`;
 }
 
 function mobileAgentDirectory(directory = []) {
   if (!directory.length) return '';
-  return `<section class="mobile-agent-directory" aria-label="手机 Agent 组织目录"><header><span class="growth-kicker">MOBILE AGENT DIRECTORY</span><h3>按组织与部门查找 Agent</h3><p>身份、规则、知识入口、上下文摘要与任务历史继续使用原有 Agent OS 记录。</p></header>${directory.map((organization) => `<details class="mobile-agent-organization" data-agent-organization="${escapeHtml(organization.id || organization.name)}"${organization.open ? ' open' : ''}><summary><span>${escapeHtml(organization.name)}</span><strong>${organization.departments.reduce((total, department) => total + department.agents.length, 0)} Agents</strong></summary><div class="mobile-agent-departments">${organization.departments.map((department) => `<details class="mobile-agent-department" data-agent-department="${escapeHtml(department.id || `${organization.id || organization.name}::${department.name}`)}"${department.open ? ' open' : ''}><summary>${escapeHtml(department.name)}<small>${department.agents.length} Agents</small></summary>${mobileAgentRows(department.agents)}</details>`).join('')}</div></details>`).join('')}</section>`;
+  return `<section class="mobile-agent-directory" aria-label="手机 Agent 组织目录"><header><span class="growth-kicker">MOBILE AGENT DIRECTORY</span><h3>按组织与部门查找 Agent</h3><p>身份、规则、知识入口、上下文摘要与任务历史继续使用原有 Agent OS 记录。</p></header>${mobileAgentPriority(directory)}${directory.map((organization) => `<details class="mobile-agent-organization" data-agent-organization="${escapeHtml(organization.id || organization.name)}"${organization.open ? ' open' : ''}><summary><span>${escapeHtml(organization.name)}</span><strong>${organization.departments.reduce((total, department) => total + department.agents.length, 0)} Agents</strong></summary><div class="mobile-agent-departments">${organization.departments.map((department) => `<details class="mobile-agent-department" data-agent-department="${escapeHtml(department.id || `${organization.id || organization.name}::${department.name}`)}"${department.open ? ' open' : ''}><summary>${escapeHtml(department.name)}<small>${department.agents.length} Agents</small></summary>${mobileAgentRows(department.agents)}</details>`).join('')}</div></details>`).join('')}</section>`;
 }
 
 function runRows(runs) {
