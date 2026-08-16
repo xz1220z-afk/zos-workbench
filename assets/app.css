@@ -48,6 +48,10 @@
     --motion-press: 80ms;
     --motion-panel: 200ms;
     --motion-page: 220ms;
+    --mobile-press-duration: 120ms;
+    --mobile-sheet-duration: 220ms;
+    --mobile-surface: rgba(15, 27, 45, .88);
+    --mobile-border: rgba(255, 255, 255, .09);
     --ease-premium: cubic-bezier(.2, .8, .2, 1);
   }
 
@@ -2502,6 +2506,19 @@ body { overflow-x: hidden; }
       :where(.v13-action, .nav-item, .workspace-switch button, .bottom-nav-item, .company-overview button):active { transform: none; }
       .v25-glass-hero, .v25-glass-hero * { transition: none !important; animation: none !important; }
     }
+
+@media (max-width: 720px) {
+  :where(.bottom-nav-item, .v13-action, .mobile-more-item) {
+    min-height: 44px;
+    transition: transform var(--mobile-press-duration) ease, opacity var(--mobile-press-duration) ease, background-color var(--mobile-press-duration) ease;
+  }
+  :where(.bottom-nav-item, .v13-action, .mobile-more-item):active { transform: scale(.97); }
+  .mobile-ai-sheet { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.bottom-nav-item, .v13-action, .mobile-more-item, .mobile-ai-sheet) { transition: none; transform: none; }
+}
 
 .task-agent-context {
   grid-column: 1 / -1;

@@ -164,6 +164,7 @@ export function createCeoOsApplication(config = {}) {
     mobileAgentDirectoryDisclosure: { organizationId: null, departmentId: null },
     agentOsImportState: 'idle', agentOsImportMessage: null, agentAnalysis: null,
     weather: { state: 'loading', location: DEFAULT_WEATHER_LOCATION },
+    localBusy: { ai: false, agent: false, intelligence: false, refreshSource: null },
     mobileAiSheetOpen: false,
     aiCommand: {
       ...createAiCommand('', { id: 'ai-command-home', now: now() }),
@@ -200,6 +201,11 @@ export function createCeoOsApplication(config = {}) {
   let aiVoiceHoldTimer = null;
   let aiVoiceHoldActive = false;
   let aiVoiceIgnoreClick = false;
+  let aiCommandWork = null;
+  let intelligenceQuestionWork = null;
+  let agentAnalysisWork = null;
+  let intelligenceRefreshWork = null;
+  const refreshSourceWork = new Map();
   const legacyProjectionRetryDelays = Array.isArray(config.legacyProjectionRetryDelays)
     ? config.legacyProjectionRetryDelays : [0, 5_000, 30_000, 120_000];
 
@@ -344,9 +350,16 @@ export function createCeoOsApplication(config = {}) {
     queueReminderSchedule();
   }
 
+  function setLocalBusy(kind, value) {
+    runtime.localBusy = { ...runtime.localBusy, [kind]: value };
+  }
+
   async function submitAiCommand(input, options = {}) {
+    if (aiCommandWork) return aiCommandWork;
+    aiCommandWork = (async () => {
     const text = String(input || '').trim();
     if (!text) throw new Error('ai_command_input_required');
+    setLocalBusy('ai', true);
     const scope = options.scope || runtime.aiCommand?.scope || 'auto';
     const route = routeIntent(text, { scope, agentId: options.agentId || null });
     runtime.aiCommand = {
@@ -355,15 +368,11 @@ export function createCeoOsApplication(config = {}) {
       result: null, preview: null, undo: null,
     };
     renderAll();
-    const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
-    if (typeof ask !== 'function') {
-      runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'failed', { error: 'AI 尚未配置，请先登录并检查服务。' });
-      renderAll();
-      throw new Error('ai_command_failed');
-    }
-    runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'answering');
-    renderAll();
     try {
+      const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
+      if (typeof ask !== 'function') throw new Error('ai_not_configured');
+      runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'answering');
+      renderAll();
       const response = await ask({ mode: 'command', task: text, route });
       const actions = Array.isArray(response?.actions) ? response.actions.filter((action) => action && typeof action === 'object') : [];
       const result = normalizeAiCommandResult(response, {
@@ -377,7 +386,13 @@ export function createCeoOsApplication(config = {}) {
       runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'failed', { error: 'AI 暂时不可用，请稍后重试。' });
       renderAll();
       throw new Error('ai_command_failed');
+    } finally {
+      setLocalBusy('ai', false);
+      renderAll();
     }
+    })();
+    try { return await aiCommandWork; }
+    finally { aiCommandWork = null; }
   }
 
   async function executeAiCommandAction(indexOrAction = 0) {
@@ -773,6 +788,10 @@ export function createCeoOsApplication(config = {}) {
   }
 
   async function refreshSource(source) {
+    if (refreshSourceWork.has(source)) return refreshSourceWork.get(source);
+    setLocalBusy('refreshSource', source);
+    renderAll();
+    const work = (async () => {
     if (!operatingRuntime?.operatingLoop) throw new Error('请先登录 Supabase');
     await operatingRuntime.operatingLoop.refresh(source);
     const targets = store.load().collections.targets || [];
@@ -781,6 +800,39 @@ export function createCeoOsApplication(config = {}) {
     updateFromOperatingLoop(brief);
     renderAll();
     return viewModel();
+    })();
+    refreshSourceWork.set(source, work);
+    try { return await work; }
+    finally {
+      refreshSourceWork.delete(source);
+      if (runtime.localBusy.refreshSource === source) setLocalBusy('refreshSource', null);
+      renderAll();
+    }
+  }
+
+  async function refreshIntelligence() {
+    if (intelligenceRefreshWork) return intelligenceRefreshWork;
+    intelligenceRefreshWork = (async () => {
+      setLocalBusy('intelligence', true);
+      runtime.intelligenceState = 'loading';
+      renderAll();
+      try {
+        if (!operatingRuntime?.loadIntelligence) {
+          runtime.intelligenceState = 'authentication_required';
+          return runtime.intelligence;
+        }
+        applyIntelligenceResult(await operatingRuntime.loadIntelligence({ refresh: true }));
+        return runtime.intelligence;
+      } catch (error) {
+        runtime.intelligenceState = runtime.intelligence.length ? 'cached' : safeRefreshCode(error);
+        throw error;
+      } finally {
+        setLocalBusy('intelligence', false);
+        renderAll();
+      }
+    })();
+    try { return await intelligenceRefreshWork; }
+    finally { intelligenceRefreshWork = null; }
   }
 
   async function diagnoseWanjiaSchema() {
@@ -1235,37 +1287,44 @@ export function createCeoOsApplication(config = {}) {
   }
 
   async function askIntelligenceQuestion(externalId, question) {
-    const id = String(externalId || runtime.intelligenceQuestion?.externalId || '').trim();
-    const asked = String(question || '').trim();
-    if (!asked) throw new Error('intelligence_question_required');
-    const model = viewModel();
-    const item = model.intelligenceAll.find((entry) => entry.externalId === id);
-    if (!item) throw new Error('intelligence_not_found');
-    runtime.intelligenceQuestion = { externalId: id, question: asked };
-    runtime.intelligenceAnswer = { state: 'loading', directAnswer: '正在调用 AI 助手…' };
-    renderAll();
-    const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
-    if (typeof ask !== 'function') {
-      runtime.intelligenceAnswer = buildIntelligenceAnswer({ item, allItems: model.intelligenceAll, question: asked });
-      runtime.intelligenceAnswer.localFallback = true;
+    if (intelligenceQuestionWork) return intelligenceQuestionWork;
+    intelligenceQuestionWork = (async () => {
+      const id = String(externalId || runtime.intelligenceQuestion?.externalId || '').trim();
+      const asked = String(question || '').trim();
+      if (!asked) throw new Error('intelligence_question_required');
+      const model = viewModel();
+      const item = model.intelligenceAll.find((entry) => entry.externalId === id);
+      if (!item) throw new Error('intelligence_not_found');
+      runtime.intelligenceQuestion = { externalId: id, question: asked };
+      setLocalBusy('intelligence', true);
+      runtime.intelligenceAnswer = { state: 'loading', directAnswer: '正在调用 AI 助手…' };
       renderAll();
+      try {
+        const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
+        if (typeof ask !== 'function') {
+          runtime.intelligenceAnswer = buildIntelligenceAnswer({ item, allItems: model.intelligenceAll, question: asked });
+          runtime.intelligenceAnswer.localFallback = true;
+          return runtime.intelligenceAnswer;
+        }
+        const answer = await ask({
+          mode: 'intelligence', question: asked,
+          intelligence: { externalId: item.externalId, title: item.title, sourceName: item.sourceName, factSummary: item.factSummary, impactAnalysis: item.impactAnalysis, suggestedAction: item.suggestedAction },
+        });
+        runtime.intelligenceAnswer = { state: 'answered', directAnswer: answer.answer, sources: answer.sources || [], knowledgeState: answer.knowledgeState || 'general_only' };
+      } catch (error) {
+        const code = String(error?.message || 'ai_request_failed');
+        runtime.intelligenceAnswer = {
+          state: 'error', directAnswer: code === 'ai_not_configured' ? 'AI 服务尚未配置。请在 Supabase 的 Edge Function Secrets 中设置 OPENAI_API_KEY 后重试。' : 'AI 助手本轮未能回答；原始情报卡仍可正常查看。',
+          uncertainty: code, nextStep: code === 'ai_not_configured' ? '完成服务端密钥配置后点击“回答”。' : '检查登录与网络后重试。', sources: [],
+        };
+      } finally {
+        setLocalBusy('intelligence', false);
+        renderAll();
+      }
       return runtime.intelligenceAnswer;
-    }
-    try {
-      const answer = await ask({
-        mode: 'intelligence', question: asked,
-        intelligence: { externalId: item.externalId, title: item.title, sourceName: item.sourceName, factSummary: item.factSummary, impactAnalysis: item.impactAnalysis, suggestedAction: item.suggestedAction },
-      });
-      runtime.intelligenceAnswer = { state: 'answered', directAnswer: answer.answer, sources: answer.sources || [], knowledgeState: answer.knowledgeState || 'general_only' };
-    } catch (error) {
-      const code = String(error?.message || 'ai_request_failed');
-      runtime.intelligenceAnswer = {
-        state: 'error', directAnswer: code === 'ai_not_configured' ? 'AI 服务尚未配置。请在 Supabase 的 Edge Function Secrets 中设置 OPENAI_API_KEY 后重试。' : 'AI 助手本轮未能回答；原始情报卡仍可正常查看。',
-        uncertainty: code, nextStep: code === 'ai_not_configured' ? '完成服务端密钥配置后点击“回答”。' : '检查登录与网络后重试。', sources: [],
-      };
-    }
-    renderAll();
-    return runtime.intelligenceAnswer;
+    })();
+    try { return await intelligenceQuestionWork; }
+    finally { intelligenceQuestionWork = null; }
   }
 
   function closeIntelligenceQuestion() {
@@ -1456,36 +1515,43 @@ export function createCeoOsApplication(config = {}) {
   }
 
   async function analyzeAgent(agentId, question) {
-    const detail = agentDetails(currentAgentOsIndex() || {}, agentId);
-    if (!detail) throw new Error('agent_not_found');
-    if (detail.agentId === 'REL-001' && runtime.agentOsFilter !== 'private-relations') throw new Error('private_agent_hidden');
-    if (detail.agentId === 'REL-001') throw new Error('private_agent_local_only');
-    runtime.agentOsDetailId = detail.agentId;
-    const asked = String(question || '').trim();
-    if (!asked) {
-      runtime.agentAnalysis = { agentId: detail.agentId, state: 'ready', question: '', answer: null };
+    if (agentAnalysisWork) return agentAnalysisWork;
+    agentAnalysisWork = (async () => {
+      const detail = agentDetails(currentAgentOsIndex() || {}, agentId);
+      if (!detail) throw new Error('agent_not_found');
+      if (detail.agentId === 'REL-001' && runtime.agentOsFilter !== 'private-relations') throw new Error('private_agent_hidden');
+      if (detail.agentId === 'REL-001') throw new Error('private_agent_local_only');
+      runtime.agentOsDetailId = detail.agentId;
+      const asked = String(question || '').trim();
+      if (!asked) {
+        runtime.agentAnalysis = { agentId: detail.agentId, state: 'ready', question: '', answer: null };
+        renderAll();
+        return runtime.agentAnalysis;
+      }
+      runtime.agentAnalysis = { agentId: detail.agentId, state: 'loading', question: asked, answer: null };
+      setLocalBusy('agent', true);
       renderAll();
+      try {
+        const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
+        if (typeof ask !== 'function') {
+          runtime.agentAnalysis = { agentId: detail.agentId, state: 'error', question: asked, answer: 'AI 服务尚未连接。请登录 Supabase 并完成服务端 OpenAI 配置。', error: 'ai_not_configured' };
+          return runtime.agentAnalysis;
+        }
+        const result = await ask(buildAgentAnalysisRequest(detail, asked, {
+          confirmedContext: confirmedContextForAgent(store.load().collections.agent_contexts || [], detail.agentId),
+        }));
+        runtime.agentAnalysis = { agentId: detail.agentId, state: 'answered', question: asked, answer: result.answer, sources: result.sources || [], knowledgeState: result.knowledgeState || 'general_only' };
+      } catch (error) {
+        const code = String(error?.message || 'ai_request_failed');
+        runtime.agentAnalysis = { agentId: detail.agentId, state: 'error', question: asked, answer: code === 'ai_not_configured' ? 'AI 服务尚未配置。请先在 Supabase 设置 OPENAI_API_KEY。' : '本轮分析未完成，请检查登录、网络后重试。', error: code };
+      } finally {
+        setLocalBusy('agent', false);
+        renderAll();
+      }
       return runtime.agentAnalysis;
-    }
-    runtime.agentAnalysis = { agentId: detail.agentId, state: 'loading', question: asked, answer: null };
-    renderAll();
-    const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
-    if (typeof ask !== 'function') {
-      runtime.agentAnalysis = { agentId: detail.agentId, state: 'error', question: asked, answer: 'AI 服务尚未连接。请登录 Supabase 并完成服务端 OpenAI 配置。', error: 'ai_not_configured' };
-      renderAll();
-      return runtime.agentAnalysis;
-    }
-    try {
-      const result = await ask(buildAgentAnalysisRequest(detail, asked, {
-        confirmedContext: confirmedContextForAgent(store.load().collections.agent_contexts || [], detail.agentId),
-      }));
-      runtime.agentAnalysis = { agentId: detail.agentId, state: 'answered', question: asked, answer: result.answer, sources: result.sources || [], knowledgeState: result.knowledgeState || 'general_only' };
-    } catch (error) {
-      const code = String(error?.message || 'ai_request_failed');
-      runtime.agentAnalysis = { agentId: detail.agentId, state: 'error', question: asked, answer: code === 'ai_not_configured' ? 'AI 服务尚未配置。请先在 Supabase 设置 OPENAI_API_KEY。' : '本轮分析未完成，请检查登录、网络后重试。', error: code };
-    }
-    renderAll();
-    return runtime.agentAnalysis;
+    })();
+    try { return await agentAnalysisWork; }
+    finally { agentAnalysisWork = null; }
   }
 
   async function analyzeAgentTask(archiveId) {
@@ -2874,13 +2940,7 @@ export function createCeoOsApplication(config = {}) {
         } else if (intelligenceOpen) {
           openIntelligenceQuestion(intelligenceOpen.dataset.intelligenceOpen);
         } else if (intelligenceRefresh) {
-          if (!operatingRuntime?.loadIntelligence) {
-            runtime.intelligenceState = 'authentication_required'; renderAll();
-          } else {
-            runtime.intelligenceState = 'loading'; renderAll();
-            applyIntelligenceResult(await operatingRuntime.loadIntelligence({ refresh: true }));
-            renderAll();
-          }
+          await refreshIntelligence();
         } else if (intelligenceCompany) {
           setIntelligenceFilter('company', intelligenceCompany.dataset.intelligenceCompany || 'all');
         } else if (intelligenceReset) {
@@ -3389,7 +3449,22 @@ export function createCeoOsApplication(config = {}) {
     }
   }
 
-  function renderAll() {
+  function applyLocalBusyAttributes() {
+    const setBusy = (selector, busy) => {
+      for (const button of document?.querySelectorAll?.(selector) || []) {
+        button.toggleAttribute?.('aria-busy', busy);
+        button.disabled = busy;
+      }
+    };
+    const localBusy = runtime.localBusy || {};
+    setBusy('[data-ai-command-form] button[type="submit"]', localBusy.ai === true);
+    setBusy('[data-intelligence-question-form] button[type="submit"], [data-refresh-intelligence]', localBusy.intelligence === true);
+    setBusy('[data-agent-analyze], [data-agent-task-analyze], [data-agent-analysis-form] button[type="submit"]', localBusy.agent === true);
+    setBusy(`[data-refresh-source="${localBusy.refreshSource || '__none__'}"]`, Boolean(localBusy.refreshSource));
+    setBusy('[data-refresh-all]', runtime.autoRefresh?.phase === 'refreshing');
+  }
+
+  function renderCurrentPage() {
     const activePageId = document?.querySelector?.('.page.active')?.id || '';
     const activePage = activePageId.replace(/^page-/, '');
     const modularPages = new Set([
@@ -3399,7 +3474,10 @@ export function createCeoOsApplication(config = {}) {
     ]);
     renderMobileAiSheet();
     renderMobileMoreGroups();
-    if (activePage && !modularPages.has(activePage)) return;
+    if (activePage && !modularPages.has(activePage)) {
+      applyLocalBusyAttributes();
+      return;
+    }
     const baseModel = activePage === 'local-life' ? wanjiaViewModel() : viewModel();
     const model = { ...baseModel, isMobile: Number(document?.defaultView?.innerWidth || 0) <= 767 };
     const renderers = {
@@ -3445,7 +3523,10 @@ export function createCeoOsApplication(config = {}) {
       badge.textContent = String(partitionDecisions(model.decisions).ceo.length);
       badge.style.display = badge.textContent === '0' ? 'none' : '';
     }
+    applyLocalBusyAttributes();
   }
+
+  const renderAll = renderCurrentPage;
 
   function renderMobileAiSheet() {
     let container = document?.getElementById?.('mobileAiSheetRoot');

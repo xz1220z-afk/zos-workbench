@@ -2152,6 +2152,8 @@ import { mobilePrimaryPage } from './app/mobile-navigation.mjs?v=2.9.0';
   };
 
   let currentPage = 'dashboard';
+  // Navigation scroll is deliberately runtime-only: it is neither user data nor a sync preference.
+  const pageScroll = new Map();
   let sidebarCollapsed = false;
   const navigationPreferenceKey = 'zos_navigation_mode_v1';
   let navigationMode = normalizeNavigationMode(localStorage.getItem(navigationPreferenceKey));
@@ -2206,6 +2208,24 @@ import { mobilePrimaryPage } from './app/mobile-navigation.mjs?v=2.9.0';
     focusTarget.focus({ preventScroll: true });
   }
 
+  function rememberPageScroll(pageId) {
+    if (!pageId) return;
+    const content = document.getElementById('content');
+    const top = Number.isFinite(content?.scrollTop)
+      ? content.scrollTop
+      : (document.scrollingElement?.scrollTop || 0);
+    pageScroll.set(pageId, top);
+  }
+
+  function restorePageScroll(pageId) {
+    requestAnimationFrame(function() {
+      const top = pageScroll.get(pageId) || 0;
+      const content = document.getElementById('content');
+      if (content) content.scrollTop = top;
+      globalThis.scrollTo?.({ top, behavior: 'instant' });
+    });
+  }
+
   function navigateTo(pageId, options) {
     options = options || {};
     const target = document.getElementById('page-' + pageId);
@@ -2220,6 +2240,8 @@ import { mobilePrimaryPage } from './app/mobile-navigation.mjs?v=2.9.0';
       if (options.focusPage) focusPageContent(target);
       return;
     }
+
+    rememberPageScroll(currentPage);
 
     document.querySelectorAll('.sidebar-nav .nav-item, .sidebar-footer .nav-item').forEach(el => {
       el.classList.toggle('active', el.dataset.page === pageId);
@@ -2243,13 +2265,13 @@ import { mobilePrimaryPage } from './app/mobile-navigation.mjs?v=2.9.0';
     }
 
     if (window.innerWidth <= 1024) closeSidebar();
-    document.getElementById('content').scrollTop = 0;
 
     // Call page enter handler
     if (pageEnterHandlers[pageId]) pageEnterHandlers[pageId]();
     if (window.ZOS_CEO_OS && typeof window.ZOS_CEO_OS.render === 'function') {
       window.ZOS_CEO_OS.render();
     }
+    restorePageScroll(pageId);
     if (options.focusPage) focusPageContent(target);
   }
 
