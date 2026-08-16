@@ -102,7 +102,7 @@ export function createSnapshotRepository(config = {}) {
       const value = {
         id: input.id || createId(),
         kind: input.kind || 'manual',
-        appVersion: input.appVersion || '2.9.0',
+        appVersion: input.appVersion || '2.10.0',
         createdAt: input.createdAt || now(),
         backup: clone(input.backup),
       };

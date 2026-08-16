@@ -1,4 +1,4 @@
-import { escapeHtml } from './view-utils.mjs?v=2.9.0';
+import { escapeHtml } from './view-utils.mjs?v=2.10.0';
 
 export function renderMobileCommandSheetHtml(model = {}) {
   if (!model.open) return '';
