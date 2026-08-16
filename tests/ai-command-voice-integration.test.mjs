@@ -83,3 +83,40 @@ test('closing the mobile sheet aborts an active voice recognition session', () =
   assert.equal(app.viewModel().mobileAiSheetOpen, false);
   assert.notEqual(app.viewModel().aiCommand.voice.state, 'listening');
 });
+
+test('submitted voice transcript calls the controlled assistant once and can speak the answer', async () => {
+  FakeRecognition.instance = null;
+  const requests = [];
+  const spoken = [];
+  let cancelled = 0;
+  class Utterance { constructor(text) { this.text = text; } }
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {}, defaultView: null },
+    storage: memoryStorage(), createOperatingRuntime: false, SpeechRecognition: FakeRecognition,
+    askAi: async (request) => {
+      requests.push(request);
+      return { state: 'answered', answer: '万嘉今天应先核验异常商家。', sources: [] };
+    },
+    speechSynthesis: { speak: (utterance) => spoken.push(utterance.text), cancel: () => { cancelled += 1; } },
+    SpeechSynthesisUtterance: Utterance,
+  });
+
+  app.startAiVoice();
+  FakeRecognition.instance.result('查一下万嘉今天最需要处理什么');
+  app.stopAiVoice();
+  FakeRecognition.instance.end();
+  assert.equal(requests.length, 0);
+
+  await app.submitAiCommand(app.viewModel().aiCommand.input);
+  assert.equal(requests.length, 1);
+  assert.deepEqual(requests[0], {
+    mode: 'command', question: '查一下万嘉今天最需要处理什么', interactionMode: 'quick_voice',
+    page: { route: 'dashboard' }, agentId: '',
+    command: { scope: 'wanjia', intent: 'business_query', riskLevel: 'L0' },
+  });
+  assert.equal(app.viewModel().aiCommand.result.sections.advice[0], '万嘉今天应先核验异常商家。');
+  assert.deepEqual(spoken, ['万嘉今天应先核验异常商家。']);
+  assert.equal(app.stopAiSpeech(), true);
+  assert.equal(cancelled >= 2, true);
+  app.stop();
+});

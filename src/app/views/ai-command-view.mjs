@@ -72,6 +72,7 @@ export function renderAiCommandHtml(model = {}) {
       <div class="ai-command-scopes" role="group" aria-label="任务范围">${SCOPES.map(([value, label]) => `<button type="button" data-ai-command-scope="${value}" class="${model.scope === value ? 'is-active' : ''}" aria-pressed="${model.scope === value ? 'true' : 'false'}">${label}</button>`).join('')}</div>
       <div class="ai-command-footer"><div><strong>${escapeHtml(STATE_COPY[state] || STATE_COPY.idle)}</strong><small>${voice.supported ? '按住或点击后才收音；不持续监听，不保存原始音频。' : '当前浏览器不支持语音；键盘输入不受影响。'}</small>${model.error ? `<em>${escapeHtml(model.error)}</em>` : ''}</div><button type="submit" class="v13-action v13-action-primary" data-ai-command-submit ${busy ? 'disabled' : ''}>${busy ? '处理中…' : '交给 AI'}</button></div>
     </form>
+    ${model.speechState === 'speaking' ? '<div class="ai-command-undo"><span>正在朗读 ChatGPT 回答</span><button type="button" class="v13-action" data-ai-speech-stop>停止朗读</button></div>' : ''}
     ${model.undo ? `<div class="ai-command-undo"><span>草案已保存到现有任务系统，可随时撤销。</span><button type="button" class="v13-action" data-ai-command-undo>撤销本次草案</button></div>` : ''}
     ${resultPanel(model.result)}${previewPanel(model.preview)}
   </section>`;

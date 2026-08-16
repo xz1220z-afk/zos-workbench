@@ -84,6 +84,7 @@ import { createAiCommand, normalizeAiCommandResult, transitionAiCommand } from '
 import { routeIntent } from './app/intent-router.mjs?v=2.10.0';
 import { executeControlledAction } from './app/controlled-execution.mjs?v=2.10.0';
 import { createVoiceInput } from './app/voice-input.mjs?v=2.10.0';
+import { createBrowserSpeechOutput, createVoiceTurn } from './app/voice-turn.mjs?v=2.10.0';
 import { renderMobileCommandSheet } from './app/views/mobile-command-sheet.mjs?v=2.10.0';
 
 export const APP_VERSION = '2.10.0';
@@ -117,6 +118,12 @@ export function createCeoOsApplication(config = {}) {
     ? config.SpeechRecognition
     : document?.defaultView?.SpeechRecognition || document?.defaultView?.webkitSpeechRecognition
       || globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition;
+  const speechSynthesis = Object.hasOwn(config, 'speechSynthesis')
+    ? config.speechSynthesis
+    : document?.defaultView?.speechSynthesis || globalThis.speechSynthesis;
+  const SpeechSynthesisUtterance = Object.hasOwn(config, 'SpeechSynthesisUtterance')
+    ? config.SpeechSynthesisUtterance
+    : document?.defaultView?.SpeechSynthesisUtterance || globalThis.SpeechSynthesisUtterance;
   const deviceId = storage?.getItem?.('zos_device_id') || browserId();
   const preUpgradeState = config.preUpgradeState || null;
   const preUpgradeRaw = config.preUpgradeRaw || globalThis.__ZOS_PRE_UPGRADE_RAW__ || null;
@@ -175,6 +182,7 @@ export function createCeoOsApplication(config = {}) {
     aiCommand: {
       ...createAiCommand('', { id: 'ai-command-home', now: now() }),
       voice: { supported: typeof SpeechRecognition === 'function', state: typeof SpeechRecognition === 'function' ? 'idle' : 'unsupported' },
+      interactionMode: 'text', speechState: 'idle',
       result: null, preview: null, undo: null,
     },
   };
@@ -203,6 +211,7 @@ export function createCeoOsApplication(config = {}) {
   let decisionReturnFocus = null;
   let wanjiaModelCache = null;
   let aiVoiceInput = null;
+  let aiVoiceTurn = null;
   let aiVoiceInputGeneration = 0;
   let aiVoiceDraftSession = null;
   let mobileAiReturnFocus = null;
@@ -380,25 +389,36 @@ export function createCeoOsApplication(config = {}) {
     setLocalBusy('ai', true);
     const scope = options.scope || runtime.aiCommand?.scope || 'auto';
     const route = routeIntent(text, { scope, agentId: options.agentId || null });
+    const interactionMode = options.interactionMode || runtime.aiCommand?.interactionMode || 'text';
     runtime.aiCommand = {
       ...transitionAiCommand(createAiCommand(text, { id: browserId(), scope, now: now() }), 'routing'),
       route, voice: runtime.aiCommand?.voice || { supported: false, state: 'unsupported' },
+      interactionMode, speechState: runtime.aiCommand?.speechState || 'idle',
       result: null, preview: null, undo: null,
     };
     renderAll();
     try {
-      const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
-      if (typeof ask !== 'function') throw new Error('ai_not_configured');
+      const turn = ensureAiVoiceTurn();
       runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'answering');
       renderAll();
-      const response = await ask({ mode: 'command', task: text, route });
-      const actions = Array.isArray(response?.actions) ? response.actions.filter((action) => action && typeof action === 'object') : [];
-      const result = normalizeAiCommandResult(response, {
-        task: text,
-        execution: { level: route.riskLevel, actions },
+      let result = null;
+      const response = await turn.submit({
+        mode: 'command', question: text, interactionMode,
+        page: { route: activePageId() }, agentId: route.agentId || '',
+        command: { scope: route.scope, intent: route.intent, riskLevel: route.riskLevel },
+      }, {
+        speak: interactionMode === 'quick_voice',
+        onAnswer: (answer) => {
+          const actions = Array.isArray(answer?.actions) ? answer.actions.filter((action) => action && typeof action === 'object') : [];
+          result = normalizeAiCommandResult(answer, {
+            task: text,
+            execution: { level: route.riskLevel, actions },
+          });
+          runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'completed', { result, error: null });
+          renderAll();
+        },
       });
-      runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'completed', { result, error: null });
-      renderAll();
+      if (!response || !result) throw new Error('ai_command_cancelled');
       return result;
     } catch {
       runtime.aiCommand = transitionAiCommand(runtime.aiCommand, 'failed', { error: 'AI 暂时不可用，请稍后重试。' });
@@ -458,7 +478,7 @@ export function createCeoOsApplication(config = {}) {
   }
 
   function setAiCommandInput(input, options = {}) {
-    runtime.aiCommand = { ...runtime.aiCommand, input: String(input || '') };
+    runtime.aiCommand = { ...runtime.aiCommand, input: String(input || ''), interactionMode: options.interactionMode || 'text' };
     if (options.render !== false) renderAll();
     return runtime.aiCommand.input;
   }
@@ -500,7 +520,7 @@ export function createCeoOsApplication(config = {}) {
           session.transcript = transcript;
           if (session.deferCommit && session.outcome === 'recording') return;
         }
-        runtime.aiCommand = { ...runtime.aiCommand, input: transcript };
+        runtime.aiCommand = { ...runtime.aiCommand, input: transcript, interactionMode: 'quick_voice' };
         renderAll();
       },
       onError: (state) => {
@@ -511,6 +531,34 @@ export function createCeoOsApplication(config = {}) {
       },
     });
     return aiVoiceInput;
+  }
+
+  function ensureAiVoiceTurn() {
+    if (aiVoiceTurn) return aiVoiceTurn;
+    const speaker = createBrowserSpeechOutput({
+      speechSynthesis, SpeechSynthesisUtterance,
+      globalObject: document?.defaultView || globalThis,
+    });
+    aiVoiceTurn = createVoiceTurn({
+      ask: (payload) => {
+        const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
+        if (typeof ask !== 'function') throw new Error('ai_not_configured');
+        return ask(payload);
+      },
+      speaker,
+      onState: (speechState) => {
+        runtime.aiCommand = { ...runtime.aiCommand, speechState };
+        renderAll();
+      },
+    });
+    return aiVoiceTurn;
+  }
+
+  function stopAiSpeech() {
+    const stopped = aiVoiceTurn?.stopAudio?.() === true;
+    runtime.aiCommand = { ...runtime.aiCommand, speechState: 'idle' };
+    renderAll();
+    return stopped;
   }
 
   function startAiVoice(options = {}) {
@@ -539,7 +587,7 @@ export function createCeoOsApplication(config = {}) {
     const session = aiVoiceDraftSession?.generation === aiVoiceInputGeneration ? aiVoiceDraftSession : null;
     if (session) {
       session.outcome = 'commit';
-      if (session.transcript) runtime.aiCommand = { ...runtime.aiCommand, input: session.transcript };
+      if (session.transcript) runtime.aiCommand = { ...runtime.aiCommand, input: session.transcript, interactionMode: 'quick_voice' };
     }
     const stopped = voice.stop();
     if (session && !stopped && aiVoiceDraftSession === session) {
@@ -554,6 +602,8 @@ export function createCeoOsApplication(config = {}) {
     aiVoiceInputGeneration += 1;
     aiVoiceInput?.destroy?.();
     aiVoiceInput = null;
+    aiVoiceTurn?.destroy?.();
+    aiVoiceTurn = null;
     aiVoiceDraftSession = null;
     const supported = typeof SpeechRecognition === 'function';
     runtime.aiCommand = {
@@ -2997,9 +3047,11 @@ export function createCeoOsApplication(config = {}) {
       const aiCommandUndo = event.target?.closest?.('[data-ai-command-undo]');
       const aiCommandScope = event.target?.closest?.('[data-ai-command-scope]');
       const aiVoiceToggle = event.target?.closest?.('[data-ai-voice-toggle]');
+      const aiSpeechStop = event.target?.closest?.('[data-ai-speech-stop]');
       const mobileAiClose = event.target?.closest?.('[data-mobile-ai-close]');
       try {
         if (mobileAiClose) closeMobileAiSheet();
+        else if (aiSpeechStop) stopAiSpeech();
         else if (aiCommandAction) await executeAiCommandAction(aiCommandAction.dataset.aiCommandAction);
         else if (aiCommandUndo) undoAiCommandAction();
         else if (aiCommandScope) setAiCommandScope(aiCommandScope.dataset.aiCommandScope);
@@ -3952,6 +4004,8 @@ export function createCeoOsApplication(config = {}) {
     aiVoiceInputGeneration += 1;
     aiVoiceInput?.destroy?.();
     aiVoiceInput = null;
+    aiVoiceTurn?.destroy?.();
+    aiVoiceTurn = null;
     aiVoiceDraftSession = null;
     started = false;
   }
@@ -3983,7 +4037,7 @@ export function createCeoOsApplication(config = {}) {
     captureContentExperiment, updateContentExperiment, compoundContentItem, reviewCompoundCandidate, updateContentMetrics, editAsset, openBrainstorm,
     launchAgentRun, submitAgentRun, approveAgentRun, deletePrivateEntity,
     submitAiCommand, executeAiCommandAction, undoAiCommandAction,
-    setAiCommandInput, setAiCommandScope, startAiVoice, stopAiVoice, toggleAiVoice,
+    setAiCommandInput, setAiCommandScope, startAiVoice, stopAiVoice, toggleAiVoice, stopAiSpeech,
     openMobileAiSheet, closeMobileAiSheet,
     get operatingRuntime() { return operatingRuntime; },
   };
