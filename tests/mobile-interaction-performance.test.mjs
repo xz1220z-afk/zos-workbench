@@ -37,6 +37,15 @@ test('page-scoped models leave unrelated expensive domains unbuilt', () => {
   assert.deepEqual(decisions.searchResults, []);
 });
 
+test('startup and the focus ticker never rebuild the whole workspace model', () => {
+  const startBlock = app.slice(app.indexOf('async function start()'), app.indexOf('function stop()', app.indexOf('async function start()')));
+  assert.match(startBlock, /return pageViewModel\(activePageId\(\)\)/);
+  assert.match(startBlock, /if \(activePageId\(\) !== 'focus'\) return/);
+  assert.match(startBlock, /const model = pageViewModel\('focus'\)/);
+  assert.doesNotMatch(startBlock, /const model = viewModel\(\)/);
+  assert.doesNotMatch(startBlock, /return viewModel\(\)/);
+});
+
 test('navigation keeps each page scroll in runtime memory and restores it after the active page changes', () => {
   assert.match(legacy, /const pageScroll = new Map\(\)/);
   assert.match(legacy, /function rememberPageScroll\(pageId\)/);

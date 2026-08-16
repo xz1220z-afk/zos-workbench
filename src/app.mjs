@@ -834,6 +834,10 @@ export function createCeoOsApplication(config = {}) {
     return pageId === 'local-life' ? wanjiaViewModel() : viewModel({ pageId });
   }
 
+  function activePageId() {
+    return String(document?.querySelector?.('.page.active')?.id || '').replace(/^page-/, '') || 'dashboard';
+  }
+
   function invalidateWanjiaModel() {
     wanjiaModelCache = null;
   }
@@ -3771,7 +3775,7 @@ export function createCeoOsApplication(config = {}) {
       runtime.intelligenceState = 'authentication_required';
       runtime.autoRefresh = { ...runtime.autoRefresh, phase: 'authentication_required' };
       renderAll();
-      return viewModel();
+      return pageViewModel(activePageId());
     }
     if (operatingRuntime.loadKnowledgeContextStatus) {
       operatingRuntime.loadKnowledgeContextStatus().then((status) => {
@@ -3813,10 +3817,10 @@ export function createCeoOsApplication(config = {}) {
     });
     if (config.autoRefreshFactory || document?.visibilityState != null) autoRefreshController.start();
     await autoRefreshController.refresh('startup');
-    config.ensureDailyBrief && Object.assign(runtime, { briefs: await config.ensureDailyBrief(viewModel()) });
+    config.ensureDailyBrief && Object.assign(runtime, { briefs: await config.ensureDailyBrief(pageViewModel('dashboard')) });
     await scheduleDurableReminders({ force: true });
     renderAll();
-    return viewModel();
+    return pageViewModel(activePageId());
   }
 
   async function refreshWeather({ location = runtime.weather?.location || DEFAULT_WEATHER_LOCATION } = {}) {
@@ -3848,7 +3852,7 @@ export function createCeoOsApplication(config = {}) {
   }
 
   async function start() {
-    if (started) return viewModel();
+    if (started) return pageViewModel(activePageId());
     started = true;
     unsubscribeStore = store.subscribe(() => {
       invalidateWanjiaModel();
@@ -3861,7 +3865,8 @@ export function createCeoOsApplication(config = {}) {
     clearCalendarTouchPending();
     if (browserWindow?.setInterval && !focusTicker) {
       focusTicker = browserWindow.setInterval(() => {
-        const model = viewModel();
+        if (activePageId() !== 'focus') return;
+        const model = pageViewModel('focus');
         if (model.focusSession?.state === 'running') {
           renderFocus(document?.getElementById('focusCenterRoot'), model);
         }
@@ -3870,7 +3875,7 @@ export function createCeoOsApplication(config = {}) {
     const remoteStartup = initializeRemote().catch(() => {
       runtime.syncStatus = '初始化失败，请稍后重试';
       renderAll();
-      return viewModel();
+      return pageViewModel(activePageId());
     });
     const agentOsStartup = loadBundledAgentOsIndex().catch((error) => {
       runtime.agentOsImportState = 'error';
@@ -3878,9 +3883,9 @@ export function createCeoOsApplication(config = {}) {
       renderAll();
       return currentAgentOsIndex();
     });
-    startupWork = Promise.all([remoteStartup, agentOsStartup]).then(() => viewModel());
+    startupWork = Promise.all([remoteStartup, agentOsStartup]).then(() => pageViewModel(activePageId()));
     refreshWeather();
-    return viewModel();
+    return pageViewModel(activePageId());
   }
 
   function stop() {
@@ -3915,7 +3920,7 @@ export function createCeoOsApplication(config = {}) {
   }
 
   return {
-    start, stop, whenIdle: () => Promise.all([startupWork, reminderScheduleWork]).then(() => viewModel()), render: renderAll, store, runtime, viewModel, pageViewModel,
+    start, stop, whenIdle: () => Promise.all([startupWork, reminderScheduleWork]).then(() => pageViewModel(activePageId())), render: renderAll, store, runtime, viewModel, pageViewModel,
     refreshSource, refreshAllSources, diagnoseWanjiaSchema, notifyCurrentReminders, confirmTarget, previewDecision, executeApproval,
     openDecisionAction, closeDecisionAction, confirmDecisionAction, undoDecisionAction, setDecisionFilter, loadMoreDecisions,
     setDecisionSelection, toggleDecisionSelection, executeDecisionBatch,
