@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const CACHE_NAME = 'zos-workbench-v2.11.0';
+const CACHE_NAME = 'zos-workbench-v2.12.0';
 
 async function installHarness({ failingAsset }) {
   const source = await readFile(new URL('../sw.js', import.meta.url), 'utf8');

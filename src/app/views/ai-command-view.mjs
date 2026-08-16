@@ -1,4 +1,4 @@
-import { escapeHtml } from './view-utils.mjs?v=2.11.0';
+import { escapeHtml } from './view-utils.mjs?v=2.12.0';
 
 const SCOPES = Object.freeze([
   ['auto', '自动'], ['wanjia', '万嘉'], ['huahuo', '花火'], ['lingli', '玲丽'],

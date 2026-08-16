@@ -1,15 +1,15 @@
-import { fetchBusinessData, fetchWanjiaSchema } from '../business-data-client.mjs?v=2.11.0';
-import { createSupabaseAuth } from '../supabase-auth.mjs?v=2.11.0';
-import { createSupabaseTransport } from '../supabase-transport.mjs?v=2.11.0';
-import { createFeishuApprovalClient } from './feishu-approvals.mjs?v=2.11.0';
-import { createOperatingLoop } from './operating-loop.mjs?v=2.11.0';
-import { createSyncController } from './sync-controller.mjs?v=2.11.0';
-import { createPushClient } from './push-notifications.mjs?v=2.11.0';
-import { createAiAssistantClient } from './ai-assistant-client.mjs?v=2.11.0';
-import { createRealtimeSyncSignal } from './realtime-sync-signal.mjs?v=2.11.0';
-import { createSupabaseRealtimeChannelFactory } from './supabase-realtime-channel.mjs?v=2.11.0';
-import { createRealtimeSessionExchange } from './realtime-voice.mjs?v=2.11.0';
-import { buildLocalSyncInput, LOCAL_ONLY_ENTITY_TYPES } from '../sync-engine.mjs?v=2.11.0';
+import { fetchBusinessData, fetchWanjiaSchema } from '../business-data-client.mjs?v=2.12.0';
+import { createSupabaseAuth } from '../supabase-auth.mjs?v=2.12.0';
+import { createSupabaseTransport } from '../supabase-transport.mjs?v=2.12.0';
+import { createFeishuApprovalClient } from './feishu-approvals.mjs?v=2.12.0';
+import { createOperatingLoop } from './operating-loop.mjs?v=2.12.0';
+import { createSyncController } from './sync-controller.mjs?v=2.12.0';
+import { createPushClient } from './push-notifications.mjs?v=2.12.0';
+import { createAiAssistantClient } from './ai-assistant-client.mjs?v=2.12.0';
+import { createRealtimeSyncSignal } from './realtime-sync-signal.mjs?v=2.12.0';
+import { createSupabaseRealtimeChannelFactory } from './supabase-realtime-channel.mjs?v=2.12.0';
+import { createRealtimeSessionExchange } from './realtime-voice.mjs?v=2.12.0';
+import { buildLocalSyncInput, LOCAL_ONLY_ENTITY_TYPES } from '../sync-engine.mjs?v=2.12.0';
 
 export const BROWSER_SUPABASE_CONFIG = Object.freeze({
   url: 'https://dtwvyramgbwtlyhmkhkd.supabase.co',
