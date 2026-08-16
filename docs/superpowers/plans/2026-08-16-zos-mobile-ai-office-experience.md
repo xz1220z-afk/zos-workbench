@@ -758,7 +758,7 @@ git commit -m "release: prepare ZOS CEO OS v2.10.0"
 
 ```bash
 git push origin codex/ai-first-home-v2.9
-git push origin main
+git push origin HEAD:main
 ```
 
 Wait for the Pages deployment to complete. Verify the formal URL returns HTTP 200 for `/zos-workbench/`, `manifest.json`, `sw.js`, `src/app.mjs`, `src/app/mobile-navigation.mjs`, `src/app/mobile-dashboard.mjs` and `src/app/mobile-agent-directory.mjs`; verify all declare or import `2.10.0` as required. Repeat iPhone, Android, iPad and desktop checks on the formal URL.
