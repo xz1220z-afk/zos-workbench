@@ -58,10 +58,15 @@ export function normalizeAiCommandResult(payload = {}, context = {}) {
 }
 
 export function sanitizeAiActivity(command = {}) {
-  return {
+  const activity = {
     id: command.id,
     scope: command.scope,
     state: command.state,
     createdAt: command.createdAt,
   };
+  if (command.updatedAt) activity.updatedAt = command.updatedAt;
+  if (command.route?.intent) activity.intent = String(command.route.intent);
+  if (command.route?.agentId) activity.agentId = String(command.route.agentId);
+  if (command.route?.riskLevel) activity.riskLevel = String(command.route.riskLevel);
+  return activity;
 }
