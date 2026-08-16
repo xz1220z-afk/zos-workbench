@@ -110,5 +110,5 @@ export function render(container, viewModel = {}) {
       <article class="v13-panel"><div class="v14-section-head"><h3>⏳ 关键期限</h3><button class="v13-action" data-important-dates-open="work">查看全部</button></div>${importantDateRows(workDates)}</article>
       <article class="v13-panel"><div class="v14-section-head"><h3>☀ 晨间简报</h3><span>07:30</span></div><p>${escapeHtml(viewModel.morningDigest?.body || '等待今日数据')}</p><div class="v14-section-head"><h3>☾ 晚间简报</h3><span>21:30</span></div><p>${escapeHtml(viewModel.eveningDigest?.body || '等待今日数据')}</p><small>仅在你开启系统提醒后推送，不会自动外发。</small></article>
       <article class="v13-panel"><h3>◉ 系统健康</h3><div class="v13-value">${synced}/${health.length || '—'}</div><p>${escapeHtml(viewModel.syncStatus || '等待同步')}</p></article>
-    </div></section>${importantDatesDrawer(viewModel, workDates)}</div><div id="mobileDashboardRoot" class="v13-mobile-dashboard"></div>`;
+    </div></section>${importantDatesDrawer(viewModel, workDates)}</div>`;
 }

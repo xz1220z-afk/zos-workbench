@@ -88,6 +88,7 @@ const ASSETS_TO_CACHE = [
   'src/app/views/targets-view.mjs',
   'src/app/views/health-view.mjs',
   'src/app/views/business-view.mjs',
+  'src/app/mobile-dashboard.mjs',
   'src/app/views/mobile-view.mjs',
   'src/app/views/intelligence-view.mjs',
   'src/app/views/calendar-view.mjs',

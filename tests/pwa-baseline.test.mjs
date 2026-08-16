@@ -32,6 +32,7 @@ for (const asset of [
   'src/app/decision-center.mjs', 'src/app/targets.mjs', 'src/app/source-health.mjs',
   'src/app/daily-brief.mjs', 'src/app/sync-controller.mjs', 'src/app/feishu-approvals.mjs',
   'src/app/monitoring.mjs', 'src/app/router.mjs', 'src/app/views/dashboard-view.mjs',
+  'src/app/mobile-dashboard.mjs',
   'src/app/mobile-navigation.mjs',
   'src/app/value-utils.mjs', 'src/app/calendar-range.mjs', 'src/app/calendar-event.mjs',
   'src/app/calendar-recurrence.mjs',
