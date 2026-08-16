@@ -1,4 +1,4 @@
-import { AuthError, requireUser } from '../_shared/auth.ts';
+import { AuthError, requireOwnerUser } from '../_shared/auth.ts';
 import {
   FeishuRequestError,
   getTenantAccessToken,
@@ -74,7 +74,7 @@ async function withOptionalHistory(
   payload: unknown,
   requestedSource: string,
   includeHistory: boolean,
-  identity: Awaited<ReturnType<typeof requireUser>>,
+  identity: Awaited<ReturnType<typeof requireOwnerUser>>,
   searchParams: URLSearchParams,
 ) {
   if (!includeHistory || !['all', 'wanjia'].includes(requestedSource)) return payload;
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
 
   let identity;
   try {
-    identity = await requireUser(req);
+    identity = await requireOwnerUser(req);
   } catch (error) {
     if (error instanceof AuthError) return response({ error: error.code }, error.status);
     return response({ error: 'authentication_invalid' }, 401);

@@ -1,5 +1,5 @@
 import { executeApproval } from '../_shared/approval-execution.mjs';
-import { AuthError, requireUser } from '../_shared/auth.ts';
+import { AuthError, requireOwnerUser } from '../_shared/auth.ts';
 import { createServiceClient, writeSafeAudit } from '../_shared/database.ts';
 import {
   FEISHU_TARGETS,
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return response({ error: 'method_not_allowed' }, 405);
 
   let user;
-  try { ({ user } = await requireUser(req)); }
+  try { ({ user } = await requireOwnerUser(req)); }
   catch (error) {
     if (error instanceof AuthError) return response({ error: error.code }, error.status);
     return response({ error: 'authentication_required' }, 401);

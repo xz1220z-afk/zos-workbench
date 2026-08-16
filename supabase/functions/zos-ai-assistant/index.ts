@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { AuthError, requireUser } from '../_shared/auth.ts';
+import { AuthError, requireOwnerUser } from '../_shared/auth.ts';
 import { buildAssistantInstructions, normalizeAssistantRequest, selectKnowledgeContext } from '../_shared/ai-assistant-contract.mjs';
 
 const HEADERS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Content-Type': 'application/json; charset=utf-8' };
@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: HEADERS });
   if (req.method !== 'POST') return reply({ error: 'method_not_allowed' }, 405);
   let identity;
-  try { identity = await requireUser(req); }
+  try { identity = await requireOwnerUser(req); }
   catch (error) { return reply({ error: error instanceof AuthError ? error.code : 'authentication_invalid' }, error instanceof AuthError ? error.status : 401); }
   let request;
   try { request = normalizeAssistantRequest(await req.json()); } catch (error) { return reply({ error: error instanceof Error ? error.message : 'assistant_request_invalid' }, 400); }

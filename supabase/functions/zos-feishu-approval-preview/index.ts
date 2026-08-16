@@ -1,4 +1,4 @@
-import { AuthError, requireUser } from '../_shared/auth.ts';
+import { AuthError, requireOwnerUser } from '../_shared/auth.ts';
 import { createServiceClient, writeSafeAudit } from '../_shared/database.ts';
 import {
   FEISHU_TARGETS,
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
 
   let user;
   try {
-    ({ user } = await requireUser(req));
+    ({ user } = await requireOwnerUser(req));
   } catch (error) {
     if (error instanceof AuthError && error.code === 'authentication_required') {
       return response({ error: 'authentication_required' }, 401);

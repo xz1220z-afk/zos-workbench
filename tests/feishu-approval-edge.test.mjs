@@ -8,7 +8,7 @@ const configPath = new URL('../supabase/config.toml', import.meta.url);
 
 test('preview endpoint requires authentication and accepts only the proposal shape', async () => {
   const source = await readFile(previewPath, 'utf8');
-  assert.match(source, /requireUser\(req\)/);
+  assert.match(source, /requireOwnerUser\(req\)/);
   assert.match(source, /authentication_required/);
   assert.match(source, /REQUEST_KEYS\s*=\s*new Set\(\['source', 'recordId', 'action', 'value'\]\)/);
   assert.match(source, /Object\.keys\(body\)\.some\(\(key\) => !REQUEST_KEYS\.has\(key\)\)/);

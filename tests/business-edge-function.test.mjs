@@ -99,8 +99,8 @@ assert.match(config, /verify_jwt\s*=\s*true/);
 const historyMigration = await readFile(new URL('../supabase/migrations/011_wanjia_history_mirror.sql', import.meta.url), 'utf8');
 assert.match(source, /searchParams\.get\('history'\) === '1'/,
   'History is opt-in and cannot alter existing payloads by default');
-assert.match(source, /requireUser\(req\)/,
-  'History reads stay behind the existing Supabase login requirement');
+assert.match(source, /requireOwnerUser\(req\)/,
+  'History reads stay behind the configured owner login requirement');
 assert.match(source, /wanjia:\s*\{\s*\.\.\.\(wanjia as Record<string, unknown>\),\s*history\s*\}/,
   'History is nested under wanjia so selected-source clients receive it');
 assert.match(source, /zos_wanjia_history_batches/);
