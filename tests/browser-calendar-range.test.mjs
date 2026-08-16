@@ -60,3 +60,22 @@ test('browser runtime preserves only safe calendar permission diagnostics', asyn
     start: '2026-08-03T00:00:00+08:00', end: '2026-08-10T00:00:00+08:00',
   }), /calendar_feishu_permission_denied/);
 });
+
+test('browser runtime exposes an owner-authenticated realtime SDP exchange', async () => {
+  const store = {
+    load: () => ({ collections: { tasks: [], decisions: [], targets: [], inbox: [] }, tombstones: [] }),
+    loadBaseRevisions: () => ({}), saveBaseRevisions() {}, replaceSnapshot() {},
+  };
+  const calls = [];
+  const runtime = await createBrowserOperatingRuntime({
+    storage: signedInStorage(), store, deviceId: 'd1',
+    fetchImpl: async (url, init) => {
+      calls.push({ url: String(url), init });
+      return { ok: true, text: async () => 'v=0\r\no=answer', json: async () => ({}) };
+    },
+  });
+  const answer = await runtime.exchangeRealtimeSdp('v=0\r\no=offer', { page: { route: 'dashboard' } });
+  assert.equal(answer, 'v=0\r\no=answer');
+  assert.match(calls.at(-1).url, /\/functions\/v1\/zos-ai-realtime-session$/);
+  assert.equal(calls.at(-1).init.headers.Authorization, 'Bearer access-token');
+});

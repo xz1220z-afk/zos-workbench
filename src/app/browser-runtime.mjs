@@ -8,6 +8,7 @@ import { createPushClient } from './push-notifications.mjs?v=2.10.0';
 import { createAiAssistantClient } from './ai-assistant-client.mjs?v=2.10.0';
 import { createRealtimeSyncSignal } from './realtime-sync-signal.mjs?v=2.10.0';
 import { createSupabaseRealtimeChannelFactory } from './supabase-realtime-channel.mjs?v=2.10.0';
+import { createRealtimeSessionExchange } from './realtime-voice.mjs?v=2.10.0';
 import { buildLocalSyncInput, LOCAL_ONLY_ENTITY_TYPES } from '../sync-engine.mjs?v=2.10.0';
 
 export const BROWSER_SUPABASE_CONFIG = Object.freeze({
@@ -189,6 +190,7 @@ export async function createBrowserOperatingRuntime({
     loadKnowledgeContextStatus: () => loadKnowledgeContextStatus(fetchImpl, config, session.accessToken),
     saveKnowledgeContext: (index) => saveKnowledgeContext(fetchImpl, config, session.accessToken, index),
     aiAssistant: createAiAssistantClient({ ...config, getAccessToken, fetchImpl }),
+    exchangeRealtimeSdp: createRealtimeSessionExchange({ ...config, getAccessToken, fetchImpl }),
     diagnoseWanjiaSchema: () => fetchWanjiaSchema({ ...config, accessToken: session.accessToken, fetchImpl }),
   };
 }

@@ -85,6 +85,7 @@ import { routeIntent } from './app/intent-router.mjs?v=2.10.0';
 import { executeControlledAction } from './app/controlled-execution.mjs?v=2.10.0';
 import { createVoiceInput } from './app/voice-input.mjs?v=2.10.0';
 import { createBrowserSpeechOutput, createVoiceTurn } from './app/voice-turn.mjs?v=2.10.0';
+import { createRealtimeVoice } from './app/realtime-voice.mjs?v=2.10.0';
 import { renderMobileCommandSheet } from './app/views/mobile-command-sheet.mjs?v=2.10.0';
 
 export const APP_VERSION = '2.10.0';
@@ -124,6 +125,12 @@ export function createCeoOsApplication(config = {}) {
   const SpeechSynthesisUtterance = Object.hasOwn(config, 'SpeechSynthesisUtterance')
     ? config.SpeechSynthesisUtterance
     : document?.defaultView?.SpeechSynthesisUtterance || globalThis.SpeechSynthesisUtterance;
+  const RTCPeerConnection = Object.hasOwn(config, 'RTCPeerConnection')
+    ? config.RTCPeerConnection
+    : document?.defaultView?.RTCPeerConnection || globalThis.RTCPeerConnection;
+  const mediaDevices = Object.hasOwn(config, 'mediaDevices')
+    ? config.mediaDevices
+    : document?.defaultView?.navigator?.mediaDevices || globalThis.navigator?.mediaDevices;
   const deviceId = storage?.getItem?.('zos_device_id') || browserId();
   const preUpgradeState = config.preUpgradeState || null;
   const preUpgradeRaw = config.preUpgradeRaw || globalThis.__ZOS_PRE_UPGRADE_RAW__ || null;
@@ -182,6 +189,11 @@ export function createCeoOsApplication(config = {}) {
     aiCommand: {
       ...createAiCommand('', { id: 'ai-command-home', now: now() }),
       voice: { supported: typeof SpeechRecognition === 'function', state: typeof SpeechRecognition === 'function' ? 'idle' : 'unsupported' },
+      realtimeVoice: {
+        supported: typeof RTCPeerConnection === 'function' && typeof mediaDevices?.getUserMedia === 'function',
+        state: typeof RTCPeerConnection === 'function' && typeof mediaDevices?.getUserMedia === 'function' ? 'idle' : 'unsupported',
+        muted: false, captionsEnabled: true, caption: '', reason: null,
+      },
       interactionMode: 'text', speechState: 'idle',
       result: null, preview: null, undo: null,
     },
@@ -212,6 +224,9 @@ export function createCeoOsApplication(config = {}) {
   let wanjiaModelCache = null;
   let aiVoiceInput = null;
   let aiVoiceTurn = null;
+  let aiRealtimeVoice = null;
+  let aiRealtimeRoute = null;
+  let realtimeVisibilityHandler = null;
   let aiVoiceInputGeneration = 0;
   let aiVoiceDraftSession = null;
   let mobileAiReturnFocus = null;
@@ -561,6 +576,73 @@ export function createCeoOsApplication(config = {}) {
     return stopped;
   }
 
+  function ensureRealtimeVoice() {
+    if (aiRealtimeVoice) return aiRealtimeVoice;
+    const factory = config.realtimeVoiceFactory || createRealtimeVoice;
+    aiRealtimeVoice = factory({
+      RTCPeerConnection, mediaDevices,
+      clock: config.clock || document?.defaultView || globalThis,
+      createAudioElement: config.createRealtimeAudioElement,
+      exchangeSdp: (sdp, context) => {
+        const exchange = config.exchangeRealtimeSdp || operatingRuntime?.exchangeRealtimeSdp;
+        if (typeof exchange !== 'function') throw new Error('realtime_not_configured');
+        return exchange(sdp, context);
+      },
+      onState: (realtimeVoice) => {
+        runtime.aiCommand = { ...runtime.aiCommand, realtimeVoice: { ...runtime.aiCommand.realtimeVoice, ...realtimeVoice } };
+        if (started) renderAll();
+      },
+      onCaption: ({ text }) => {
+        runtime.aiCommand = {
+          ...runtime.aiCommand,
+          realtimeVoice: { ...runtime.aiCommand.realtimeVoice, caption: String(text || '') },
+        };
+        if (started) renderAll();
+      },
+    });
+    return aiRealtimeVoice;
+  }
+
+  async function startRealtimeVoice() {
+    const voice = ensureRealtimeVoice();
+    const route = activePageId();
+    const title = String(document?.querySelector?.('.page.active h1, .page.active h2')?.textContent || '').trim();
+    aiRealtimeRoute = route;
+    try {
+      return await voice.start({
+        page: { route, title },
+        agentId: runtime.aiCommand?.route?.agentId || '',
+        knowledgeRefs: [],
+      });
+    } catch {
+      runtime.aiCommand = {
+        ...runtime.aiCommand,
+        realtimeVoice: { ...runtime.aiCommand.realtimeVoice, state: 'failed', reason: 'start_failed' },
+      };
+      renderAll();
+      return false;
+    }
+  }
+
+  function stopRealtimeVoice(reason = 'user') {
+    aiRealtimeRoute = null;
+    return aiRealtimeVoice?.stop?.(reason) || false;
+  }
+
+  function interruptRealtimeVoice() {
+    return aiRealtimeVoice?.interrupt?.() || false;
+  }
+
+  function toggleRealtimeVoiceMute() {
+    const muted = !runtime.aiCommand?.realtimeVoice?.muted;
+    return aiRealtimeVoice?.setMuted?.(muted) || false;
+  }
+
+  function toggleRealtimeVoiceCaptions() {
+    const enabled = !runtime.aiCommand?.realtimeVoice?.captionsEnabled;
+    return aiRealtimeVoice?.setCaptions?.(enabled) ?? false;
+  }
+
   function startAiVoice(options = {}) {
     const voice = ensureAiVoiceInput();
     if (!voice.supported) {
@@ -636,6 +718,7 @@ export function createCeoOsApplication(config = {}) {
   function closeMobileAiSheet() {
     cancelAiVoiceHold({ abort: true, render: false });
     if (aiVoiceInput) abortAiVoice({ render: false });
+    if (aiRealtimeVoice) stopRealtimeVoice('sheet_close');
     runtime.mobileAiSheetOpen = false;
     renderAll();
     mobileAiReturnFocus?.focus?.({ preventScroll: true });
@@ -3048,9 +3131,19 @@ export function createCeoOsApplication(config = {}) {
       const aiCommandScope = event.target?.closest?.('[data-ai-command-scope]');
       const aiVoiceToggle = event.target?.closest?.('[data-ai-voice-toggle]');
       const aiSpeechStop = event.target?.closest?.('[data-ai-speech-stop]');
+      const realtimeStart = event.target?.closest?.('[data-ai-realtime-start]');
+      const realtimeStop = event.target?.closest?.('[data-ai-realtime-stop]');
+      const realtimeInterrupt = event.target?.closest?.('[data-ai-realtime-interrupt]');
+      const realtimeMute = event.target?.closest?.('[data-ai-realtime-mute]');
+      const realtimeCaptions = event.target?.closest?.('[data-ai-realtime-captions]');
       const mobileAiClose = event.target?.closest?.('[data-mobile-ai-close]');
       try {
         if (mobileAiClose) closeMobileAiSheet();
+        else if (realtimeStart) await startRealtimeVoice();
+        else if (realtimeStop) stopRealtimeVoice();
+        else if (realtimeInterrupt) interruptRealtimeVoice();
+        else if (realtimeMute) toggleRealtimeVoiceMute();
+        else if (realtimeCaptions) toggleRealtimeVoiceCaptions();
         else if (aiSpeechStop) stopAiSpeech();
         else if (aiCommandAction) await executeAiCommandAction(aiCommandAction.dataset.aiCommandAction);
         else if (aiCommandUndo) undoAiCommandAction();
@@ -3686,6 +3779,7 @@ export function createCeoOsApplication(config = {}) {
   function renderCurrentPage() {
     const activePageId = document?.querySelector?.('.page.active')?.id || '';
     const activePage = activePageId.replace(/^page-/, '');
+    if (aiRealtimeRoute && activePage && aiRealtimeRoute !== activePage) stopRealtimeVoice('route_change');
     const modularPages = new Set([
       'dashboard', 'decisions', 'targets', 'health', 'intelligence', 'calendar', 'life', 'search',
       'lingli', 'local-life', 'spark-media', 'relations', 'reviews', 'today', 'tasks', 'focus',
@@ -3942,6 +4036,12 @@ export function createCeoOsApplication(config = {}) {
   async function start() {
     if (started) return pageViewModel(activePageId());
     started = true;
+    if (!realtimeVisibilityHandler) {
+      realtimeVisibilityHandler = () => {
+        if (document?.visibilityState === 'hidden' && aiRealtimeVoice) stopRealtimeVoice('background');
+      };
+      document?.addEventListener?.('visibilitychange', realtimeVisibilityHandler);
+    }
     unsubscribeStore = store.subscribe(() => {
       invalidateWanjiaModel();
       renderAll();
@@ -3980,6 +4080,8 @@ export function createCeoOsApplication(config = {}) {
     const browserWindow = document?.defaultView;
     clearCalendarTouchPending();
     clearCalendarEventLongPress();
+    if (realtimeVisibilityHandler) document?.removeEventListener?.('visibilitychange', realtimeVisibilityHandler);
+    realtimeVisibilityHandler = null;
     if (focusTicker && browserWindow?.clearInterval) browserWindow.clearInterval(focusTicker);
     focusTicker = null;
     unsubscribeStore?.();
@@ -4006,6 +4108,9 @@ export function createCeoOsApplication(config = {}) {
     aiVoiceInput = null;
     aiVoiceTurn?.destroy?.();
     aiVoiceTurn = null;
+    if (aiRealtimeVoice) aiRealtimeVoice.stop?.('application_stop');
+    aiRealtimeVoice = null;
+    aiRealtimeRoute = null;
     aiVoiceDraftSession = null;
     started = false;
   }
@@ -4038,6 +4143,7 @@ export function createCeoOsApplication(config = {}) {
     launchAgentRun, submitAgentRun, approveAgentRun, deletePrivateEntity,
     submitAiCommand, executeAiCommandAction, undoAiCommandAction,
     setAiCommandInput, setAiCommandScope, startAiVoice, stopAiVoice, toggleAiVoice, stopAiSpeech,
+    startRealtimeVoice, stopRealtimeVoice, interruptRealtimeVoice, toggleRealtimeVoiceMute, toggleRealtimeVoiceCaptions,
     openMobileAiSheet, closeMobileAiSheet,
     get operatingRuntime() { return operatingRuntime; },
   };

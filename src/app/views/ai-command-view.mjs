@@ -56,6 +56,28 @@ function previewPanel(preview) {
   </section>`;
 }
 
+function realtimeVoicePanel(model = {}) {
+  const voice = model.realtimeVoice || { supported: false, state: 'unsupported', muted: false, captionsEnabled: true, caption: '' };
+  const active = ['connecting', 'reconnecting', 'listening', 'speaking', 'muted', 'idle_warning'].includes(voice.state);
+  const labels = {
+    connecting: '正在建立加密语音会话…', reconnecting: '连接波动，正在重试一次…',
+    listening: '正在听你说', speaking: 'ChatGPT 正在回答', muted: '麦克风已静音',
+    idle_warning: '90 秒无交互，即将自动结束', failed: '实时对话未连接，可继续使用文字或快捷语音',
+    ended: '实时对话已结束', unsupported: '当前浏览器不支持实时对话', idle: '需要时再主动开始',
+  };
+  return `<section class="ai-realtime-voice" data-ai-realtime-state="${escapeHtml(voice.state || 'idle')}">
+    <div><small>CHATGPT REALTIME</small><strong>实时语音对话</strong><span>${escapeHtml(labels[voice.state] || labels.idle)}</span></div>
+    ${active ? `<div class="ai-realtime-controls" role="group" aria-label="实时语音控制">
+      <button type="button" class="v13-action" data-ai-realtime-interrupt ${voice.state === 'speaking' ? '' : 'disabled'}>打断回答</button>
+      <button type="button" class="v13-action" data-ai-realtime-mute aria-pressed="${voice.muted ? 'true' : 'false'}">${voice.muted ? '恢复麦克风' : '麦克风静音'}</button>
+      <button type="button" class="v13-action" data-ai-realtime-captions aria-pressed="${voice.captionsEnabled ? 'true' : 'false'}">${voice.captionsEnabled ? '隐藏字幕' : '显示字幕'}</button>
+      <button type="button" class="v13-action" data-ai-realtime-stop>结束对话</button>
+    </div>` : `<button type="button" class="v13-action v13-action-primary" data-ai-realtime-start ${voice.supported ? '' : 'disabled'}>实时对话</button>`}
+    ${voice.captionsEnabled && voice.caption ? `<p class="ai-realtime-caption" aria-live="polite">${escapeHtml(voice.caption)}</p>` : ''}
+    <p class="ai-realtime-privacy">快捷语音只转成可编辑文字；实时对话不保存原始音频或字幕，高影响操作仍需你确认。</p>
+  </section>`;
+}
+
 export function renderAiCommandHtml(model = {}) {
   const voice = model.voice || { supported: false, state: 'unsupported' };
   const state = model.state || 'idle';
@@ -72,6 +94,7 @@ export function renderAiCommandHtml(model = {}) {
       <div class="ai-command-scopes" role="group" aria-label="任务范围">${SCOPES.map(([value, label]) => `<button type="button" data-ai-command-scope="${value}" class="${model.scope === value ? 'is-active' : ''}" aria-pressed="${model.scope === value ? 'true' : 'false'}">${label}</button>`).join('')}</div>
       <div class="ai-command-footer"><div><strong>${escapeHtml(STATE_COPY[state] || STATE_COPY.idle)}</strong><small>${voice.supported ? '按住或点击后才收音；不持续监听，不保存原始音频。' : '当前浏览器不支持语音；键盘输入不受影响。'}</small>${model.error ? `<em>${escapeHtml(model.error)}</em>` : ''}</div><button type="submit" class="v13-action v13-action-primary" data-ai-command-submit ${busy ? 'disabled' : ''}>${busy ? '处理中…' : '交给 AI'}</button></div>
     </form>
+    ${realtimeVoicePanel(model)}
     ${model.speechState === 'speaking' ? '<div class="ai-command-undo"><span>正在朗读 ChatGPT 回答</span><button type="button" class="v13-action" data-ai-speech-stop>停止朗读</button></div>' : ''}
     ${model.undo ? `<div class="ai-command-undo"><span>草案已保存到现有任务系统，可随时撤销。</span><button type="button" class="v13-action" data-ai-command-undo>撤销本次草案</button></div>` : ''}
     ${resultPanel(model.result)}${previewPanel(model.preview)}
