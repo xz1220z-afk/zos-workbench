@@ -53,12 +53,13 @@ test('AI, Agent and intelligence actions expose busy state only during their loc
   assert.match(app, /function applyLocalBusyAttributes\(\)/);
   assert.match(app, /toggleAttribute\?\.\('aria-busy', busy\)/);
   assert.match(app, /\[data-ai-command-form\] button\[type="submit"\]/);
-  assert.match(app, /\[data-intelligence-question-form\] button\[type="submit"\], \[data-refresh-intelligence\]/);
+  assert.match(app, /\[data-intelligence-question-form\] button\[type="submit"\]/);
+  assert.match(app, /\[data-refresh-intelligence\]/);
   assert.match(app, /setBusy\('\[data-refresh-all\]', runtime\.autoRefresh\?\.phase === 'refreshing'\)/);
   assert.match(app, /let aiCommandWork = null/);
   assert.match(app, /if \(aiCommandWork\) return aiCommandWork/);
-  assert.match(app, /let intelligenceQuestionWork = null/);
-  assert.match(app, /if \(intelligenceQuestionWork\) return intelligenceQuestionWork/);
+  assert.match(app, /const intelligenceQuestionWork = new Map\(\)/);
+  assert.match(app, /if \(intelligenceQuestionWork\.has\(id\)\) return intelligenceQuestionWork\.get\(id\)/);
 });
 
 function deferred() {

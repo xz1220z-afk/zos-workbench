@@ -164,7 +164,8 @@ export function createCeoOsApplication(config = {}) {
     mobileAgentDirectoryDisclosure: { organizationId: null, departmentId: null },
     agentOsImportState: 'idle', agentOsImportMessage: null, agentAnalysis: null,
     weather: { state: 'loading', location: DEFAULT_WEATHER_LOCATION },
-    localBusy: { ai: false, agent: false, intelligence: false, refreshSource: null },
+    localBusy: { ai: false, agentIds: [], agentTaskArchives: [], intelligenceIds: [], refreshSources: [] },
+    intelligenceQuestionStates: {},
     mobileAiSheetOpen: false,
     aiCommand: {
       ...createAiCommand('', { id: 'ai-command-home', now: now() }),
@@ -202,8 +203,9 @@ export function createCeoOsApplication(config = {}) {
   let aiVoiceHoldActive = false;
   let aiVoiceIgnoreClick = false;
   let aiCommandWork = null;
-  let intelligenceQuestionWork = null;
+  const intelligenceQuestionWork = new Map();
   let agentAnalysisWork = null;
+  const agentTaskAnalysisWork = new Map();
   let intelligenceRefreshWork = null;
   const refreshSourceWork = new Map();
   const legacyProjectionRetryDelays = Array.isArray(config.legacyProjectionRetryDelays)
@@ -352,6 +354,13 @@ export function createCeoOsApplication(config = {}) {
 
   function setLocalBusy(kind, value) {
     runtime.localBusy = { ...runtime.localBusy, [kind]: value };
+  }
+
+  function setLocalBusyItem(kind, id, busy) {
+    const items = new Set(runtime.localBusy?.[kind] || []);
+    if (busy) items.add(id);
+    else items.delete(id);
+    setLocalBusy(kind, [...items]);
   }
 
   async function submitAiCommand(input, options = {}) {
@@ -789,7 +798,7 @@ export function createCeoOsApplication(config = {}) {
 
   async function refreshSource(source) {
     if (refreshSourceWork.has(source)) return refreshSourceWork.get(source);
-    setLocalBusy('refreshSource', source);
+    setLocalBusyItem('refreshSources', source, true);
     renderAll();
     const work = (async () => {
     if (!operatingRuntime?.operatingLoop) throw new Error('请先登录 Supabase');
@@ -805,7 +814,7 @@ export function createCeoOsApplication(config = {}) {
     try { return await work; }
     finally {
       refreshSourceWork.delete(source);
-      if (runtime.localBusy.refreshSource === source) setLocalBusy('refreshSource', null);
+      setLocalBusyItem('refreshSources', source, false);
       renderAll();
     }
   }
@@ -813,7 +822,7 @@ export function createCeoOsApplication(config = {}) {
   async function refreshIntelligence() {
     if (intelligenceRefreshWork) return intelligenceRefreshWork;
     intelligenceRefreshWork = (async () => {
-      setLocalBusy('intelligence', true);
+      setLocalBusyItem('intelligenceIds', 'refresh', true);
       runtime.intelligenceState = 'loading';
       renderAll();
       try {
@@ -827,7 +836,7 @@ export function createCeoOsApplication(config = {}) {
         runtime.intelligenceState = runtime.intelligence.length ? 'cached' : safeRefreshCode(error);
         throw error;
       } finally {
-        setLocalBusy('intelligence', false);
+        setLocalBusyItem('intelligenceIds', 'refresh', false);
         renderAll();
       }
     })();
@@ -1279,52 +1288,65 @@ export function createCeoOsApplication(config = {}) {
     const id = String(externalId || '').trim();
     const item = viewModel().intelligenceAll.find((entry) => entry.externalId === id);
     if (!item) throw new Error('intelligence_not_found');
-    runtime.intelligenceQuestion = { externalId: id, question: '' };
-    runtime.intelligenceAnswer = null;
+    const previous = runtime.intelligenceQuestionStates[id] || {};
+    runtime.intelligenceQuestion = { externalId: id, question: previous.question || '' };
+    runtime.intelligenceAnswer = previous.answer || null;
     renderAll();
     document?.defaultView?.requestAnimationFrame?.(() => document?.querySelector?.('[data-intelligence-question]')?.focus?.());
     return { ...runtime.intelligenceQuestion };
   }
 
   async function askIntelligenceQuestion(externalId, question) {
-    if (intelligenceQuestionWork) return intelligenceQuestionWork;
-    intelligenceQuestionWork = (async () => {
-      const id = String(externalId || runtime.intelligenceQuestion?.externalId || '').trim();
+    const id = String(externalId || runtime.intelligenceQuestion?.externalId || '').trim();
+    if (intelligenceQuestionWork.has(id)) return intelligenceQuestionWork.get(id);
+    const work = (async () => {
       const asked = String(question || '').trim();
       if (!asked) throw new Error('intelligence_question_required');
       const model = viewModel();
       const item = model.intelligenceAll.find((entry) => entry.externalId === id);
       if (!item) throw new Error('intelligence_not_found');
-      runtime.intelligenceQuestion = { externalId: id, question: asked };
-      setLocalBusy('intelligence', true);
-      runtime.intelligenceAnswer = { state: 'loading', directAnswer: '正在调用 AI 助手…' };
+      const loading = { state: 'loading', directAnswer: '正在调用 AI 助手…' };
+      runtime.intelligenceQuestionStates = { ...runtime.intelligenceQuestionStates, [id]: { question: asked, answer: loading } };
+      if (runtime.intelligenceQuestion?.externalId === id) {
+        runtime.intelligenceQuestion = { externalId: id, question: asked };
+        runtime.intelligenceAnswer = loading;
+      }
+      setLocalBusyItem('intelligenceIds', id, true);
       renderAll();
       try {
         const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
         if (typeof ask !== 'function') {
-          runtime.intelligenceAnswer = buildIntelligenceAnswer({ item, allItems: model.intelligenceAll, question: asked });
-          runtime.intelligenceAnswer.localFallback = true;
-          return runtime.intelligenceAnswer;
+          const answer = buildIntelligenceAnswer({ item, allItems: model.intelligenceAll, question: asked });
+          answer.localFallback = true;
+          runtime.intelligenceQuestionStates = { ...runtime.intelligenceQuestionStates, [id]: { question: asked, answer } };
+          if (runtime.intelligenceQuestion?.externalId === id) runtime.intelligenceAnswer = answer;
+          return answer;
         }
-        const answer = await ask({
+        const response = await ask({
           mode: 'intelligence', question: asked,
           intelligence: { externalId: item.externalId, title: item.title, sourceName: item.sourceName, factSummary: item.factSummary, impactAnalysis: item.impactAnalysis, suggestedAction: item.suggestedAction },
         });
-        runtime.intelligenceAnswer = { state: 'answered', directAnswer: answer.answer, sources: answer.sources || [], knowledgeState: answer.knowledgeState || 'general_only' };
+        const answer = { state: 'answered', directAnswer: response.answer, sources: response.sources || [], knowledgeState: response.knowledgeState || 'general_only' };
+        runtime.intelligenceQuestionStates = { ...runtime.intelligenceQuestionStates, [id]: { question: asked, answer } };
+        if (runtime.intelligenceQuestion?.externalId === id) runtime.intelligenceAnswer = answer;
+        return answer;
       } catch (error) {
         const code = String(error?.message || 'ai_request_failed');
-        runtime.intelligenceAnswer = {
+        const answer = {
           state: 'error', directAnswer: code === 'ai_not_configured' ? 'AI 服务尚未配置。请在 Supabase 的 Edge Function Secrets 中设置 OPENAI_API_KEY 后重试。' : 'AI 助手本轮未能回答；原始情报卡仍可正常查看。',
           uncertainty: code, nextStep: code === 'ai_not_configured' ? '完成服务端密钥配置后点击“回答”。' : '检查登录与网络后重试。', sources: [],
         };
+        runtime.intelligenceQuestionStates = { ...runtime.intelligenceQuestionStates, [id]: { question: asked, answer } };
+        if (runtime.intelligenceQuestion?.externalId === id) runtime.intelligenceAnswer = answer;
+        return answer;
       } finally {
-        setLocalBusy('intelligence', false);
+        setLocalBusyItem('intelligenceIds', id, false);
         renderAll();
       }
-      return runtime.intelligenceAnswer;
     })();
-    try { return await intelligenceQuestionWork; }
-    finally { intelligenceQuestionWork = null; }
+    intelligenceQuestionWork.set(id, work);
+    try { return await work; }
+    finally { if (intelligenceQuestionWork.get(id) === work) intelligenceQuestionWork.delete(id); }
   }
 
   function closeIntelligenceQuestion() {
@@ -1529,7 +1551,7 @@ export function createCeoOsApplication(config = {}) {
         return runtime.agentAnalysis;
       }
       runtime.agentAnalysis = { agentId: detail.agentId, state: 'loading', question: asked, answer: null };
-      setLocalBusy('agent', true);
+      setLocalBusyItem('agentIds', detail.agentId, true);
       renderAll();
       try {
         const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
@@ -1545,7 +1567,7 @@ export function createCeoOsApplication(config = {}) {
         const code = String(error?.message || 'ai_request_failed');
         runtime.agentAnalysis = { agentId: detail.agentId, state: 'error', question: asked, answer: code === 'ai_not_configured' ? 'AI 服务尚未配置。请先在 Supabase 设置 OPENAI_API_KEY。' : '本轮分析未完成，请检查登录、网络后重试。', error: code };
       } finally {
-        setLocalBusy('agent', false);
+        setLocalBusyItem('agentIds', detail.agentId, false);
         renderAll();
       }
       return runtime.agentAnalysis;
@@ -1555,39 +1577,50 @@ export function createCeoOsApplication(config = {}) {
   }
 
   async function analyzeAgentTask(archiveId) {
-    const archive = (store.load().collections.agent_task_archives || []).find((item) => item.id === archiveId);
-    if (!archive) throw new Error('agent_task_archive_required');
-    if (archive.privacy === 'private' || archive.agentId === 'REL-001') throw new Error('private_agent_local_only');
-    const detail = agentDetails(currentAgentOsIndex() || {}, archive.agentId);
-    if (!detail) throw new Error('agent_not_found');
-    const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
-    if (typeof ask !== 'function') throw new Error('ai_not_configured');
-    runtime.agentOsDetailId = detail.agentId;
-    runtime.agentAnalysis = { agentId: detail.agentId, archiveId, state: 'loading', question: archive.objective, answer: null };
-    renderAll();
-    try {
-      const result = await ask(buildAgentAnalysisRequest(detail, archive.objective, {
-        confirmedContext: confirmedContextForAgent(store.load().collections.agent_contexts || [], detail.agentId),
-      }));
-      const sourceLabels = (result.sources || []).map((item) => typeof item === 'string' ? item : (item.title || item.name || item.path || '')).filter(Boolean);
-      const completed = completeAgentTaskArchive(archive, {
-        factSummary: String(result.answer || '已完成只读分析。'),
-        sourceLabels,
-      }, { now: now() });
-      const candidate = store.saveEntity('agent_contexts', createContextCandidate(completed, { now: now() }));
-      const savedArchive = store.saveEntity('agent_task_archives', { ...completed, contextCandidateId: candidate.id });
-      signalLocalChange();
-      runtime.agentAnalysis = {
-        agentId: detail.agentId, archiveId, state: 'answered', question: archive.objective,
-        answer: result.answer || '已完成只读分析。', sources: result.sources || [], knowledgeState: result.knowledgeState || 'general_only',
-      };
+    const id = String(archiveId || '');
+    if (agentTaskAnalysisWork.has(id)) return agentTaskAnalysisWork.get(id);
+    const work = (async () => {
+      const archive = (store.load().collections.agent_task_archives || []).find((item) => item.id === id);
+      if (!archive) throw new Error('agent_task_archive_required');
+      if (archive.privacy === 'private' || archive.agentId === 'REL-001') throw new Error('private_agent_local_only');
+      const detail = agentDetails(currentAgentOsIndex() || {}, archive.agentId);
+      if (!detail) throw new Error('agent_not_found');
+      const ask = config.askAi || operatingRuntime?.aiAssistant?.ask;
+      if (typeof ask !== 'function') throw new Error('ai_not_configured');
+      runtime.agentOsDetailId = detail.agentId;
+      runtime.agentAnalysis = { agentId: detail.agentId, archiveId: id, state: 'loading', question: archive.objective, answer: null };
+      setLocalBusyItem('agentTaskArchives', id, true);
       renderAll();
-      return { archive: savedArchive, candidate, analysis: runtime.agentAnalysis };
-    } catch (error) {
-      runtime.agentAnalysis = { agentId: detail.agentId, archiveId, state: 'error', question: archive.objective, answer: '本轮分析未完成，请检查登录、网络与 AI 配置后重试。', error: String(error?.message || 'ai_request_failed') };
-      renderAll();
-      throw error;
-    }
+      try {
+        const result = await ask(buildAgentAnalysisRequest(detail, archive.objective, {
+          confirmedContext: confirmedContextForAgent(store.load().collections.agent_contexts || [], detail.agentId),
+        }));
+        const sourceLabels = (result.sources || []).map((item) => typeof item === 'string' ? item : (item.title || item.name || item.path || '')).filter(Boolean);
+        const completed = completeAgentTaskArchive(archive, {
+          factSummary: String(result.answer || '已完成只读分析。'),
+          sourceLabels,
+        }, { now: now() });
+        const candidate = store.saveEntity('agent_contexts', createContextCandidate(completed, { now: now() }));
+        const savedArchive = store.saveEntity('agent_task_archives', { ...completed, contextCandidateId: candidate.id });
+        signalLocalChange();
+        runtime.agentAnalysis = {
+          agentId: detail.agentId, archiveId: id, state: 'answered', question: archive.objective,
+          answer: result.answer || '已完成只读分析。', sources: result.sources || [], knowledgeState: result.knowledgeState || 'general_only',
+        };
+        renderAll();
+        return { archive: savedArchive, candidate, analysis: runtime.agentAnalysis };
+      } catch (error) {
+        runtime.agentAnalysis = { agentId: detail.agentId, archiveId: id, state: 'error', question: archive.objective, answer: '本轮分析未完成，请检查登录、网络与 AI 配置后重试。', error: String(error?.message || 'ai_request_failed') };
+        renderAll();
+        throw error;
+      } finally {
+        setLocalBusyItem('agentTaskArchives', id, false);
+        renderAll();
+      }
+    })();
+    agentTaskAnalysisWork.set(id, work);
+    try { return await work; }
+    finally { if (agentTaskAnalysisWork.get(id) === work) agentTaskAnalysisWork.delete(id); }
   }
 
   function confirmAgentContext(id, summary = '') {
@@ -3456,11 +3489,21 @@ export function createCeoOsApplication(config = {}) {
         button.disabled = busy;
       }
     };
+    const setBusyByData = (selector, dataKey, activeIds) => {
+      for (const button of document?.querySelectorAll?.(selector) || []) {
+        const busy = activeIds.includes(button.dataset?.[dataKey]);
+        button.toggleAttribute?.('aria-busy', busy);
+        button.disabled = busy;
+      }
+    };
     const localBusy = runtime.localBusy || {};
     setBusy('[data-ai-command-form] button[type="submit"]', localBusy.ai === true);
-    setBusy('[data-intelligence-question-form] button[type="submit"], [data-refresh-intelligence]', localBusy.intelligence === true);
-    setBusy('[data-agent-analyze], [data-agent-task-analyze], [data-agent-analysis-form] button[type="submit"]', localBusy.agent === true);
-    setBusy(`[data-refresh-source="${localBusy.refreshSource || '__none__'}"]`, Boolean(localBusy.refreshSource));
+    setBusy('[data-intelligence-question-form] button[type="submit"]', (localBusy.intelligenceIds || []).includes(runtime.intelligenceQuestion?.externalId));
+    setBusy('[data-refresh-intelligence]', (localBusy.intelligenceIds || []).includes('refresh'));
+    setBusyByData('[data-agent-analyze]', 'agentAnalyze', localBusy.agentIds || []);
+    setBusyByData('[data-agent-task-analyze]', 'agentTaskAnalyze', localBusy.agentTaskArchives || []);
+    setBusy('[data-agent-analysis-form] button[type="submit"]', (localBusy.agentIds || []).includes(runtime.agentAnalysis?.agentId));
+    setBusyByData('[data-refresh-source]', 'refreshSource', localBusy.refreshSources || []);
     setBusy('[data-refresh-all]', runtime.autoRefresh?.phase === 'refreshing');
   }
 
