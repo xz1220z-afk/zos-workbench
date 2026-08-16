@@ -5,7 +5,12 @@ import { render as renderDecisions } from './app/views/decision-view.mjs?v=2.10.
 import { render as renderTargets } from './app/views/targets-view.mjs?v=2.10.0';
 import { render as renderHealth } from './app/views/health-view.mjs?v=2.10.0';
 import { render as renderMobile } from './app/views/mobile-view.mjs?v=2.10.0';
-import { createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.10.0';
+import { BROWSER_SUPABASE_CONFIG, createBrowserOperatingRuntime } from './app/browser-runtime.mjs?v=2.10.0';
+import { createSupabaseAuth } from './supabase-auth.mjs?v=2.10.0';
+import { createAuthGate } from './app/auth-gate.mjs?v=2.10.0';
+import { createOwnerSessionClient } from './app/owner-session-client.mjs?v=2.10.0';
+import { createAuthenticatedBootstrap } from './app/authenticated-bootstrap.mjs?v=2.10.0';
+import { renderLogin } from './app/views/login-view.mjs?v=2.10.0';
 import { buildCalendar, calendarLayout, detectCalendarConflicts, redactLifeEventForWork } from './app/calendar-center.mjs?v=2.10.0';
 import { calendarEventCapabilities, calendarRecordSyncState, normalizeCalendarDraft } from './app/calendar-event.mjs?v=2.10.0';
 import { calendarRangeKey, calendarVisibleRange, moveCalendarAnchor } from './app/calendar-range.mjs?v=2.10.0';
@@ -3977,11 +3982,50 @@ export function createCeoOsApplication(config = {}) {
 }
 
 if (typeof document !== 'undefined' && typeof localStorage !== 'undefined') {
-  const application = createCeoOsApplication();
-  application.start().catch(() => {
-    application.runtime.syncStatus = '初始化失败，请刷新页面';
-    application.render();
+  function readOwnerConfig() {
+    try {
+      return { ...BROWSER_SUPABASE_CONFIG, ...(JSON.parse(localStorage.getItem('zos_supabase_config') || '{}') || {}) };
+    } catch {
+      return { ...BROWSER_SUPABASE_CONFIG };
+    }
+  }
+  function ownerDeviceId() {
+    let id = '';
+    try { id = localStorage.getItem('zos_device_id') || ''; } catch { /* Storage may be restricted. */ }
+    if (!id) {
+      id = globalThis.crypto?.randomUUID?.() || `device-${Date.now().toString(36)}`;
+      try { localStorage.setItem('zos_device_id', id); } catch { /* Continue as a tab-only device. */ }
+    }
+    return id;
+  }
+
+  const ownerConfig = readOwnerConfig();
+  const ownerAuth = createSupabaseAuth({ ...ownerConfig, fetchImpl: globalThis.fetch });
+  const ownerSession = createOwnerSessionClient({ ...ownerConfig, fetchImpl: globalThis.fetch });
+  const authGate = createAuthGate({
+    auth: ownerAuth,
+    verifyOwner: (accessToken) => ownerSession.verify(accessToken),
+    storage: localStorage,
+    deviceId: ownerDeviceId(),
+    isOnline: () => globalThis.navigator?.onLine !== false,
   });
-  window.ZOS_CEO_OS = application;
-  installSettingsSyncBridge({ browserWindow: window, application });
+  const authBootstrap = createAuthenticatedBootstrap({
+    gate: authGate,
+    appRoot: document.getElementById('zosAppRoot'),
+    loginRoot: document.getElementById('zosLoginRoot'),
+    renderLogin,
+    createApplication: ({ offlineReadOnly }) => {
+      const application = createCeoOsApplication({ createOperatingRuntime: !offlineReadOnly });
+      window.ZOS_CEO_OS = application;
+      installSettingsSyncBridge({ browserWindow: window, application });
+      return application;
+    },
+  });
+
+  document.addEventListener('click', (event) => {
+    if (event.target?.closest?.('[data-owner-sign-out]')) authBootstrap.signOut();
+    if (event.target?.closest?.('[data-owner-remove-device]')) authBootstrap.removeDevice();
+  });
+  authBootstrap.start().catch(() => authBootstrap.signOut());
+  window.ZOS_AUTH = authBootstrap;
 }

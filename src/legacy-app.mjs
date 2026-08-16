@@ -41,7 +41,7 @@ import { mobilePrimaryPage } from './app/mobile-navigation.mjs?v=2.10.0';
     const headers = { apikey: anonKey, 'Content-Type': 'application/json' };
     function sessionFromResponse(response) { return { accessToken: syncRequired(response.access_token, 'missing access token'), refreshToken: syncRequired(response.refresh_token, 'missing refresh token'), userId: syncRequired(response.user?.id, 'missing user id') }; }
     return {
-      async requestOtp(email, redirectTo) { syncRequired(email, 'email'); const body = { email: email, create_user: true }; if (redirectTo) body.email_redirect_to = redirectTo; await syncRequestJson(fetchImpl, syncEndpoint(url, '/auth/v1/otp'), { method: 'POST', headers, body: JSON.stringify(body) }); },
+      async requestOtp(email, redirectTo) { syncRequired(email, 'email'); const body = { email: email, create_user: false }; if (redirectTo) body.email_redirect_to = redirectTo; await syncRequestJson(fetchImpl, syncEndpoint(url, '/auth/v1/otp'), { method: 'POST', headers, body: JSON.stringify(body) }); },
       async signInWithPassword(email, password) { syncRequired(email, 'email'); syncRequired(password, 'password'); const response = await syncRequestJson(fetchImpl, syncEndpoint(url, '/auth/v1/token?grant_type=password'), { method: 'POST', headers, body: JSON.stringify({ email: email, password: password }) }); return sessionFromResponse(response); },
       async verifyOtp(email, token) {
         syncRequired(email, 'email'); syncRequired(token, 'token');

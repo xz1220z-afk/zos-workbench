@@ -8,7 +8,7 @@ import { createPushClient } from './push-notifications.mjs?v=2.10.0';
 import { createAiAssistantClient } from './ai-assistant-client.mjs?v=2.10.0';
 import { buildLocalSyncInput, LOCAL_ONLY_ENTITY_TYPES } from '../sync-engine.mjs?v=2.10.0';
 
-const DEFAULT_CONFIG = Object.freeze({
+export const BROWSER_SUPABASE_CONFIG = Object.freeze({
   url: 'https://dtwvyramgbwtlyhmkhkd.supabase.co',
   anonKey: 'sb_publishable_a9d0ekZtcMn6oce51UdV0g_j7_BmVjg',
 });
@@ -98,7 +98,7 @@ export async function createBrowserOperatingRuntime({
   eventTarget = globalThis, document = globalThis.document, onSyncStatus = () => {}, onSyncConflict = () => {},
 } = {}) {
   if (!storage || !store || typeof fetchImpl !== 'function') return null;
-  const config = { ...DEFAULT_CONFIG, ...readJson(storage, 'zos_supabase_config') };
+  const config = { ...BROWSER_SUPABASE_CONFIG, ...readJson(storage, 'zos_supabase_config') };
   let session = readJson(storage, 'zos_supabase_session');
   if (!session.userId || !session.accessToken) return null;
 

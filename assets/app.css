@@ -92,6 +92,49 @@
     touch-action: pan-y;
     -webkit-touch-callout: none;
   }
+  .zos-app-root:not([hidden]) { display: contents; }
+  .zos-app-root[hidden], #zosLoginRoot[hidden] { display: none !important; }
+  #zosLoginRoot { position: fixed; inset: 0; z-index: 1000; width: 100%; min-height: 100%; }
+  .zos-login-screen {
+    position: absolute; inset: 0; display: grid; place-items: center; min-width: 0; min-height: 100dvh;
+    padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+    overflow: auto; background: #07101d; color: var(--cc-text); isolation: isolate;
+  }
+  .zos-login-ambient { position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at 22% 12%, rgba(74,144,226,.22), transparent 34%), radial-gradient(circle at 85% 82%, rgba(216,180,106,.16), transparent 28%); }
+  .zos-login-card {
+    width: min(100%, 460px); padding: clamp(24px, 5vw, 42px); border: 1px solid rgba(255,255,255,.13);
+    border-radius: 28px; background: linear-gradient(145deg, rgba(22,35,55,.94), rgba(9,18,31,.97));
+    box-shadow: 0 28px 90px rgba(0,0,0,.42); backdrop-filter: blur(24px) saturate(1.3); -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  }
+  .zos-login-brand { display: flex; align-items: baseline; gap: 12px; margin-bottom: 34px; }
+  .zos-login-brand span { color: var(--cc-accent-gold); font-size: 25px; font-weight: 800; letter-spacing: -.04em; }
+  .zos-login-brand small { color: var(--cc-text-muted); font-size: 12px; }
+  .zos-login-kicker { margin-bottom: 10px; color: var(--cc-accent-gold) !important; font-size: 10px !important; font-weight: 750; letter-spacing: .16em; }
+  .zos-login-heading { margin-bottom: 26px; }
+  .zos-login-heading h1 { margin: 0 0 10px; color: var(--cc-text); font-size: clamp(28px, 6vw, 38px); letter-spacing: -.035em; }
+  .zos-login-heading p, .zos-login-security { color: var(--cc-text-muted); font-size: 13px; line-height: 1.65; }
+  .zos-login-card form, .zos-login-otp-grid { display: grid; gap: 14px; }
+  .zos-login-card label { display: grid; gap: 7px; color: #c9d4e7; font-size: 12px; font-weight: 650; }
+  .zos-login-card input:not([type="checkbox"]) {
+    width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid rgba(255,255,255,.14); border-radius: 13px;
+    outline: none; background: rgba(5,13,24,.76); color: var(--cc-text); font: inherit;
+  }
+  .zos-login-card input:focus-visible, .zos-login-card button:focus-visible, .zos-login-card summary:focus-visible { outline: 3px solid rgba(216,180,106,.42); outline-offset: 2px; }
+  .zos-login-check { display: flex !important; min-height: 44px; align-items: center; grid-template-columns: auto 1fr; cursor: pointer; }
+  .zos-login-check input { width: 20px; height: 20px; accent-color: var(--cc-accent-gold); }
+  .zos-login-card button, .zos-login-card summary { min-height: 44px; touch-action: manipulation; }
+  .zos-login-card button { padding: 0 16px; border: 1px solid rgba(255,255,255,.13); border-radius: 13px; background: rgba(255,255,255,.06); color: var(--cc-text); font: inherit; font-weight: 700; cursor: pointer; }
+  .zos-login-card button:disabled { cursor: wait; opacity: .56; }
+  .zos-login-card .zos-login-primary { min-height: 50px; border-color: rgba(216,180,106,.5); background: linear-gradient(135deg, #e6c77e, #c49b4e); color: #14100a; }
+  .zos-login-otp { margin: 18px 0 0; border-top: 1px solid rgba(255,255,255,.08); }
+  .zos-login-otp summary { display: flex; align-items: center; color: var(--cc-text-muted); cursor: pointer; }
+  .zos-login-otp-grid { padding-top: 10px; }
+  .zos-login-device { width: 100%; margin-top: 14px; }
+  .zos-login-security { margin: 20px 0 0; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.08); font-size: 11px; }
+  @media (max-width: 767px) {
+    .zos-login-screen { place-items: stretch; padding: max(14px, env(safe-area-inset-top)) 12px max(14px, env(safe-area-inset-bottom)); }
+    .zos-login-card { align-self: center; width: 100%; padding: 24px 20px; border-radius: 22px; }
+  }
   /* Extra decorative blobs inside the layout */
   .main::before {
     content: '';

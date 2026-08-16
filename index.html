@@ -23,6 +23,13 @@ if (window.location.protocol === 'file:') {
 </head>
 <body class="zos-command">
 
+<section id="zosLoginRoot" aria-live="polite">
+  <div class="zos-login-screen" data-login-state="checking">
+    <main class="zos-login-card"><div class="zos-login-brand"><span>ZOS</span><small>CEO Operating System</small></div><p>正在核验这台设备…</p></main>
+  </div>
+</section>
+<div id="zosAppRoot" class="zos-app-root" hidden inert aria-hidden="true">
+
 <!-- ===== Sidebar ===== -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
@@ -704,21 +711,14 @@ if (window.location.protocol === 'file:') {
         </div>
       </div>
       <div class="settings-section" id="cloudSyncSettings">
-        <h3>☁️ 私有云同步（Supabase）</h3>
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6;">数据仅在你完成邮箱登录链接认证后同步到自己的 Supabase 项目。请只填写项目 URL 与 <strong>Publishable / anon key</strong>，不要填写数据库密码或 service_role 密钥。</p>
-        <div class="form-group"><label>项目 URL</label><input id="syncUrl" placeholder="https://xxxxx.supabase.co" inputmode="url"></div>
-        <div class="form-group"><label>Publishable / anon key</label><input id="syncAnonKey" placeholder="从 Project Settings → API 复制" autocomplete="off"></div>
-        <div class="form-group"><label>登录邮箱</label><input id="syncEmail" type="email" placeholder="你的邮箱"></div>
-        <div class="form-group"><label>登录密码</label><input id="syncPassword" type="password" placeholder="仅用于本次登录，不会保存" autocomplete="current-password"></div>
+        <h3>☁️ 账号与跨端同步</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6;">当前工作台只有一个统一登录入口。登录成功后才会启动受保护的数据读取与跨端同步；此处不再保存或处理密码。</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
-          <button class="btn btn-sm" onclick="saveSyncConfig()">保存连接配置</button>
-          <button class="btn btn-primary btn-sm" onclick="signInSyncPassword()">密码登录</button>
-          <button class="btn btn-sm" onclick="requestSyncOtp()">发送登录链接</button>
           <button class="btn btn-primary btn-sm" onclick="syncNow()">立即同步</button>
+          <button class="btn btn-sm" type="button" data-owner-sign-out>退出登录</button>
+          <button class="btn btn-sm" type="button" data-owner-remove-device>移除此设备</button>
         </div>
-        <div class="form-group"><label>粘贴登录链接（回跳异常时使用）</label><input id="syncMagicLink" type="url" placeholder="仅在本机解析，不会上传或保存" autocomplete="off"></div>
-        <button class="btn btn-sm" onclick="consumePastedSyncMagicLink()">完成本机登录</button>
-        <div class="setting-desc" id="syncStatus">未配置 · 当前数据仍仅保存在本机</div>
+        <div class="setting-desc" id="syncStatus">正在核验统一登录状态…</div>
       </div>
       <div class="settings-section">
         <h3>🧪 跨端实测清单</h3>
@@ -883,6 +883,7 @@ if (window.location.protocol === 'file:') {
 <!-- ===== Modals ===== -->
 <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
   <div class="modal" id="modalBody"></div>
+</div>
 </div>
 
 <script>

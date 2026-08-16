@@ -153,3 +153,20 @@ test('OTP flow stays explicit and verifies through the same owner boundary', asy
   assert.equal((await gate.verifyOtp('owner@example.com', '123456', true)).status, 'authorized');
   assert.deepEqual(calls, [['request', 'owner@example.com'], ['verify', 'owner@example.com', '123456']]);
 });
+
+test('magic-link compatibility still passes through owner verification before authorization', async () => {
+  const calls = [];
+  const gate = createAuthGate({
+    auth: {
+      consumeMagicLink: async (fragment) => { calls.push(fragment); return session(); },
+    },
+    verifyOwner: async (token) => { calls.push(token); return { state: 'authorized' }; },
+    storage: createMemoryStorage(),
+    deviceId: 'device-1',
+  });
+
+  const state = await gate.consumeMagicLink('#access_token=temporary', 'owner@example.com', true);
+
+  assert.equal(state.status, 'authorized');
+  assert.deepEqual(calls, ['#access_token=temporary', 'access-1']);
+});

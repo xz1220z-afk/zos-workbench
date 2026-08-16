@@ -182,6 +182,17 @@ export function createAuthGate({
       }
     },
 
+    async consumeMagicLink(fragment, email = '', rememberEmail = false) {
+      publish('authenticating');
+      try {
+        const session = await auth.consumeMagicLink(fragment);
+        return await authorize(session, { email, rememberEmail });
+      } catch (error) {
+        clearVerifiedSession();
+        return publish('blocked', { reason: errorCode(error) });
+      }
+    },
+
     async signOut() {
       clearVerifiedSession();
       await onSignOut();
