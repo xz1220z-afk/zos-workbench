@@ -60,6 +60,7 @@ const ASSETS_TO_CACHE = [
   'src/app/intelligence-center.mjs',
   'src/app/intelligence-explainer.mjs',
   'src/app/navigation-preferences.mjs',
+  'src/app/mobile-navigation.mjs',
   'src/app/calendar-center.mjs',
   'src/app/calendar-range.mjs',
   'src/app/calendar-event.mjs',

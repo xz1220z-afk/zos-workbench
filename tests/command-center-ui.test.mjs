@@ -113,9 +113,15 @@ test('mobile navigation has five primary destinations and routes secondary pages
   assert.match(bottomNav, /data-page="agent-workbench"/,
     'Agent must remain a primary mobile destination');
   const moreMenu = indexHtml.match(/<section class="mobile-more-menu" id="mobileMoreMenu"[\s\S]*?<\/section>/)?.[0] || '';
-  for (const pageId of ['enterprise', 'targets', 'health', 'zos-brain', 'risk', 'settings']) {
+  for (const pageId of [
+    'local-life', 'spark-media', 'lingli', 'enterprise', 'targets',
+    'intelligence', 'content-growth', 'zos-brain', 'search',
+    'life', 'relations', 'reviews', 'inbox', 'tasks', 'risk', 'privacy', 'settings',
+    'dashboard', 'decisions', 'health', 'today', 'focus',
+  ]) {
     assert.match(moreMenu, new RegExp(`data-page="${pageId}"`), `${pageId} must remain reachable from More`);
   }
+  assert.doesNotMatch(moreMenu, /data-page="agent-workbench"/);
   assert.match(indexHtml, /\.bottom-nav-item:focus-visible[\s\S]{0,180}outline:/,
     'mobile navigation must expose a visible keyboard focus indicator');
   assert.match(indexHtml, /\.bottom-nav-item[\s\S]{0,180}min-height:\s*44px/,

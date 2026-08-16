@@ -32,9 +32,15 @@ test('mobile navigation uses the approved five destinations and retains secondar
   assert.match(nav, /data-mobile-ai-command/);
   assert.match(nav, /data-page="agent-workbench"/);
   const more = html.match(/<section class="mobile-more-menu"[\s\S]*?<\/section>/)?.[0] || '';
-  for (const page of ['dashboard', 'decisions', 'inbox', 'tasks', 'local-life', 'spark-media', 'intelligence', 'zos-brain']) {
+  for (const page of [
+    'local-life', 'spark-media', 'lingli', 'enterprise', 'targets',
+    'intelligence', 'content-growth', 'zos-brain', 'search',
+    'life', 'relations', 'reviews', 'inbox', 'tasks', 'risk', 'privacy', 'settings',
+    'dashboard', 'decisions', 'health', 'today', 'focus',
+  ]) {
     assert.match(more, new RegExp(`data-page="${page}"`), `${page} must remain available from More`);
   }
+  assert.doesNotMatch(more, /data-page="agent-workbench"/);
 });
 
 test('rich task editor covers planning, business linkage and focus metadata on all screen sizes', () => {
