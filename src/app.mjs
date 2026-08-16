@@ -198,9 +198,12 @@ export function createCeoOsApplication(config = {}) {
   let decisionReturnFocus = null;
   let wanjiaModelCache = null;
   let aiVoiceInput = null;
+  let aiVoiceInputGeneration = 0;
+  let aiVoiceDraftSession = null;
   let mobileAiReturnFocus = null;
   let aiVoiceHoldTimer = null;
   let aiVoiceHoldActive = false;
+  let aiVoiceHoldPointer = null;
   let aiVoiceIgnoreClick = false;
   let aiCommandWork = null;
   const intelligenceQuestionWork = new Map();
@@ -463,19 +466,31 @@ export function createCeoOsApplication(config = {}) {
 
   function ensureAiVoiceInput() {
     if (aiVoiceInput) return aiVoiceInput;
+    const generation = ++aiVoiceInputGeneration;
     aiVoiceInput = createVoiceInput({
       Recognition: SpeechRecognition,
       globalObject: document?.defaultView || globalThis,
       onState: (state) => {
+        if (generation !== aiVoiceInputGeneration) return;
+        const session = aiVoiceDraftSession?.generation === generation ? aiVoiceDraftSession : null;
+        const discard = session && ['permission_denied', 'failed'].includes(state);
         runtime.aiCommand = {
           ...runtime.aiCommand,
+          ...(discard ? { input: session.originalInput } : {}),
           state,
           voice: { supported: state !== 'unsupported', state },
           error: state === 'permission_denied' ? '未获麦克风权限，请继续使用键盘。' : runtime.aiCommand.error,
         };
+        if (discard || (session && state === 'idle')) aiVoiceDraftSession = null;
         renderAll();
       },
       onTranscript: (transcript) => {
+        if (generation !== aiVoiceInputGeneration) return;
+        const session = aiVoiceDraftSession?.generation === generation ? aiVoiceDraftSession : null;
+        if (session) {
+          session.transcript = transcript;
+          if (session.deferCommit && session.outcome === 'recording') return;
+        }
         runtime.aiCommand = { ...runtime.aiCommand, input: transcript };
         renderAll();
       },
@@ -489,18 +504,51 @@ export function createCeoOsApplication(config = {}) {
     return aiVoiceInput;
   }
 
-  function startAiVoice() {
+  function startAiVoice(options = {}) {
     const voice = ensureAiVoiceInput();
     if (!voice.supported) {
       runtime.aiCommand = { ...runtime.aiCommand, state: 'unsupported', voice: { supported: false, state: 'unsupported' } };
       renderAll();
       return false;
     }
-    return voice.start();
+    if (!aiVoiceDraftSession || aiVoiceDraftSession.generation !== aiVoiceInputGeneration) {
+      aiVoiceDraftSession = {
+        generation: aiVoiceInputGeneration,
+        originalInput: runtime.aiCommand.input,
+        transcript: '',
+        deferCommit: options.deferCommit === true,
+        outcome: 'recording',
+      };
+    }
+    const started = voice.start();
+    if (!started && aiVoiceDraftSession?.generation === aiVoiceInputGeneration) aiVoiceDraftSession = null;
+    return started;
   }
 
   function stopAiVoice() {
+    const session = aiVoiceDraftSession?.generation === aiVoiceInputGeneration ? aiVoiceDraftSession : null;
+    if (session) {
+      session.outcome = 'commit';
+      if (session.transcript) runtime.aiCommand = { ...runtime.aiCommand, input: session.transcript };
+    }
     return ensureAiVoiceInput().stop();
+  }
+
+  function abortAiVoice(options = {}) {
+    const session = aiVoiceDraftSession;
+    aiVoiceInputGeneration += 1;
+    aiVoiceInput?.destroy?.();
+    aiVoiceInput = null;
+    aiVoiceDraftSession = null;
+    const supported = typeof SpeechRecognition === 'function';
+    runtime.aiCommand = {
+      ...runtime.aiCommand,
+      ...(session ? { input: session.originalInput } : {}),
+      state: supported ? 'idle' : 'unsupported',
+      voice: { supported, state: supported ? 'idle' : 'unsupported' },
+    };
+    if (options.render !== false) renderAll();
+    return Boolean(session);
   }
 
   function toggleAiVoice() {
@@ -521,11 +569,33 @@ export function createCeoOsApplication(config = {}) {
   }
 
   function closeMobileAiSheet() {
-    if (runtime.aiCommand?.voice?.state === 'listening') stopAiVoice();
+    cancelAiVoiceHold({ abort: true, render: false });
+    if (aiVoiceInput) abortAiVoice({ render: false });
     runtime.mobileAiSheetOpen = false;
     renderAll();
     mobileAiReturnFocus?.focus?.({ preventScroll: true });
     mobileAiReturnFocus = null;
+  }
+
+  function voiceHoldMatches(event) {
+    return Boolean(aiVoiceHoldPointer
+      && (event?.pointerId == null || event.pointerId === aiVoiceHoldPointer.pointerId));
+  }
+
+  function cancelAiVoiceHold({ abort = false, render = true } = {}) {
+    const clock = document?.defaultView || globalThis;
+    if (aiVoiceHoldTimer) clock.clearTimeout?.(aiVoiceHoldTimer);
+    aiVoiceHoldTimer = null;
+    const wasActive = aiVoiceHoldActive;
+    aiVoiceHoldActive = false;
+    aiVoiceHoldPointer = null;
+    if (wasActive) {
+      if (abort) abortAiVoice({ render });
+      else stopAiVoice();
+      aiVoiceIgnoreClick = true;
+      clock.setTimeout?.(() => { aiVoiceIgnoreClick = false; }, 0);
+    }
+    return wasActive;
   }
 
   function viewModel() {
@@ -3323,30 +3393,28 @@ export function createCeoOsApplication(config = {}) {
       if (sheet && !sheet.contains?.(event.target)) focusMobileAiSheetInput();
     });
     document.addEventListener('pointerdown', (event) => {
-      if (!event.target?.closest?.('[data-ai-voice-toggle]')) return;
+      const voiceButton = event.target?.closest?.('[data-ai-voice-toggle]');
+      if (!voiceButton) return;
+      if (event.button != null && event.button !== 0) return;
       const clock = document?.defaultView || globalThis;
-      if (aiVoiceHoldTimer) clock.clearTimeout?.(aiVoiceHoldTimer);
-      aiVoiceHoldActive = false;
+      cancelAiVoiceHold({ abort: true });
+      aiVoiceHoldPointer = { pointerId: event.pointerId, target: voiceButton };
       aiVoiceHoldTimer = clock.setTimeout?.(() => {
+        if (!aiVoiceHoldPointer) return;
         aiVoiceHoldTimer = null;
-        aiVoiceHoldActive = true;
-        startAiVoice();
+        aiVoiceHoldActive = startAiVoice({ deferCommit: true }) === true;
       }, 240);
     });
     const releaseAiVoice = (event) => {
-      if (!event.target?.closest?.('[data-ai-voice-toggle]')) return;
-      const clock = document?.defaultView || globalThis;
-      if (aiVoiceHoldTimer) clock.clearTimeout?.(aiVoiceHoldTimer);
-      aiVoiceHoldTimer = null;
-      if (aiVoiceHoldActive) {
-        stopAiVoice();
-        aiVoiceHoldActive = false;
-        aiVoiceIgnoreClick = true;
-        clock.setTimeout?.(() => { aiVoiceIgnoreClick = false; }, 0);
-      }
+      if (!voiceHoldMatches(event)) return;
+      cancelAiVoiceHold({ abort: event.type === 'pointercancel' });
     };
     document.addEventListener('pointerup', releaseAiVoice);
     document.addEventListener('pointercancel', releaseAiVoice);
+    document.addEventListener('pointerleave', (event) => {
+      if (!voiceHoldMatches(event) || event.target !== aiVoiceHoldPointer?.target || aiVoiceHoldActive) return;
+      cancelAiVoiceHold({ abort: true });
+    }, true);
     document.addEventListener('input', (event) => {
       if (event.target?.matches?.('[data-decision-search]')) setDecisionFilter('search', event.target.value);
       if (event.target?.matches?.('[data-intelligence-search]')) setIntelligenceFilter('search', event.target.value);
@@ -3822,8 +3890,11 @@ export function createCeoOsApplication(config = {}) {
     if (aiVoiceHoldTimer) clock.clearTimeout?.(aiVoiceHoldTimer);
     aiVoiceHoldTimer = null;
     aiVoiceHoldActive = false;
+    aiVoiceHoldPointer = null;
+    aiVoiceInputGeneration += 1;
     aiVoiceInput?.destroy?.();
     aiVoiceInput = null;
+    aiVoiceDraftSession = null;
     started = false;
   }
 

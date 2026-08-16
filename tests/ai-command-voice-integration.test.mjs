@@ -69,7 +69,7 @@ test('mobile sheet uses the same AI command state and preserves text when voice 
   assert.equal(app.viewModel().aiCommand.input, '生成今天的 CEO 行动建议');
 });
 
-test('closing the mobile sheet stops an active voice recognition session', () => {
+test('closing the mobile sheet aborts an active voice recognition session', () => {
   FakeRecognition.instance = null;
   const app = createCeoOsApplication({
     document: { getElementById: () => null, addEventListener() {}, defaultView: null },
@@ -78,7 +78,8 @@ test('closing the mobile sheet stops an active voice recognition session', () =>
   app.openMobileAiSheet();
   app.startAiVoice();
   app.closeMobileAiSheet();
-  assert.equal(FakeRecognition.instance.stopped, true);
+  assert.equal(FakeRecognition.instance.aborted, true);
+  assert.equal(FakeRecognition.instance.stopped, undefined);
   assert.equal(app.viewModel().mobileAiSheetOpen, false);
   assert.notEqual(app.viewModel().aiCommand.voice.state, 'listening');
 });

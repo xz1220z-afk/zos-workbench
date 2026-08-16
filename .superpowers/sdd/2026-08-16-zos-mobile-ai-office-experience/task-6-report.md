@@ -122,3 +122,32 @@ node --test tests/*.test.mjs
 结果：686/686 通过。
 
 静态检查：`git diff --check` 与 `node --check src/app.mjs` 通过。
+
+## 最终审查 Important 2（2026-08-16）
+
+### 修复范围
+
+- 按住说话现在按 `pointerId` 跟踪完整生命周期；即使手指移出按钮，匹配的 `pointerup` 仍会结束当前收音，其他指针不会误停。
+- 按住期间的转写先存在临时 session；`pointerup` 使用 stop/commit，`pointercancel` 和关闭移动 AI sheet 使用 abort/discard，取消不会覆盖原有键盘草稿。
+- 指针在 240ms 阈值前移出、取消或关闭 sheet 会清除延迟定时器，不会在明确手势结束后开始收音。
+- abort 后通过 voice generation 隔离旧 recognition 回调，迟到的转写结果不会再改写输入。保留点击开始和显式 API 手势，没有持续监听。
+
+### TDD 记录
+
+RED：新增 `tests/mobile-voice-pointer-lifecycle.test.mjs` 后执行：
+
+```sh
+node --test tests/mobile-voice-pointer-lifecycle.test.mjs
+```
+
+结果：0/4 通过。四项分别因为语音提前覆盖键盘草稿、移出后仍延迟启动、`pointercancel` 未 abort、关闭 sheet 未清除 pending timer 而失败。
+
+GREEN：实现最小 pointer/session 修复后，同一命令 4/4 通过。
+
+### 定向验证
+
+```sh
+node --test tests/mobile-voice-pointer-lifecycle.test.mjs tests/ai-command-voice-integration.test.mjs tests/voice-input.test.mjs tests/mobile-command-sheet.test.mjs tests/mobile-command-sheet-accessibility.test.mjs tests/mobile-high-frequency-flows.test.mjs
+```
+
+结果：23/23 通过。
