@@ -409,6 +409,16 @@ test('production application drives the authenticated operating loop on startup'
   assert.equal(app.viewModel().brief.id, 'brief-1');
 });
 
+test('dashboard desktop and mobile roots receive the same dynamic homepage presence', () => {
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {} },
+    storage: { getItem: () => 'device-1', setItem() {} },
+    store: fakeStore(),
+  });
+
+  assert.equal(app.viewModel().homePresence.title, '今天的节奏已排好');
+});
+
 test('application exposes the source-aware three-company operating contract', async () => {
   const operatingLoop = {
     async refresh() {}, confirmTargets() {}, ensureDailyBrief() { return null; },

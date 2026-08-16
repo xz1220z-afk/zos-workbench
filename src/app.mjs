@@ -47,6 +47,7 @@ import { buildCompanyOperatingContract } from './app/company-operating-contract.
 import { buildCompanyCockpit } from './app/company-cockpit.mjs?v=2.9.0';
 import { render as renderCompanyCockpit } from './app/views/company-cockpit-view.mjs?v=2.9.0';
 import { buildTodayTop3 } from './app/priority-engine.mjs?v=2.9.0';
+import { buildWorkHomepagePresence } from './app/homepage-presence.mjs?v=2.9.0';
 import { buildDurableReminderSchedule, buildReminderQueue, notifyGrantedReminders } from './app/reminder-center.mjs?v=2.9.0';
 import { buildDailyDigestItems, buildEveningDigest, buildMorningDigest } from './app/daily-digest.mjs?v=2.9.0';
 import { enablePushNotifications, pushCapabilityState } from './app/push-notifications.mjs?v=2.9.0';
@@ -583,6 +584,10 @@ export function createCeoOsApplication(config = {}) {
       filterIntelligence(intelligence, { ...intelligenceFilters, now: now() }),
       intelligenceFilters.sortBy,
     ).slice(0, 100);
+    const mustRead = todayMustRead(intelligence, { now: now() });
+    const homePresence = buildWorkHomepagePresence({
+      decisions, importantDates, todayTop3, businessExceptions: runtime.businessExceptions || [], calendarConflicts, mustRead,
+    });
     const companyOperating = buildCompanyOperatingContract(sources);
     const companyCockpits = Object.fromEntries(['wanjia', 'huahuo', 'lingli'].map((company) => [
       company,
@@ -617,6 +622,7 @@ export function createCeoOsApplication(config = {}) {
       localAgentTasks: state.collections.local_agent_tasks || [],
       inbox: state.collections.inbox || [],
       todayTop3,
+      homePresence,
       reminderQueue: buildReminderQueue(todayTop3, { now: now() }).map((item) => ({
         ...item,
         actionId: item.sourceType === 'task' ? item.sourceId : item.actionId,
@@ -634,7 +640,7 @@ export function createCeoOsApplication(config = {}) {
       intelligenceFilters,
       knowledgeContext: runtime.knowledgeContext,
       weather: runtime.weather,
-      mustRead: todayMustRead(intelligence, { now: now() }),
+      mustRead,
       calendar,
       calendarFiltered,
       calendarSyncStates,

@@ -82,7 +82,7 @@ export function render(container, viewModel = {}) {
   const activeDecisions = partitionDecisions(viewModel.decisions).ceo;
   const companies = viewModel.companyOperating || {};
   const workDates = viewModel.importantDates?.work || [];
-  const presence = buildWorkHomepagePresence(viewModel);
+  const presence = viewModel.homePresence || buildWorkHomepagePresence(viewModel);
   container.innerHTML = `<div class="v14-dashboard">
     ${syncRail(viewModel.autoRefresh)}
     ${renderAiCommandHtml(viewModel.aiCommand)}
