@@ -19,6 +19,24 @@ test('mobile interaction uses targeted motion, safe-area spacing and current-reg
   assert.doesNotMatch(app, /data-mobile-ai-command[\s\S]{0,300}renderAllPages/);
 });
 
+test('current-page rendering uses a page-scoped model instead of eagerly building the whole workspace', () => {
+  assert.match(app, /function pageViewModel\(pageId\)/);
+  assert.match(app, /const baseModel = pageViewModel\(activePage\)/);
+  assert.doesNotMatch(app, /const baseModel = activePage === 'local-life' \? wanjiaViewModel\(\) : viewModel\(\)/);
+});
+
+test('page-scoped models leave unrelated expensive domains unbuilt', () => {
+  const application = createCeoOsApplication({
+    document: interactionDocument(busyButton()),
+    storage: { getItem() { return null; }, setItem() {} },
+  });
+  const decisions = application.pageViewModel('decisions');
+  assert.equal(decisions.wanjiaOps, null);
+  assert.equal(decisions.agentOsIndex, null);
+  assert.deepEqual(decisions.calendar, []);
+  assert.deepEqual(decisions.searchResults, []);
+});
+
 test('navigation keeps each page scroll in runtime memory and restores it after the active page changes', () => {
   assert.match(legacy, /const pageScroll = new Map\(\)/);
   assert.match(legacy, /function rememberPageScroll\(pageId\)/);

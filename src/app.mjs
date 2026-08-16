@@ -598,35 +598,47 @@ export function createCeoOsApplication(config = {}) {
     return wasActive;
   }
 
-  function viewModel() {
+  function viewModel(options = {}) {
+    const pageId = options.pageId || null;
+    const fullWorkspace = !pageId;
+    const needsPage = (...pageIds) => fullWorkspace || pageIds.includes(pageId);
+    const needsCalendar = needsPage('dashboard', 'calendar', 'health', 'today');
+    const needsLife = needsPage('dashboard', 'life');
+    const needsAgent = needsPage('dashboard', 'agent-workbench');
+    const needsContent = needsPage('content-growth', 'zos-brain', 'reviews', 'search');
+    const needsBusinessRecords = needsPage('relations', 'search') || needsCalendar;
+    const needsReliability = needsPage('health', 'calendar');
+    const needsCompanyOperating = needsPage('dashboard', 'lingli', 'spark-media');
     const state = store.load();
     const decisions = runtime.loopConnected ? runtime.decisions : (state.collections.decisions || []);
     const brief = runtime.brief || runtime.briefs.at(-1) || null;
     const intelligence = runtime.intelligence.length ? runtime.intelligence : (state.collections.intelligence || []);
     const life = state.collections.life || [];
     const sources = runtime.sources || {};
-    const businessRecords = ['wanjia', 'huahuo', 'lingli'].flatMap((source) => {
+    const businessRecords = needsBusinessRecords ? ['wanjia', 'huahuo', 'lingli'].flatMap((source) => {
       const payload = sources[source]?.records;
       const rows = Array.isArray(payload) ? payload : payload?.records || [];
       return rows.map((item) => ({ ...item, source, company: source, title: item.merchantName || item.projectName || item.name }));
-    });
+    }) : [];
     const projects = state.collections.projects || [];
     const tasks = state.collections.tasks || [];
     const focusSessions = state.collections.focus_sessions || [];
     const countdowns = state.collections.countdowns || [];
-    const allContentItems = (state.collections.content_items || []).map(normalizeContentItem);
+    const allContentItems = needsContent ? (state.collections.content_items || []).map(normalizeContentItem) : [];
     const contentItems = allContentItems.filter((item) => {
       const companyMatches = runtime.contentCompany === 'all' || item.company === runtime.contentCompany;
       const ownerMatches = runtime.contentOwner === 'all' || item.owner === 'me';
       return companyMatches && ownerMatches;
     });
-    const readingItems = (state.collections.reading_items || []).map(normalizeReadingItem);
-    const knowledgeCards = state.collections.knowledge_cards || [];
+    const readingItems = needsContent ? (state.collections.reading_items || []).map(normalizeReadingItem) : [];
+    const knowledgeCards = needsContent ? (state.collections.knowledge_cards || []) : [];
     const agentRuns = state.collections.agent_runs || [];
     const agentTaskArchives = state.collections.agent_task_archives || [];
     const agentContextCandidates = state.collections.agent_contexts || [];
-    const agentOsRecord = [...(state.collections.agent_os_indexes || [])]
-      .sort((left, right) => String(right.importedAt || right.updatedAt || '').localeCompare(String(left.importedAt || left.updatedAt || '')))[0] || null;
+    const agentOsRecord = needsAgent
+      ? ([...(state.collections.agent_os_indexes || [])]
+        .sort((left, right) => String(right.importedAt || right.updatedAt || '').localeCompare(String(left.importedAt || left.updatedAt || '')))[0] || null)
+      : null;
     const agentOsIndex = agentOsRecord?.index || null;
     const agentOsOverview = agentOsIndex ? buildAgentOsOverview(agentOsIndex) : null;
     const agentOsDetails = agentOsIndex && runtime.agentOsDetailId
@@ -636,12 +648,12 @@ export function createCeoOsApplication(config = {}) {
       runtimeAvailability: agentRuntimeAvailability(agent, { aiReady: typeof (config.askAi || operatingRuntime?.aiAssistant?.ask) === 'function' }),
       confirmedContextCount: confirmedContextForAgent(agentContextCandidates, agent.agentId).length,
     })) : [];
-    const socialInsights = rankSocialOpportunities(state.collections.social_insights || []);
-    const contentAssets = state.collections.content_assets || [];
-    const brainstorms = state.collections.brainstorms || [];
-    const contentExperiments = state.collections.content_experiments || [];
-    const compoundCandidates = state.collections.compound_candidates || [];
-    const calendar = buildCalendar({
+    const socialInsights = needsPage('intelligence', 'search') ? rankSocialOpportunities(state.collections.social_insights || []) : [];
+    const contentAssets = needsContent ? (state.collections.content_assets || []) : [];
+    const brainstorms = needsContent ? (state.collections.brainstorms || []) : [];
+    const contentExperiments = needsPage('content-growth', 'reviews') ? (state.collections.content_experiments || []) : [];
+    const compoundCandidates = needsPage('content-growth', 'reviews') ? (state.collections.compound_candidates || []) : [];
+    const calendar = needsCalendar ? buildCalendar({
       calendar: [...(state.collections.calendar || []), ...(runtime.externalCalendar || [])],
       tasks,
       projects: [...projects, ...businessRecords].map((item) => ({ ...item, dueAt: item.dueAt || item.dueDate || item.shootingDate })),
@@ -650,60 +662,60 @@ export function createCeoOsApplication(config = {}) {
       countdowns,
       focusSessions,
     }, { showFocus: runtime.showFocus })
-      .map((item) => item.company === 'life' ? redactLifeEventForWork(item) : item);
-    const calendarConflicts = detectCalendarConflicts(calendar);
-    const baseRevisions = store.loadBaseRevisions?.() || {};
-    const syncConflicts = operatingRuntime?.syncController?.getConflicts?.() || runtime.conflicts || [];
-    const syncControllerStatus = operatingRuntime?.syncController?.getStatus?.() || {};
-    const online = config.isOnline ? config.isOnline() : document?.defaultView?.navigator?.onLine !== false;
-    const restorableItems = listRestorableItems(state.tombstones || [], { now: now(), retentionDays: 30 });
-    const reliability = buildReliabilityOverview({
+      .map((item) => item.company === 'life' ? redactLifeEventForWork(item) : item) : [];
+    const calendarConflicts = needsCalendar ? detectCalendarConflicts(calendar) : [];
+    const baseRevisions = needsReliability ? (store.loadBaseRevisions?.() || {}) : {};
+    const syncConflicts = needsReliability ? (operatingRuntime?.syncController?.getConflicts?.() || runtime.conflicts || []) : [];
+    const syncControllerStatus = needsReliability ? (operatingRuntime?.syncController?.getStatus?.() || {}) : {};
+    const online = needsReliability ? (config.isOnline ? config.isOnline() : document?.defaultView?.navigator?.onLine !== false) : true;
+    const restorableItems = needsPage('health') ? listRestorableItems(state.tombstones || [], { now: now(), retentionDays: 30 }) : [];
+    const reliability = needsReliability ? buildReliabilityOverview({
       online, deviceId: state.deviceId || deviceId,
       syncStatus: { ...syncControllerStatus, lastSuccessAt: syncControllerStatus.lastSuccessAt || syncMeta.lastSuccessAt || null },
       conflicts: syncConflicts, tombstones: state.tombstones, auditLog: state.auditLog, now: now(),
       snapshotCount: runtime.snapshotCount, protectionState: runtime.protectionState,
-    });
-    const calendarSyncStates = Object.fromEntries(calendar.map((record) => [
+    }) : null;
+    const calendarSyncStates = needsPage('calendar') ? Object.fromEntries(calendar.map((record) => [
       record.id,
       calendarRecordSyncState(record, { baseRevisions, conflicts: syncConflicts }),
-    ]));
-    const calendarFiltered = calendar.filter((record) => {
+    ])) : {};
+    const calendarFiltered = needsPage('calendar') ? calendar.filter((record) => {
       const filter = runtime.calendarFilter;
       if (filter === 'all') return true;
       if (filter === 'task') return record.source === 'local_task';
       if (filter === 'schedule') return record.source !== 'local_task';
       return record.company === filter;
-    });
-    const importantDates = buildImportantDates(countdowns, { now: now() });
+    }) : calendar;
+    const importantDates = needsLife ? buildImportantDates(countdowns, { now: now() }) : { work: [], life: [] };
     const digestInput = { tasks, calendar, conflicts: calendarConflicts, importantDates };
-    const todayTop3 = buildTodayTop3({
+    const todayTop3 = needsPage('dashboard', 'health') ? buildTodayTop3({
       tasks,
       decisions,
       risks: runtime.businessExceptions || [],
       calendarConflicts,
       intelligence,
-    }, { date: now().slice(0, 10) });
+    }, { date: now().slice(0, 10) }) : [];
     const intelligenceFilters = { ...runtime.intelligenceFilters, company: runtime.intelligenceFilters?.company || runtime.intelligenceCompany || 'all' };
-    const filteredIntelligence = sortIntelligence(
+    const filteredIntelligence = needsPage('intelligence') ? sortIntelligence(
       filterIntelligence(intelligence, { ...intelligenceFilters, now: now() }),
       intelligenceFilters.sortBy,
-    ).slice(0, 100);
-    const mustRead = todayMustRead(intelligence, { now: now() });
-    const homePresence = buildWorkHomepagePresence({
+    ).slice(0, 100) : [];
+    const mustRead = needsPage('dashboard', 'intelligence') ? todayMustRead(intelligence, { now: now() }) : [];
+    const homePresence = needsPage('dashboard') ? buildWorkHomepagePresence({
       decisions, importantDates, todayTop3, businessExceptions: runtime.businessExceptions || [], calendarConflicts, mustRead,
-    });
-    const companyOperating = buildCompanyOperatingContract(sources);
-    const companyCockpits = Object.fromEntries(['wanjia', 'huahuo', 'lingli'].map((company) => [
+    }) : null;
+    const companyOperating = needsCompanyOperating ? buildCompanyOperatingContract(sources) : {};
+    const companyCockpits = needsPage('lingli', 'spark-media') ? Object.fromEntries(['wanjia', 'huahuo', 'lingli'].map((company) => [
       company,
       buildCompanyCockpit(company, { operating: companyOperating[company], decisions, intelligence }),
-    ]));
-    const wanjiaOps = buildWanjiaOpsModel(sources.wanjia || null, {
+    ])) : {};
+    const wanjiaOps = fullWorkspace ? buildWanjiaOpsModel(sources.wanjia || null, {
       today: now().slice(0, 10), tasks, filters: runtime.wanjiaFilters,
       historyRange: runtime.wanjiaHistoryRange, historyFilters: runtime.wanjiaHistoryFilters, activePane: runtime.wanjiaOpsPane,
-    });
-    wanjiaOps.history.queryFeedback = runtime.wanjiaHistoryFeedback;
-    const activeFocus = [...focusSessions].reverse().find((item) => ['planned', 'running', 'paused'].includes(item.state)) || null;
-    const searchIndex = buildSearchIndex({
+    }) : null;
+    if (wanjiaOps) wanjiaOps.history.queryFeedback = runtime.wanjiaHistoryFeedback;
+    const activeFocus = needsPage('focus') ? [...focusSessions].reverse().find((item) => ['planned', 'running', 'paused'].includes(item.state)) || null : null;
+    const searchIndex = needsPage('search') ? buildSearchIndex({
       business: businessRecords,
       knowledge: runtime.brain?.notes || [],
       intelligence,
@@ -716,7 +728,7 @@ export function createCeoOsApplication(config = {}) {
       agentRuns,
       assets: contentAssets,
       brainstorms,
-    });
+    }) : [];
     return {
       ...runtime,
       decisions,
@@ -727,17 +739,17 @@ export function createCeoOsApplication(config = {}) {
       inbox: state.collections.inbox || [],
       todayTop3,
       homePresence,
-      reminderQueue: buildReminderQueue(todayTop3, { now: now() }).map((item) => ({
+      reminderQueue: needsPage('dashboard', 'health') ? buildReminderQueue(todayTop3, { now: now() }).map((item) => ({
         ...item,
         actionId: item.sourceType === 'task' ? item.sourceId : item.actionId,
         snoozable: item.sourceType === 'task' && tasks.some((task) => task.id === item.sourceId),
-      })),
+      })) : [],
       brief,
       sources,
       companyOperating,
       companyCockpits,
       wanjiaOps,
-      intelligence: filteredIntelligence,
+      intelligence: needsPage('intelligence') ? filteredIntelligence : intelligence,
       intelligenceAll: intelligence,
       intelligenceTotal: intelligence.length,
       intelligenceCompany: intelligenceFilters.company,
@@ -750,7 +762,7 @@ export function createCeoOsApplication(config = {}) {
       calendarSyncStates,
       calendarView: runtime.calendarView,
       calendarAnchor: runtime.calendarAnchor,
-      calendarLayout: calendarLayout(calendarFiltered, { view: runtime.calendarView, anchor: runtime.calendarAnchor }),
+      calendarLayout: needsPage('calendar') ? calendarLayout(calendarFiltered, { view: runtime.calendarView, anchor: runtime.calendarAnchor }) : null,
       calendarTrash: state.tombstones || [],
       syncConflicts,
       reliability,
@@ -758,50 +770,50 @@ export function createCeoOsApplication(config = {}) {
       auditLog: state.auditLog || [],
       showFocus: runtime.showFocus,
       calendarConflicts,
-      relations: buildRelations(businessRecords),
+      relations: needsPage('relations') ? buildRelations(businessRecords) : [],
       life,
-      lifeSummary: summarizeLife(life),
-      lifeNextSevenDays: buildLifeAgenda(life, { now: now(), horizonDays: 7 }),
-      rituals: upcomingRituals({ now: now(), horizonDays: 45, ignoredIds: runtime.ignoredRitualIds }),
+      lifeSummary: needsPage('life') ? summarizeLife(life) : null,
+      lifeNextSevenDays: needsPage('life') ? buildLifeAgenda(life, { now: now(), horizonDays: 7 }) : [],
+      rituals: needsPage('life') ? upcomingRituals({ now: now(), horizonDays: 45, ignoredIds: runtime.ignoredRitualIds }) : [],
       privateDateSource: {
         state: life.some((item) => item.kind === 'private_date') ? 'ready' : runtime.privateDateSource.state,
         count: life.filter((item) => item.kind === 'private_date').length,
       },
       importantDates,
-      morningDigest: buildMorningDigest(digestInput, { date: now().slice(0, 10), timeZone: 'Asia/Shanghai' }),
-      eveningDigest: buildEveningDigest(digestInput, { date: now().slice(0, 10), timeZone: 'Asia/Shanghai' }),
-      searchResults: searchWorkspace(searchIndex, runtime.searchQuery),
+      morningDigest: needsPage('dashboard') ? buildMorningDigest(digestInput, { date: now().slice(0, 10), timeZone: 'Asia/Shanghai' }) : null,
+      eveningDigest: needsPage('dashboard') ? buildEveningDigest(digestInput, { date: now().slice(0, 10), timeZone: 'Asia/Shanghai' }) : null,
+      searchResults: needsPage('search') ? searchWorkspace(searchIndex, runtime.searchQuery) : [],
       today: now().slice(0, 10),
       agendaDate: now().slice(0, 10),
-      agenda: groupAgenda([
+      agenda: needsPage('today') ? groupAgenda([
         ...tasks,
         ...calendar.filter((item) => item.source !== 'local_task').map((item) => ({ ...item, status: 'todo' })),
-      ], { date: now().slice(0, 10) }),
+      ], { date: now().slice(0, 10) }) : [],
       taskDrawerOpen: runtime.taskDrawerOpen,
       taskDraft: runtime.taskDraft,
-      countdowns: countdowns.map((item) => ({ ...item, distance: countdownDistance(item, { now: now() }) })),
+      countdowns: needsPage('life') ? countdowns.map((item) => ({ ...item, distance: countdownDistance(item, { now: now() }) })) : [],
       focusSession: activeFocus,
-      focusSnapshot: activeFocus ? focusSnapshot(activeFocus, { now: now() }) : { state: 'planned', remainingSeconds: runtime.focusDuration * 60, elapsedSeconds: 0 },
-      focusTasks: tasks.filter((item) => !['done', 'completed', 'cancelled'].includes(item.status)),
-      focusSummary: summarizeFocus(focusSessions, { now: now() }),
+      focusSnapshot: needsPage('focus') ? (activeFocus ? focusSnapshot(activeFocus, { now: now() }) : { state: 'planned', remainingSeconds: runtime.focusDuration * 60, elapsedSeconds: 0 }) : null,
+      focusTasks: needsPage('focus') ? tasks.filter((item) => !['done', 'completed', 'cancelled'].includes(item.status)) : [],
+      focusSummary: needsPage('focus') ? summarizeFocus(focusSessions, { now: now() }) : null,
       contentItems,
       contentCompany: runtime.contentCompany,
       contentOwner: runtime.contentOwner,
-      contentOverview: contentOverview(contentItems),
-      contentPerformance: contentPerformance(contentItems),
+      contentOverview: needsPage('content-growth') ? contentOverview(contentItems) : null,
+      contentPerformance: needsPage('content-growth', 'reviews') ? contentPerformance(contentItems) : null,
       readingItems,
       knowledgeCards,
-      knowledgeReview: knowledgeReviewQueue(knowledgeCards),
+      knowledgeReview: needsPage('zos-brain') ? knowledgeReviewQueue(knowledgeCards) : [],
       agentRuns,
-      agentSummary: summarizeAgentRuns(agentRuns),
+      agentSummary: needsPage('agent-workbench') ? summarizeAgentRuns(agentRuns) : null,
       agentOsIndex,
       agentOsOverview,
       agentOsAgents,
-      mobileAgentDirectory: buildMobileAgentDirectory(agentOsAgents, {
+      mobileAgentDirectory: needsPage('agent-workbench') ? buildMobileAgentDirectory(agentOsAgents, {
         recentAgentIds: agentRuns.slice().reverse().slice(0, 8).map((run) => run.agentId),
         expandedOrganizationId: runtime.mobileAgentDirectoryDisclosure.organizationId,
         expandedDepartmentId: runtime.mobileAgentDirectoryDisclosure.departmentId,
-      }),
+      }) : null,
       agentOsDetails,
       agentTaskArchives,
       agentContextCandidates,
@@ -814,8 +826,12 @@ export function createCeoOsApplication(config = {}) {
       merchantSearch: runtime.merchantSearch || { state: 'empty_query', matches: [] },
       merchantProfile: runtime.merchantProfile || null,
       merchantDiagnostic: runtime.merchantDiagnostic || null,
-      availability: runtime.availability || queryHuahuoAvailability({ date: runtime.availabilityDate }, { render: false }),
+      availability: needsPage('spark-media') ? (runtime.availability || queryHuahuoAvailability({ date: runtime.availabilityDate }, { render: false })) : runtime.availability,
     };
+  }
+
+  function pageViewModel(pageId) {
+    return pageId === 'local-life' ? wanjiaViewModel() : viewModel({ pageId });
   }
 
   function invalidateWanjiaModel() {
@@ -3596,7 +3612,7 @@ export function createCeoOsApplication(config = {}) {
       applyLocalBusyAttributes();
       return;
     }
-    const baseModel = activePage === 'local-life' ? wanjiaViewModel() : viewModel();
+    const baseModel = pageViewModel(activePage);
     const model = { ...baseModel, isMobile: Number(document?.defaultView?.innerWidth || 0) <= 767 };
     const renderers = {
       dashboard: () => {
@@ -3899,7 +3915,7 @@ export function createCeoOsApplication(config = {}) {
   }
 
   return {
-    start, stop, whenIdle: () => Promise.all([startupWork, reminderScheduleWork]).then(() => viewModel()), render: renderAll, store, runtime, viewModel,
+    start, stop, whenIdle: () => Promise.all([startupWork, reminderScheduleWork]).then(() => viewModel()), render: renderAll, store, runtime, viewModel, pageViewModel,
     refreshSource, refreshAllSources, diagnoseWanjiaSchema, notifyCurrentReminders, confirmTarget, previewDecision, executeApproval,
     openDecisionAction, closeDecisionAction, confirmDecisionAction, undoDecisionAction, setDecisionFilter, loadMoreDecisions,
     setDecisionSelection, toggleDecisionSelection, executeDecisionBatch,
