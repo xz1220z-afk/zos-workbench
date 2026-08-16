@@ -1,7 +1,7 @@
 # ZOS CEO OS v2.11.0 发布记录
 
-候选日期：2026-08-16  
-状态：发布候选，尚未完成生产验收。
+发布日期：2026-08-16
+状态：核心版本已发布；OpenAI 服务端配置待补齐，AI/实时语音尚未做最终生产验收。
 
 ## 本次范围
 
@@ -38,4 +38,7 @@
 - `zos_records` 已启用 RLS、`replica identity full` 并加入 `supabase_realtime` publication；生产回读均为真。
 - 六个本次相关 Edge Function 已发布且为 `ACTIVE`、`verify_jwt=true`；匿名探测全部返回 HTTP `401`。
 - 当前 Supabase 尚未配置 `OPENAI_API_KEY`。登录、同步与受控入口可发布，但 ChatGPT 回答及实时语音必须保持“服务未配置”，不得标记为可用；完成该服务端配置后再做真实语音验收。
-- GitHub Pages 回读与四尺寸验收将在正式站部署完成后回填。
+- GitHub Pages 部署成功：[`pages build and deployment #31945927432`](https://github.com/xz1220z-afk/zos-workbench/actions/runs/31945927432)；对应提交 `ef9445d`。同一提交的 [`ZOS Workbench CI #31945927840`](https://github.com/xz1220z-afk/zos-workbench/actions/runs/31945927840) 通过。
+- 正式站回读：`index.html`、`manifest.json`、`sw.js`、`src/legacy-app.mjs`、认证、Realtime 与语音代表模块均为 HTTP `200`；入口、清单与缓存均确认 `2.11.0`。
+- 未登录首屏四尺寸验收通过：桌面 `1440×900`、iPad `834×1194`、iPhone `390×844`、Android `412×915`；均显示独立登录页、业务工作区为 `inert`、正文非空、无横向溢出、控制台 error 为 `0`。
+- 真实老板登录、快捷语音、ChatGPT 回答与实时语音仍需在补齐 `OPENAI_API_KEY` 后使用本人账号与麦克风做最终生产验收；在此之前不创建最终 `zos-workbench-v2.11.0` 标签。
