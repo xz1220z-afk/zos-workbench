@@ -4,19 +4,19 @@ import { readFile } from 'node:fs/promises';
 
 const root = new URL('../', import.meta.url);
 
-test('v2.12.0 release cache includes the AI office loop, owner login, realtime sync and both voice modes', async () => {
+test('v2.12.1 release cache includes the AI office loop, owner login, realtime sync and both voice modes', async () => {
   const [sw, manifest, app, html] = await Promise.all([
     readFile(new URL('sw.js', root), 'utf8'),
     readFile(new URL('manifest.json', root), 'utf8').then(JSON.parse),
     readFile(new URL('src/app.mjs', root), 'utf8'),
     readFile(new URL('index.html', root), 'utf8'),
   ]);
-  assert.match(sw, /zos-workbench-v2\.12\.0/);
-  assert.equal(manifest.version, '2.12.0');
-  assert.match(app, /APP_VERSION\s*=\s*'2\.12\.0'/);
-  assert.match(html, /assets\/app\.css\?v=2\.12\.0/);
-  assert.match(html, /src\/legacy-app\.mjs\?v=2\.12\.0/);
-  assert.match(html, /src\/app\.mjs\?v=2\.12\.0/);
+  assert.match(sw, /zos-workbench-v2\.12\.1/);
+  assert.equal(manifest.version, '2.12.1');
+  assert.match(app, /APP_VERSION\s*=\s*'2\.12\.1'/);
+  assert.match(html, /assets\/app\.css\?v=2\.12\.1/);
+  assert.match(html, /src\/legacy-app\.mjs\?v=2\.12\.1/);
+  assert.match(html, /src\/app\.mjs\?v=2\.12\.1/);
   for (const asset of [
     'src/app/content-growth.mjs', 'src/app/knowledge-workspace.mjs',
     'src/app/social-insight-center.mjs', 'src/app/agent-workbench.mjs',

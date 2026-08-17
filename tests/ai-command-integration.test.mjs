@@ -83,3 +83,15 @@ test('failed AI request keeps the user input and exposes only a safe error', asy
   assert.equal(app.viewModel().aiCommand.error, 'AI 暂时不可用，请稍后重试。');
   assert.doesNotMatch(JSON.stringify(app.viewModel().aiCommand), /secret_internal_stack/);
 });
+
+test('failed AI request preserves realtime voice capability and shows a safe upstream reason', async () => {
+  const app = application({
+    askAi: async () => { throw new Error('ai_quota_exhausted'); },
+    RTCPeerConnection: function FakePeerConnection() {},
+    mediaDevices: { getUserMedia() {} },
+  });
+  await assert.rejects(() => app.submitAiCommand('保留语音能力'), /ai_command_failed/);
+  assert.equal(app.viewModel().aiCommand.realtimeVoice.supported, true);
+  assert.equal(app.viewModel().aiCommand.realtimeVoice.state, 'idle');
+  assert.equal(app.viewModel().aiCommand.error, 'OpenAI 账户额度不足，请充值或更换可用密钥后重试。');
+});

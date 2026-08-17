@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { AuthError, requireOwnerUser } from '../_shared/auth.ts';
 import { buildAssistantInstructions, normalizeAssistantRequest, selectKnowledgeContext } from '../_shared/ai-assistant-contract.mjs';
+import { safeOpenAiUpstreamCode } from '../_shared/openai-upstream-errors.mjs';
 
 const HEADERS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Content-Type': 'application/json; charset=utf-8' };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS });
@@ -43,7 +44,11 @@ Deno.serve(async (req) => {
       max_output_tokens: 1200, safety_identifier: await safetyIdentifier(identity.user.id),
     }),
   });
-  if (!response.ok) return reply({ error: 'ai_upstream_failed' }, 502);
+  if (!response.ok) {
+    const safeCode = await safeOpenAiUpstreamCode(response);
+    console.error('openai_upstream_error', { status: response.status, code: safeCode });
+    return reply({ error: safeCode }, 502);
+  }
   const answer = outputText(await response.json());
   if (!answer) return reply({ error: 'ai_response_invalid' }, 502);
   return reply({ state: 'answered', answer, knowledgeState: knowledge.length ? 'matched_approved_excerpt' : 'general_only', sources: knowledge.map((item) => ({ title: item.title, sourceRef: item.sourceRef, scope: item.scope })) });

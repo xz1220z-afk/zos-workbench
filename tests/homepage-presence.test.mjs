@@ -34,7 +34,7 @@ test('both presences fall back to non-slogan states when records are empty', () 
 test('dashboard and life views render dynamic briefs through existing actions', () => {
   const work = { innerHTML: '' };
   renderDashboard(work, {
-    decisions: [{ id: 'd-1', title: '确认报价' }], importantDates: { work: [] }, todayTop3: [],
+    decisions: [{ id: 'd-1', title: '确认报价', status: 'open', requiresCeoDecision: true }], importantDates: { work: [] }, todayTop3: [],
     autoRefresh: {}, companyOperating: {}, mustRead: [], health: [], calendar: [], weather: {},
   });
   assert.match(work.innerHTML, /今天有 1 件事需要你拍板/);
@@ -45,6 +45,20 @@ test('dashboard and life views render dynamic briefs through existing actions', 
   renderLife(life, { importantDates: { life: [] }, lifeNextSevenDays: [], rituals: [], life: [] });
   assert.match(life.innerHTML, /今天可以给自己留一点空间/);
   assert.doesNotMatch(life.innerHTML, /把生活安排好，工作才有稳定的能量/);
+});
+
+test('dashboard hero counts only unresolved CEO decisions instead of resolved history', () => {
+  const work = { innerHTML: '' };
+  const decisions = [
+    { id: 'active', status: 'open', requiresCeoDecision: true, title: '待拍板事项' },
+    ...Array.from({ length: 343 }, (_, index) => ({ id: `resolved-${index}`, status: 'resolved', title: '已解除历史' })),
+  ];
+  renderDashboard(work, {
+    decisions, importantDates: { work: [] }, todayTop3: [], autoRefresh: {}, companyOperating: {},
+    mustRead: [], health: [], calendar: [], weather: {}, businessExceptions: [], calendarConflicts: [],
+  });
+  assert.match(work.innerHTML, /今天有 1 件事需要你拍板/);
+  assert.doesNotMatch(work.innerHTML, /今天有 344 件事需要你拍板/);
 });
 
 test('homepage material has a readable fallback and reduced-motion override', async () => {

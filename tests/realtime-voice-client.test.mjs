@@ -219,3 +219,27 @@ test('realtime SDP exchange uses the signed-in Edge Function and returns only SD
     page: { route: 'dashboard', title: '' }, agentId: 'CEO-001', knowledgeRefs: [],
   });
 });
+
+test('realtime SDP exchange preserves only a bounded server error code for retry UI', async () => {
+  const exchange = createRealtimeSessionExchange({
+    url: 'https://project.supabase.co', anonKey: 'anon', getAccessToken: async () => 'owner-token',
+    fetchImpl: async () => ({
+      ok: false, status: 502, headers: { get: () => 'application/json' },
+      json: async () => ({ error: 'ai_quota_exhausted', ignored: 'private upstream detail' }),
+    }),
+  });
+  await assert.rejects(() => exchange('v=0\r\no=offer'), /ai_quota_exhausted/);
+});
+
+test('realtime voice keeps browser support after a safe service failure so the user can retry', async () => {
+  const media = fakeMedia();
+  const voice = createRealtimeVoice({
+    RTCPeerConnection: FakePeerConnection, mediaDevices: media.mediaDevices,
+    createAudioElement: () => ({ play: async () => {}, pause() {}, srcObject: null }),
+    exchangeSdp: async () => { throw new Error('ai_quota_exhausted'); },
+  });
+  await assert.rejects(() => voice.start({ page: { route: 'dashboard' } }), /ai_quota_exhausted/);
+  assert.equal(voice.state().supported, true);
+  assert.equal(voice.state().state, 'failed');
+  assert.equal(voice.state().reason, 'ai_quota_exhausted');
+});

@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { AuthError, requireOwnerUser } from '../_shared/auth.ts';
 import { buildRealtimeSession, normalizeRealtimeVoiceContext } from '../_shared/realtime-voice-contract.mjs';
+import { safeOpenAiUpstreamCode } from '../_shared/openai-upstream-errors.mjs';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -79,7 +80,11 @@ Deno.serve(async (req) => {
   } catch {
     return reply({ error: 'ai_upstream_failed' }, 502);
   }
-  if (!upstream.ok) return reply({ error: 'ai_upstream_failed' }, 502);
+  if (!upstream.ok) {
+    const safeCode = await safeOpenAiUpstreamCode(upstream);
+    console.error('openai_realtime_upstream_error', { status: upstream.status, code: safeCode });
+    return reply({ error: safeCode }, 502);
+  }
   const answerSdp = (await upstream.text()).trim();
   if (!answerSdp.startsWith('v=0') || answerSdp.length > 128_000) return reply({ error: 'ai_response_invalid' }, 502);
   return new Response(answerSdp, {

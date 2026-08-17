@@ -2,6 +2,12 @@ export const REALTIME_VOICE_IDLE_MS = 90_000;
 export const REALTIME_VOICE_IDLE_GRACE_MS = 10_000;
 export const REALTIME_VOICE_MAX_MS = 15 * 60 * 1000;
 
+const SAFE_REALTIME_ERRORS = new Set([
+  'authentication_required', 'ai_not_configured', 'ai_key_invalid', 'ai_access_denied',
+  'ai_model_unavailable', 'ai_quota_exhausted', 'ai_rate_limited', 'ai_upstream_failed',
+  'knowledge_context_read_failed',
+]);
+
 function normalizeClientContext(input = {}) {
   return {
     page: {
@@ -27,7 +33,11 @@ export function createRealtimeSessionExchange({ url, anonKey, getAccessToken, fe
     const response = await fetchImpl(`${String(url).replace(/\/$/, '')}/functions/v1/zos-ai-realtime-session`, {
       method: 'POST', headers: { apikey: anonKey, Authorization: `Bearer ${token}` }, body,
     });
-    if (!response.ok) throw new Error('realtime_session_failed');
+    if (!response.ok) {
+      let safeCode = '';
+      try { safeCode = String((await response.json())?.error || ''); } catch { /* Generic fallback below. */ }
+      throw new Error(SAFE_REALTIME_ERRORS.has(safeCode) ? safeCode : 'realtime_session_failed');
+    }
     const answer = (await response.text()).trim();
     if (!answer.startsWith('v=0')) throw new Error('realtime_answer_invalid');
     return answer;
@@ -187,7 +197,10 @@ export function createRealtimeVoice(options = {}) {
       if (currentGeneration !== generation) return false;
       cleanupResources();
       clearTimers();
-      const reason = String(error?.name || error?.message || '').includes('NotAllowed') ? 'permission_denied' : 'start_failed';
+      const errorCode = String(error?.message || '');
+      const reason = String(error?.name || errorCode).includes('NotAllowed')
+        ? 'permission_denied'
+        : SAFE_REALTIME_ERRORS.has(errorCode) ? errorCode : 'start_failed';
       publish({ state: 'failed', reason });
       throw error;
     }

@@ -1,7 +1,7 @@
-import { escapeHtml } from './view-utils.mjs?v=2.12.0';
-import { partitionDecisions } from '../decision-center.mjs?v=2.12.0';
-import { humanText } from '../value-utils.mjs?v=2.12.0';
-import { buildMobileDashboard } from '../mobile-dashboard.mjs?v=2.12.0';
+import { escapeHtml } from './view-utils.mjs?v=2.12.1';
+import { partitionDecisions } from '../decision-center.mjs?v=2.12.1';
+import { humanText } from '../value-utils.mjs?v=2.12.1';
+import { buildMobileDashboard } from '../mobile-dashboard.mjs?v=2.12.1';
 
 function count(items) { return Array.isArray(items) ? items.length : 0; }
 

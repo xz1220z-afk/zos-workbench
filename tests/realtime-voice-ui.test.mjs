@@ -38,3 +38,14 @@ test('active realtime conversation exposes end, interrupt, mute and caption cont
   assert.match(html, /aria-live="polite"/);
   assert.match(html, /正在回答你/);
 });
+
+test('realtime service failure stays retryable and gives an actionable safe reason', () => {
+  const html = renderAiCommandHtml({
+    input: '', scope: 'auto', state: 'idle', voice: { supported: true, state: 'idle' },
+    realtimeVoice: { supported: true, state: 'failed', reason: 'ai_quota_exhausted', captionsEnabled: true },
+  });
+  assert.match(html, /OpenAI 账户额度不足/);
+  assert.match(html, /data-ai-realtime-start/);
+  assert.doesNotMatch(html, /data-ai-realtime-start disabled/);
+  assert.doesNotMatch(html, /当前浏览器不支持实时对话/);
+});

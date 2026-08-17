@@ -1,4 +1,5 @@
-import { escapeHtml } from './view-utils.mjs?v=2.12.0';
+import { escapeHtml } from './view-utils.mjs?v=2.12.1';
+import { safeAiErrorMessage } from '../ai-error-messages.mjs?v=2.12.1';
 
 const SCOPES = Object.freeze([
   ['auto', '自动'], ['wanjia', '万嘉'], ['huahuo', '花火'], ['lingli', '玲丽'],
@@ -65,8 +66,11 @@ function realtimeVoicePanel(model = {}) {
     idle_warning: '90 秒无交互，即将自动结束', failed: '实时对话未连接，可继续使用文字或快捷语音',
     ended: '实时对话已结束', unsupported: '当前浏览器不支持实时对话', idle: '需要时再主动开始',
   };
+  const statusLabel = voice.state === 'failed' && String(voice.reason || '').startsWith('ai_')
+    ? safeAiErrorMessage(voice.reason)
+    : labels[voice.state] || labels.idle;
   return `<section class="ai-realtime-voice" data-ai-realtime-state="${escapeHtml(voice.state || 'idle')}">
-    <div><small>CHATGPT REALTIME</small><strong>实时语音对话</strong><span>${escapeHtml(labels[voice.state] || labels.idle)}</span></div>
+    <div><small>CHATGPT REALTIME</small><strong>实时语音对话</strong><span>${escapeHtml(statusLabel)}</span></div>
     ${active ? `<div class="ai-realtime-controls" role="group" aria-label="实时语音控制">
       <button type="button" class="v13-action" data-ai-realtime-interrupt ${voice.state === 'speaking' ? '' : 'disabled'}>打断回答</button>
       <button type="button" class="v13-action" data-ai-realtime-mute aria-pressed="${voice.muted ? 'true' : 'false'}">${voice.muted ? '恢复麦克风' : '麦克风静音'}</button>

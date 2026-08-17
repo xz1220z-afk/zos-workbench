@@ -95,3 +95,21 @@ test('backgrounding the app ends realtime voice instead of leaving the microphon
   assert.deepEqual(calls, ['background']);
   app.stop();
 });
+
+test('realtime service failure remains retryable and is not relabeled as unsupported', async () => {
+  const app = createCeoOsApplication({
+    document: { getElementById: () => null, addEventListener() {}, querySelector: () => null, defaultView: null },
+    storage: memoryStorage(), createOperatingRuntime: false,
+    exchangeRealtimeSdp: async () => 'v=0', RTCPeerConnection: function FakePeer() {}, mediaDevices: { getUserMedia() {} },
+    realtimeVoiceFactory: ({ onState }) => ({
+      start: async () => {
+        onState({ supported: true, state: 'failed', reason: 'ai_quota_exhausted' });
+        throw new Error('ai_quota_exhausted');
+      },
+    }),
+  });
+  assert.equal(await app.startRealtimeVoice(), false);
+  assert.equal(app.viewModel().aiCommand.realtimeVoice.supported, true);
+  assert.equal(app.viewModel().aiCommand.realtimeVoice.state, 'failed');
+  assert.equal(app.viewModel().aiCommand.realtimeVoice.reason, 'ai_quota_exhausted');
+});

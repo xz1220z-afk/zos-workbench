@@ -1,8 +1,8 @@
-import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.12.0';
-import { formatCurrency, humanText } from '../value-utils.mjs?v=2.12.0';
-import { partitionDecisions } from '../decision-center.mjs?v=2.12.0';
-import { buildWorkHomepagePresence } from '../homepage-presence.mjs?v=2.12.0';
-import { renderAiCommandHtml } from './ai-command-view.mjs?v=2.12.0';
+import { displayValue, escapeHtml, renderState, VIEW_STATES } from './view-utils.mjs?v=2.12.1';
+import { formatCurrency, humanText } from '../value-utils.mjs?v=2.12.1';
+import { partitionDecisions } from '../decision-center.mjs?v=2.12.1';
+import { buildWorkHomepagePresence } from '../homepage-presence.mjs?v=2.12.1';
+import { renderAiCommandHtml } from './ai-command-view.mjs?v=2.12.1';
 
 export { VIEW_STATES };
 
@@ -86,7 +86,7 @@ export function render(container, viewModel = {}) {
   const activeDecisions = partitionDecisions(viewModel.decisions).ceo;
   const companies = viewModel.companyOperating || {};
   const workDates = viewModel.importantDates?.work || [];
-  const presence = viewModel.homePresence || buildWorkHomepagePresence(viewModel);
+  const presence = viewModel.homePresence || buildWorkHomepagePresence({ ...viewModel, decisions: activeDecisions });
   container.innerHTML = `<div class="v14-dashboard">
     ${syncRail(viewModel.autoRefresh)}
     ${renderAiCommandHtml(viewModel.aiCommand)}
